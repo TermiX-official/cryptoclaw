@@ -329,6 +329,7 @@ export async function getReplyFromConfig(
   const isGroup =
     typeof ctx.From === "string" &&
     (ctx.From.includes("@g.us") || ctx.From.startsWith("group:"));
+  const isHeartbeat = opts?.isHeartbeat === true;
 
   let resolvedThinkLevel =
     inlineThink ??
@@ -359,7 +360,7 @@ export async function getReplyFromConfig(
   })();
 
   // Directive-only message => persist session thinking level and return ack
-  if (directiveOnly || combinedDirectiveOnly) {
+  if (!isHeartbeat && (directiveOnly || combinedDirectiveOnly)) {
     if (!inlineThink) {
       cleanupTyping();
       return {
@@ -425,7 +426,7 @@ export async function getReplyFromConfig(
     return noMentions.length === 0;
   })();
 
-  if (verboseDirectiveOnly) {
+  if (!isHeartbeat && verboseDirectiveOnly) {
     if (!inlineVerbose) {
       cleanupTyping();
       return {
@@ -451,7 +452,7 @@ export async function getReplyFromConfig(
   }
 
   // If any directive (think/verbose) is present anywhere, acknowledge immediately and skip agent execution.
-  if (hasThinkDirective || hasVerboseDirective) {
+  if (!isHeartbeat && (hasThinkDirective || hasVerboseDirective)) {
     if (sessionEntry && sessionStore && sessionKey) {
       if (hasThinkDirective && inlineThink) {
         if (inlineThink === "off") {
@@ -693,8 +694,6 @@ export async function getReplyFromConfig(
     cleanupTyping();
     return result;
   }
-
-  const isHeartbeat = opts?.isHeartbeat === true;
 
   if (reply && reply.mode === "command") {
     const heartbeatCommand = isHeartbeat

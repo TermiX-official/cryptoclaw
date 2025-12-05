@@ -85,4 +85,39 @@ describe("trigger handling", () => {
     expect(prompt).toContain("Give me the status");
     expect(prompt).not.toContain("/thinking high");
   });
+
+  it("does not emit directive acks for heartbeats with /think", async () => {
+    const rpcMock = vi.spyOn(tauRpc, "runPiRpc").mockResolvedValue({
+      stdout:
+        '{"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"ok"}]}}',
+      stderr: "",
+      code: 0,
+      signal: null,
+      killed: false,
+    });
+
+    const res = await getReplyFromConfig(
+      {
+        Body: "HEARTBEAT /think:high",
+        From: "+1003",
+        To: "+1003",
+      },
+      { isHeartbeat: true },
+      {
+        inbound: {
+          reply: {
+            mode: "command",
+            command: ["pi", "{{Body}}"],
+            agent: { kind: "pi" },
+            session: {},
+          },
+        },
+      },
+    );
+
+    const text = Array.isArray(res) ? res[0]?.text : res?.text;
+    expect(text).toBe("ok");
+    expect(text).not.toMatch(/Thinking level set/i);
+    expect(rpcMock).toHaveBeenCalledOnce();
+  });
 });

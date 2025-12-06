@@ -7,6 +7,8 @@ import class Foundation.Bundle
 import OSLog
 import CoreGraphics
 @preconcurrency import ScreenCaptureKit
+import AVFoundation
+import Speech
 import VideoToolbox
 import ServiceManagement
 import SwiftUI
@@ -18,6 +20,9 @@ private let launchdLabel = "com.steipete.clawdis"
 private let onboardingVersionKey = "clawdis.onboardingVersion"
 private let currentOnboardingVersion = 2
 private let pauseDefaultsKey = "clawdis.pauseEnabled"
+private let swabbleEnabledKey = "clawdis.swabbleEnabled"
+private let swabbleTriggersKey = "clawdis.swabbleTriggers"
+private let defaultVoiceWakeTriggers = ["clawd", "claude"]
 
 // MARK: - App model
 
@@ -38,6 +43,19 @@ final class AppState: ObservableObject {
     @Published var debugPaneEnabled: Bool {
         didSet { UserDefaults.standard.set(debugPaneEnabled, forKey: "clawdis.debugPaneEnabled") }
     }
+    @Published var swabbleEnabled: Bool {
+        didSet { UserDefaults.standard.set(swabbleEnabled, forKey: swabbleEnabledKey) }
+    }
+    @Published var swabbleTriggerWords: [String] {
+        didSet {
+            let cleaned = swabbleTriggerWords.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            UserDefaults.standard.set(cleaned, forKey: swabbleTriggersKey)
+            if cleaned.count != swabbleTriggerWords.count {
+                swabbleTriggerWords = cleaned
+            }
+        }
+    }
 
     init() {
         self.isPaused = UserDefaults.standard.bool(forKey: pauseDefaultsKey)
@@ -45,6 +63,8 @@ final class AppState: ObservableObject {
         self.launchAtLogin = SMAppService.mainApp.status == .enabled
         self.onboardingSeen = UserDefaults.standard.bool(forKey: "clawdis.onboardingSeen")
         self.debugPaneEnabled = UserDefaults.standard.bool(forKey: "clawdis.debugPaneEnabled")
+        self.swabbleEnabled = UserDefaults.standard.bool(forKey: swabbleEnabledKey)
+        self.swabbleTriggerWords = UserDefaults.standard.stringArray(forKey: swabbleTriggersKey) ?? defaultVoiceWakeTriggers
     }
 }
 
@@ -392,6 +412,7 @@ private struct MenuContent: View {
 
     var body: some View {
         Toggle(isOn: activeBinding) { Text("Clawdis Active") }
+        Toggle(isOn: $state.swabbleEnabled) { Text("Voice Wake") }
         Button("Settings…") { open(tab: .general) }
             .keyboardShortcut(",", modifiers: [.command])
         Button("About Clawdis") { open(tab: .about) }
@@ -662,6 +683,450 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSXPCListenerDelegate 
 
 // MARK: - Settings UI
 
+private struct SessionEntryRecord: Decodable {
+    let sessionId: String?
+    let updatedAt: Double?
+    let systemSent: Bool?
+    let abortedLastRun: Bool?
+    let thinkingLevel: String?
+    let verboseLevel: String?
+    let inputTokens: Int?
+    let outputTokens: Int?
+    let totalTokens: Int?
+    let model: String?
+    let contextTokens: Int?
+}
+
+private struct SessionTokenStats {
+    let input: Int
+    let output: Int
+    let total: Int
+    let contextTokens: Int
+
+    var percentUsed: Int? {
+        guard contextTokens > 0, total > 0 else { return nil }
+        return min(100, Int(round((Double(total) / Double(contextTokens)) * 100)))
+    }
+
+    var summary: String {
+        let parts = ["in \(input)", "out \(output)", "total \(total)"]
+        var text = parts.joined(separator: " | ")
+        if let percentUsed {
+            text += " (\(percentUsed)% of \(contextTokens))"
+        }
+        return text
+    }
+}
+
+private struct SessionRow: Identifiable {
+    let id: String
+    let key: String
+    let kind: SessionKind
+    let updatedAt: Date?
+    let sessionId: String?
+    let thinkingLevel: String?
+    let verboseLevel: String?
+    let systemSent: Bool
+    let abortedLastRun: Bool
+    let tokens: SessionTokenStats
+    let model: String?
+
+    var ageText: String { relativeAge(from: updatedAt) }
+
+    var flagLabels: [String] {
+        var flags: [String] = []
+        if let thinkingLevel { flags.append("think \(thinkingLevel)") }
+        if let verboseLevel { flags.append("verbose \(verboseLevel)") }
+        if systemSent { flags.append("system sent") }
+        if abortedLastRun { flags.append("aborted") }
+        return flags
+    }
+}
+
+private enum SessionKind {
+    case direct, group, global, unknown
+
+    static func from(key: String) -> SessionKind {
+        if key == "global" { return .global }
+        if key.hasPrefix("group:") { return .group }
+        if key == "unknown" { return .unknown }
+        return .direct
+    }
+
+    var label: String {
+        switch self {
+        case .direct: return "Direct"
+        case .group: return "Group"
+        case .global: return "Global"
+        case .unknown: return "Unknown"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .direct: return .accentColor
+        case .group: return .orange
+        case .global: return .purple
+        case .unknown: return .gray
+        }
+    }
+}
+
+private struct SessionDefaults {
+    let model: String
+    let contextTokens: Int
+}
+
+private struct SessionConfigHints {
+    let storePath: String?
+    let model: String?
+    let contextTokens: Int?
+}
+
+private enum SessionLoadError: LocalizedError {
+    case missingStore(String)
+    case decodeFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .missingStore(path):
+            return "No session store found at \(path) yet. Send or receive a message to create it."
+        case let .decodeFailed(reason):
+            return "Could not read the session store: \(reason)"
+        }
+    }
+}
+
+private enum SessionLoader {
+    static let fallbackModel = "claude-opus-4-5"
+    static let fallbackContextTokens = 200_000
+
+    static let defaultStorePath = standardize(
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".clawdis/sessions/sessions.json").path
+    )
+
+    private static let legacyStorePaths: [String] = [
+        standardize(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".clawdis/sessions.json").path),
+        standardize(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".warelay/sessions/sessions.json").path),
+        standardize(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".warelay/sessions.json").path),
+    ]
+
+    static func configHints() -> SessionConfigHints {
+        let configURL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".clawdis/clawdis.json")
+        guard let data = try? Data(contentsOf: configURL) else {
+            return SessionConfigHints(storePath: nil, model: nil, contextTokens: nil)
+        }
+        guard let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return SessionConfigHints(storePath: nil, model: nil, contextTokens: nil)
+        }
+
+        let inbound = parsed["inbound"] as? [String: Any]
+        let reply = inbound?["reply"] as? [String: Any]
+        let session = reply?["session"] as? [String: Any]
+        let agent = reply?["agent"] as? [String: Any]
+
+        let store = session?["store"] as? String
+        let model = agent?["model"] as? String
+        let contextTokens = (agent?["contextTokens"] as? NSNumber)?.intValue
+
+        return SessionConfigHints(
+            storePath: store.map { standardize($0) },
+            model: model,
+            contextTokens: contextTokens
+        )
+    }
+
+    static func resolveStorePath(override: String?) -> String {
+        let preferred = standardize(override ?? defaultStorePath)
+        let candidates = [preferred] + legacyStorePaths
+        if let existing = candidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+            return existing
+        }
+        return preferred
+    }
+
+    static func loadRows(at path: String, defaults: SessionDefaults) async throws -> [SessionRow] {
+        try await Task.detached(priority: .utility) {
+            guard FileManager.default.fileExists(atPath: path) else {
+                throw SessionLoadError.missingStore(path)
+            }
+
+            let data = try Data(contentsOf: URL(fileURLWithPath: path))
+            let decoded: [String: SessionEntryRecord]
+            do {
+                decoded = try JSONDecoder().decode([String: SessionEntryRecord].self, from: data)
+            } catch {
+                throw SessionLoadError.decodeFailed(error.localizedDescription)
+            }
+
+            return decoded.map { key, entry in
+                let updated = entry.updatedAt.map { Date(timeIntervalSince1970: $0 / 1000) }
+                let input = entry.inputTokens ?? 0
+                let output = entry.outputTokens ?? 0
+                let total = entry.totalTokens ?? input + output
+                let context = entry.contextTokens ?? defaults.contextTokens
+                let model = entry.model ?? defaults.model
+
+                return SessionRow(
+                    id: key,
+                    key: key,
+                    kind: SessionKind.from(key: key),
+                    updatedAt: updated,
+                    sessionId: entry.sessionId,
+                    thinkingLevel: entry.thinkingLevel,
+                    verboseLevel: entry.verboseLevel,
+                    systemSent: entry.systemSent ?? false,
+                    abortedLastRun: entry.abortedLastRun ?? false,
+                    tokens: SessionTokenStats(
+                        input: input,
+                        output: output,
+                        total: total,
+                        contextTokens: context
+                    ),
+                    model: model
+                )
+            }
+            .sorted { ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast) }
+        }.value
+    }
+
+    private static func standardize(_ path: String) -> String {
+        (path as NSString).expandingTildeInPath.replacingOccurrences(of: "//", with: "/")
+    }
+}
+
+private func relativeAge(from date: Date?) -> String {
+    guard let date else { return "unknown" }
+    let delta = Date().timeIntervalSince(date)
+    if delta < 60 { return "just now" }
+    let minutes = Int(round(delta / 60))
+    if minutes < 60 { return "\(minutes)m ago" }
+    let hours = Int(round(Double(minutes) / 60))
+    if hours < 48 { return "\(hours)h ago" }
+    let days = Int(round(Double(hours) / 24))
+    return "\(days)d ago"
+}
+
+@MainActor
+struct SessionsSettings: View {
+    @State private var rows: [SessionRow] = []
+    @State private var storePath: String = SessionLoader.defaultStorePath
+    @State private var lastLoaded: Date?
+    @State private var errorMessage: String?
+    @State private var loading = false
+    @State private var hasLoaded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            storeMetadata
+            Divider().padding(.vertical, 4)
+            content
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .task {
+            guard !hasLoaded else { return }
+            hasLoaded = true
+            await refresh()
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Sessions")
+                .font(.title3.weight(.semibold))
+            Text("Peek at the stored conversation buckets the CLI reuses for context and rate limits.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var storeMetadata: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Session store")
+                        .font(.callout.weight(.semibold))
+                    if let lastLoaded {
+                        Text("Updated \(relativeAge(from: lastLoaded))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Text(storePath)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { await refresh() }
+                } label: {
+                    Label(loading ? "Refreshing..." : "Refresh", systemImage: "arrow.clockwise")
+                        .labelStyle(.titleAndIcon)
+                }
+                .disabled(loading)
+
+                Button {
+                    revealStore()
+                } label: {
+                    Label("Reveal", systemImage: "folder")
+                        .labelStyle(.titleAndIcon)
+                }
+                .disabled(!FileManager.default.fileExists(atPath: storePath))
+
+                if loading {
+                    ProgressView().controlSize(.small)
+                }
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private var content: some View {
+        Group {
+            if rows.isEmpty && errorMessage == nil {
+                Text("No sessions yet. They appear after the first inbound message or heartbeat.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(rows) { row in
+                            SessionRowView(row: row)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func refresh() async {
+        guard !loading else { return }
+        loading = true
+        errorMessage = nil
+
+        let hints = SessionLoader.configHints()
+        let resolvedStore = SessionLoader.resolveStorePath(override: hints.storePath)
+        let defaults = SessionDefaults(
+            model: hints.model ?? SessionLoader.fallbackModel,
+            contextTokens: hints.contextTokens ?? SessionLoader.fallbackContextTokens
+        )
+
+        do {
+            let newRows = try await SessionLoader.loadRows(at: resolvedStore, defaults: defaults)
+            rows = newRows
+            storePath = resolvedStore
+            lastLoaded = Date()
+        } catch {
+            rows = []
+            storePath = resolvedStore
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+
+        loading = false
+    }
+
+    private func revealStore() {
+        let url = URL(fileURLWithPath: storePath)
+        if FileManager.default.fileExists(atPath: storePath) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            NSWorkspace.shared.open(url.deletingLastPathComponent())
+        }
+    }
+}
+
+private struct SessionRowView: View {
+    let row: SessionRow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(row.key)
+                    .font(.body.weight(.semibold))
+                SessionKindBadge(kind: row.kind)
+                Spacer()
+                Text(row.ageText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                Label(row.tokens.summary, systemImage: "chart.bar.doc.horizontal")
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(.secondary)
+
+                if let model = row.model {
+                    Label(model, systemImage: "brain.head.profile")
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let sessionId = row.sessionId {
+                    Label(sessionId, systemImage: "number")
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+            .font(.caption)
+            .lineLimit(1)
+
+            if !row.flagLabels.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(row.flagLabels, id: \.self) { flag in
+                        Text(flag)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(NSColor.controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+        )
+    }
+}
+
+private struct SessionKindBadge: View {
+    let kind: SessionKind
+
+    var body: some View {
+        Text(kind.label)
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .foregroundStyle(kind.tint)
+            .background(kind.tint.opacity(0.15))
+            .clipShape(Capsule())
+    }
+}
+
 struct SettingsRootView: View {
     @ObservedObject var state: AppState
     @State private var permStatus: [Capability: Bool] = [:]
@@ -673,6 +1138,14 @@ struct SettingsRootView: View {
             GeneralSettings(state: state)
                 .tabItem { Label("General", systemImage: "gearshape") }
                 .tag(SettingsTab.general)
+
+            SessionsSettings()
+                .tabItem { Label("Sessions", systemImage: "clock.arrow.circlepath") }
+                .tag(SettingsTab.sessions)
+
+            VoiceWakeSettings(state: state)
+                .tabItem { Label("Voice Wake", systemImage: "waveform.circle") }
+                .tag(SettingsTab.voiceWake)
 
             PermissionsSettings(status: permStatus, refresh: refreshPerms, showOnboarding: { OnboardingController.shared.show() })
                 .tabItem { Label("Permissions", systemImage: "lock.shield") }
@@ -727,12 +1200,14 @@ struct SettingsRootView: View {
 }
 
 enum SettingsTab: CaseIterable {
-    case general, permissions, debug, about
+    case general, sessions, voiceWake, permissions, debug, about
     static let windowWidth: CGFloat = 520
     static let windowHeight: CGFloat = 520
     var title: String {
         switch self {
         case .general: return "General"
+        case .sessions: return "Sessions"
+        case .voiceWake: return "Voice Wake"
         case .permissions: return "Permissions"
         case .debug: return "Debug"
         case .about: return "About"
@@ -756,6 +1231,110 @@ enum SettingsTabRouter {
 
 extension Notification.Name {
     static let clawdisSelectSettingsTab = Notification.Name("clawdisSelectSettingsTab")
+}
+
+enum VoiceWakeTestState: Equatable {
+    case idle
+    case requesting
+    case listening
+    case detected(String)
+    case failed(String)
+}
+
+@MainActor
+final class VoiceWakeTester {
+    private let recognizer: SFSpeechRecognizer?
+    private let audioEngine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+
+    init(locale: Locale = .current) {
+        self.recognizer = SFSpeechRecognizer(locale: locale)
+    }
+
+    func start(triggers: [String], onUpdate: @MainActor @escaping @Sendable (VoiceWakeTestState) -> Void) async throws {
+        guard recognitionTask == nil else { return }
+        guard let recognizer, recognizer.isAvailable else {
+            throw NSError(domain: "VoiceWakeTester", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech recognition unavailable"])
+        }
+
+        let granted = try await Self.ensurePermissions()
+        guard granted else {
+            throw NSError(domain: "VoiceWakeTester", code: 2, userInfo: [NSLocalizedDescriptionKey: "Microphone or speech permission denied"])
+        }
+
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        recognitionRequest?.shouldReportPartialResults = true
+
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
+            guard let self else { return }
+            Task { @MainActor in self.recognitionRequest?.append(buffer) }
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+        onUpdate(.listening)
+
+        guard let request = recognitionRequest else { return }
+
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            guard let self else { return }
+            Task { @MainActor in
+                if let result {
+                    let text = result.bestTranscription.formattedString
+                    if Self.matches(text: text, triggers: triggers) {
+                        self.stop()
+                        onUpdate(.detected(text))
+                        return
+                    }
+                }
+                if let error {
+                    self.stop()
+                    onUpdate(.failed(error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    func stop() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        audioEngine.inputNode.removeTap(onBus: 0)
+    }
+
+    private static func matches(text: String, triggers: [String]) -> Bool {
+        let lowered = text.lowercased()
+        return triggers.contains { lowered.contains($0.lowercased()) }
+    }
+
+    private static func ensurePermissions() async throws -> Bool {
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        if speechStatus == .notDetermined {
+            let granted = await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { status in
+                    continuation.resume(returning: status == .authorized)
+                }
+            }
+            guard granted else { return false }
+        } else if speechStatus != .authorized {
+            return false
+        }
+
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch micStatus {
+        case .authorized: return true
+        case .notDetermined:
+            return await AVCaptureDevice.requestAccess(for: .audio)
+        default:
+            return false
+        }
+    }
 }
 
 @MainActor
@@ -883,6 +1462,215 @@ struct GeneralSettings: View {
         await CLIInstaller.install { status in
             await MainActor.run { cliStatus = status }
         }
+    }
+}
+
+struct VoiceWakeSettings: View {
+    @ObservedObject var state: AppState
+    @State private var testState: VoiceWakeTestState = .idle
+    @State private var tester = VoiceWakeTester()
+    @State private var isTesting = false
+
+    private struct IndexedWord: Identifiable {
+        let id: Int
+        let value: String
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsToggleRow(
+                title: "Enable Voice Wake",
+                subtitle: "Listen for a wake phrase (e.g. \"Claude\") before running voice commands.",
+                binding: $state.swabbleEnabled
+            )
+
+            testCard
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Trigger words")
+                        .font(.callout.weight(.semibold))
+                    Spacer()
+                    Button {
+                        addWord()
+                    } label: {
+                        Label("Add word", systemImage: "plus")
+                    }
+                    .disabled(state.swabbleTriggerWords.contains(where: { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }))
+
+                    Button("Reset defaults") { state.swabbleTriggerWords = defaultVoiceWakeTriggers }
+                }
+
+                Table(indexedWords) {
+                    TableColumn("Word") { row in
+                        TextField("Wake word", text: binding(for: row.id))
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    TableColumn("") { row in
+                        Button {
+                            removeWord(at: row.id)
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Remove trigger word")
+                    }
+                    .width(36)
+                }
+                .frame(minHeight: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
+                )
+
+                Text("Clawdis reacts when any trigger appears in a transcription. Keep them short to avoid false positives.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+    }
+
+    private var indexedWords: [IndexedWord] {
+        state.swabbleTriggerWords.enumerated().map { IndexedWord(id: $0.offset, value: $0.element) }
+    }
+
+    private var testCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Test Voice Wake")
+                    .font(.callout.weight(.semibold))
+                Spacer()
+                Button(action: toggleTest) {
+                    Label(isTesting ? "Stop" : "Start test", systemImage: isTesting ? "stop.circle.fill" : "play.circle")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(isTesting ? .red : .accentColor)
+            }
+
+            HStack(spacing: 8) {
+                statusIcon
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(statusText)
+                        .font(.subheadline)
+                    if case let .detected(text) = testState {
+                        Text("Heard: \(text)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+                Spacer()
+            }
+            .padding(10)
+            .background(.quaternary.opacity(0.2))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var statusIcon: some View {
+        switch testState {
+        case .idle:
+            AnyView(Image(systemName: "waveform").foregroundStyle(.secondary))
+        case .requesting:
+            AnyView(ProgressView().controlSize(.small))
+        case .listening:
+            AnyView(
+                Image(systemName: "ear.and.waveform")
+                    .symbolEffect(.pulse)
+                    .foregroundStyle(Color.accentColor)
+            )
+        case .detected:
+            AnyView(Image(systemName: "checkmark.circle.fill").foregroundStyle(.green))
+        case .failed:
+            AnyView(Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow))
+        }
+    }
+
+    private var statusText: String {
+        switch testState {
+        case .idle:
+            return "Press start, say a trigger word, and wait for detection."
+        case .requesting:
+            return "Requesting mic & speech permission…"
+        case .listening:
+            return "Listening… say your trigger word."
+        case .detected:
+            return "Voice wake detected!"
+        case let .failed(reason):
+            return reason
+        }
+    }
+
+    private func addWord() {
+        state.swabbleTriggerWords.append("")
+    }
+
+    private func removeWord(at index: Int) {
+        guard state.swabbleTriggerWords.indices.contains(index) else { return }
+        state.swabbleTriggerWords.remove(at: index)
+    }
+
+    private func binding(for index: Int) -> Binding<String> {
+        Binding(
+            get: {
+                guard state.swabbleTriggerWords.indices.contains(index) else { return "" }
+                return state.swabbleTriggerWords[index]
+            },
+            set: { newValue in
+                guard state.swabbleTriggerWords.indices.contains(index) else { return }
+                state.swabbleTriggerWords[index] = newValue
+            }
+        )
+    }
+
+    private func toggleTest() {
+        if isTesting {
+            tester.stop()
+            isTesting = false
+            testState = .idle
+            return
+        }
+
+        let triggers = sanitizedTriggers()
+        isTesting = true
+        testState = .requesting
+        Task { @MainActor in
+            do {
+                try await tester.start(
+                    triggers: triggers,
+                    onUpdate: { newState in
+                        self.testState = newState
+                        if case .detected = newState { self.isTesting = false }
+                        if case .failed = newState { self.isTesting = false }
+                    }
+                )
+                // timeout after 10s
+                try await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+                if isTesting {
+                    tester.stop()
+                    testState = .failed("Timeout: no trigger heard")
+                    isTesting = false
+                }
+            } catch {
+                tester.stop()
+                testState = .failed(error.localizedDescription)
+                isTesting = false
+            }
+        }
+    }
+
+    private func sanitizedTriggers() -> [String] {
+        let cleaned = state.swabbleTriggerWords
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return cleaned.isEmpty ? defaultVoiceWakeTriggers : cleaned
     }
 }
 
@@ -1228,49 +2016,48 @@ struct OnboardingView: View {
     @State private var copied = false
     @ObservedObject private var state = AppStateStore.shared
 
+    private let pageWidth: CGFloat = 640
+    private let contentHeight: CGFloat = 260
     private var pageCount: Int { 6 }
     private var buttonTitle: String { currentPage == pageCount - 1 ? "Finish" : "Next" }
     private let devLinkCommand = "ln -sf $(pwd)/apps/macos/.build/debug/ClawdisCLI /usr/local/bin/clawdis-mac"
 
     var body: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            let contentHeight = max(proxy.size.height - 300, 240) // leave room for header + nav
+        VStack(spacing: 0) {
+            GlowingClawdisIcon(size: 156)
+                .padding(.top, 40)
+                .padding(.bottom, 20)
+                .frame(height: 240)
 
-            VStack(spacing: 0) {
-                GlowingClawdisIcon(size: 148)
-                    .padding(.top, 22)
-                    .padding(.bottom, 12)
-                    .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 220)
-
+            GeometryReader { _ in
                 HStack(spacing: 0) {
-                    welcomePage(width: width)
-                    focusPage(width: width)
-                    permissionsPage(width: width)
-                    cliPage(width: width)
-                    launchPage(width: width)
-                    readyPage(width: width)
+                    welcomePage().frame(width: pageWidth)
+                    focusPage().frame(width: pageWidth)
+                    permissionsPage().frame(width: pageWidth)
+                    cliPage().frame(width: pageWidth)
+                    launchPage().frame(width: pageWidth)
+                    readyPage().frame(width: pageWidth)
                 }
-                .frame(width: width, height: contentHeight, alignment: .top)
-                .offset(x: CGFloat(-currentPage) * width)
+                .offset(x: CGFloat(-currentPage) * pageWidth)
                 .animation(
                     .interactiveSpring(response: 0.5, dampingFraction: 0.86, blendDuration: 0.25),
                     value: currentPage
                 )
+                .frame(height: contentHeight, alignment: .top)
                 .clipped()
-
-                navigationBar(pageWidth: width)
             }
-            .frame(width: width, height: proxy.size.height, alignment: .top)
-            .background(Color(NSColor.windowBackgroundColor))
+            .frame(height: 260)
+
+            navigationBar
         }
-        .frame(width: 640, height: 560)
+        .frame(width: pageWidth, height: 560)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear { currentPage = 0 }
         .task { await refreshPerms() }
     }
 
-    private func welcomePage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func welcomePage() -> some View {
+        onboardingPage {
             Text("Welcome to Clawdis")
                 .font(.largeTitle.weight(.semibold))
             Text("Your macOS menu bar companion for notifications, screenshots, and privileged agent actions.")
@@ -1288,8 +2075,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func focusPage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func focusPage() -> some View {
+        onboardingPage {
             Text("What Clawdis handles")
                 .font(.largeTitle.weight(.semibold))
             onboardingCard {
@@ -1312,8 +2099,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func permissionsPage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func permissionsPage() -> some View {
+        onboardingPage {
             Text("Grant permissions")
                 .font(.largeTitle.weight(.semibold))
             Text("Approve these once and the helper CLI reuses the same grants.")
@@ -1343,8 +2130,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func cliPage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func cliPage() -> some View {
+        onboardingPage {
             Text("Install the helper CLI")
                 .font(.largeTitle.weight(.semibold))
             Text("Link `clawdis-mac` so scripts and the agent can talk to this app.")
@@ -1387,8 +2174,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func launchPage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func launchPage() -> some View {
+        onboardingPage {
             Text("Keep it running")
                 .font(.largeTitle.weight(.semibold))
             Text("Let Clawdis launch with macOS so permissions and notifications are ready when automations start.")
@@ -1411,8 +2198,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func readyPage(width: CGFloat) -> some View {
-        onboardingPage(width: width) {
+    private func readyPage() -> some View {
+        onboardingPage {
             Text("All set")
                 .font(.largeTitle.weight(.semibold))
             onboardingCard {
@@ -1435,7 +2222,7 @@ struct OnboardingView: View {
         }
     }
 
-    private func navigationBar(pageWidth: CGFloat) -> some View {
+    private var navigationBar: some View {
         HStack(spacing: 20) {
             ZStack(alignment: .leading) {
                 Button(action: {}, label: {
@@ -1486,13 +2273,12 @@ struct OnboardingView: View {
         .frame(height: 60)
     }
 
-    private func onboardingPage(width: CGFloat, @ViewBuilder _ content: () -> some View) -> some View {
+    private func onboardingPage(@ViewBuilder _ content: () -> some View) -> some View {
         VStack(spacing: 22) {
             content()
             Spacer()
         }
-        .frame(width: width, alignment: .top)
-        .padding(.horizontal, 26)
+        .frame(width: pageWidth, alignment: .top)
     }
 
     private func onboardingCard(@ViewBuilder _ content: () -> some View) -> some View {

@@ -13,10 +13,10 @@ struct AboutSettings: View {
             } label: {
                 Image(nsImage: appIcon)
                     .resizable()
-                    .frame(width: 88, height: 88)
-                    .cornerRadius(16)
-                    .shadow(color: self.iconHover ? .accentColor.opacity(0.25) : .clear, radius: 8)
-                    .scaleEffect(self.iconHover ? 1.06 : 1.0)
+                    .frame(width: 160, height: 160)
+                    .cornerRadius(24)
+                    .shadow(color: self.iconHover ? .accentColor.opacity(0.25) : .clear, radius: 10)
+                    .scaleEffect(self.iconHover ? 1.05 : 1.0)
             }
             .buttonStyle(.plain)
             .focusable(false)

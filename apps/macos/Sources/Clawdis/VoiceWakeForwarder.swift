@@ -144,7 +144,10 @@ enum VoiceWakeForwarder {
         } else {
             cmdTemplate = config.commandTemplate
         }
-        let shellCommand = "CLAW_TEXT=$(cat); \(self.commandWithCliPath(cmdTemplate, target: destination))"
+
+        let b64 = transcript.data(using: .utf8)?.base64EncodedString() ?? ""
+        let pythonDecode = "PYBIN=$(command -v python3 || command -v python || true); if [ -z \\\"$PYBIN\\\" ]; then echo 'python missing'; exit 127; fi; CLAW_TEXT=$($PYBIN -c \\\"import base64; print(base64.b64decode('" + b64 + "').decode('utf-8'), end='')\\\");"
+        let shellCommand = "PATH=\(cliHelperSearchPaths.joined(separator: ":")); \(pythonDecode) \(self.commandWithCliPath(cmdTemplate, target: destination))"
         args.append(contentsOf: ["sh", "-c", shellCommand])
 
         let debugCmd = (["/usr/bin/ssh"] + args).joined(separator: " ")
@@ -156,8 +159,6 @@ enum VoiceWakeForwarder {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
         process.arguments = args
 
-        let input = Pipe()
-        process.standardInput = input
         let output = Pipe()
         process.standardOutput = output
         process.standardError = output
@@ -168,11 +169,6 @@ enum VoiceWakeForwarder {
             self.logger.error("voice wake forward failed to start ssh: \(error.localizedDescription, privacy: .public)")
             return .failure(.launchFailed(error.localizedDescription))
         }
-
-        if let data = transcript.data(using: .utf8) {
-            input.fileHandleForWriting.write(data)
-        }
-        try? input.fileHandleForWriting.close()
 
         let out = await self.wait(process, timeout: config.timeout)
         if process.terminationStatus == 0 {

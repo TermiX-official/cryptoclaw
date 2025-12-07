@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.0.0 — Unreleased
+
+First Clawdis release after the Warelay rebrand. This is a semver-major because we dropped legacy providers/agents and moved defaults to new paths while adding a full macOS companion app.
+
+### Breaking
+- Renamed to **Clawdis**: defaults now live under `~/.clawdis` (sessions in `~/.clawdis/sessions/`, IPC at `~/.clawdis/clawdis.sock`, logs in `/tmp/clawdis`). Launchd labels and config filenames follow the new name; legacy stores are copied forward on first run.
+- Pi/Tau only: `inbound.reply.agent.kind` accepts only `"pi"`, and the agent CLI/CLI flags for Claude/Codex/Gemini were removed. The Pi CLI runs in RPC mode with a persistent worker.
+- WhatsApp Web is the only transport; Twilio support and related CLI flags/tests were removed.
+
+### macOS companion app
+- **Clawdis.app menu bar companion**: packaged, signed bundle with relay start/stop, launchd toggle, project-root and pnpm/node auto-resolution, live log shortcut, restart button, and status/recipient table plus badges/dimming for attention and paused states.
+- **On-device Voice Wake**: Apple speech recognizer with wake-word table, language picker, live mic meter, “hold until silence,” animated ears/legs, and an SSH forwarder + test harness that runs `clawdis-mac agent --message …` on your target machine and surfaces errors clearly.
+- **WebChat & Debugging**: bundled WebChat UI, Debug tab with heartbeat sliders, session-store picker, log opener (`clawlog`), relay restart, health probes, and scrollable settings panes.
+
+### WhatsApp & agent experience
+- Group chats fully supported: mention-gated triggers (including media-only captions), sender attribution, session primer with subject/member roster, allowlist bypass when you’re @‑mentioned, and safer handling of view-once/ephemeral media.
+- Thinking/verbosity directives: `/think` and `/verbose` acknowledge and persist per session while allowing inline overrides; verbose mode streams tool metadata with emoji/args/previews and coalesces bursts to reduce WhatsApp noise.
+- Heartbeats: configurable cadence with CLI/GUI toggles; directive acks suppressed during heartbeats; array/multi-payload replies normalized for Baileys.
+- Reply quality: smarter chunking on words/newlines, fallback warnings when media fails to send, self-number mention detection, and primed group sessions send the roster on first turn.
+
+### CLI, RPC, and health
+- New `clawdis agent` command plus a persistent Pi RPC worker (auto-started) enables direct agent chats; `clawdis status` renders a colored session/recipient table.
+- `clawdis health` probes WhatsApp link status, connect latency, heartbeat interval, session-store recency, and IPC socket presence (JSON mode for monitors).
+- Added `--help`/`--version` flags; login/logout accept `--provider` (WhatsApp default). Console output is mirrored into pino logs under `/tmp/clawdis`.
+- RPC stability: stdin/stdout loop for Tau/Pi, auto-restart worker, raw error surfacing, and deliver-via-RPC when JSON agent output is returned.
+
+### Security & hardening
+- Media server blocks symlink/path traversal, clears temporary downloads, and rotates logs daily (24h retention).
+- Session store purged on logout; IPC socket directory permissions tightened (0700/0600).
+- Launchd PATH and helper lookup hardened for packaged macOS builds; health probes surface missing binaries quickly.
+
 ## 1.5.0 — 2025-12-05
 
 ### Breaking

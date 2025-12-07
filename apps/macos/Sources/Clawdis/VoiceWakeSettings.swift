@@ -209,10 +209,7 @@ struct VoiceWakeSettings: View {
     }
 
     private func sanitizedTriggers() -> [String] {
-        let cleaned = self.state.swabbleTriggerWords
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        return cleaned.isEmpty ? defaultVoiceWakeTriggers : cleaned
+        sanitizeVoiceWakeTriggers(self.state.swabbleTriggerWords)
     }
 
     private var micPicker: some View {
@@ -343,7 +340,7 @@ struct VoiceWakeSettings: View {
     }
 
     private func friendlyName(for locale: Locale) -> String {
-        let cleanedID = self.normalizedLocaleIdentifier(locale.identifier)
+        let cleanedID = normalizeLocaleIdentifier(locale.identifier)
         let cleanLocale = Locale(identifier: cleanedID)
 
         if let langCode = cleanLocale.language.languageCode?.identifier,
@@ -359,20 +356,6 @@ struct VoiceWakeSettings: View {
             return lang
         }
         return cleanLocale.localizedString(forIdentifier: cleanedID) ?? cleanedID
-    }
-
-    private func normalizedLocaleIdentifier(_ raw: String) -> String {
-        var trimmed = raw
-        if let at = trimmed.firstIndex(of: "@") {
-            trimmed = String(trimmed[..<at])
-        }
-        if let u = trimmed.range(of: "-u-") {
-            trimmed = String(trimmed[..<u.lowerBound])
-        }
-        if let t = trimmed.range(of: "-t-") {
-            trimmed = String(trimmed[..<t.lowerBound])
-        }
-        return trimmed
     }
 
     private var levelMeter: some View {

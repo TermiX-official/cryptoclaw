@@ -190,6 +190,10 @@ final class VoiceWakeTester {
         return triggers.contains { lowered.contains($0.lowercased()) }
     }
 
+    static func _testMatches(text: String, triggers: [String]) -> Bool {
+        self.matches(text: text, triggers: triggers)
+    }
+
     private nonisolated static func ensurePermissions() async throws -> Bool {
         let speechStatus = SFSpeechRecognizer.authorizationStatus()
         if speechStatus == .notDetermined {

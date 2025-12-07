@@ -14,130 +14,133 @@ struct DebugSettings: View {
     @State private var sessionStoreSaveError: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LabeledContent("PID") { Text("\(ProcessInfo.processInfo.processIdentifier)") }
-            LabeledContent("Log file") {
-                Button("Open pino log") { self.openLog() }
-                    .help(self.pinoLogPath)
-                Text(self.pinoLogPath)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-            }
-            LabeledContent("Binary path") { Text(Bundle.main.bundlePath).font(.footnote) }
-            LabeledContent("Relay status") {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(self.relayManager.status.label)
-                    Text("Restarts: \(self.relayManager.restartCount)")
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 10) {
+                LabeledContent("PID") { Text("\(ProcessInfo.processInfo.processIdentifier)") }
+                LabeledContent("Log file") {
+                    Button("Open pino log") { self.openLog() }
+                        .help(self.pinoLogPath)
+                    Text(self.pinoLogPath)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+                LabeledContent("Binary path") { Text(Bundle.main.bundlePath).font(.footnote) }
+                LabeledContent("Relay status") {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(self.relayManager.status.label)
+                        Text("Restarts: \(self.relayManager.restartCount)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Relay stdout/stderr")
+                        .font(.caption.weight(.semibold))
+                    ScrollView {
+                        Text(self.relayManager.log.isEmpty ? "—" : self.relayManager.log)
+                            .font(.caption.monospaced())
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .frame(height: 180)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.2)))
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Clawdis project root")
+                        .font(.caption.weight(.semibold))
+                    HStack(spacing: 8) {
+                        TextField("Path to clawdis repo", text: self.$relayRootInput)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption.monospaced())
+                            .onSubmit { self.saveRelayRoot() }
+                        Button("Save") { self.saveRelayRoot() }
+                            .buttonStyle(.borderedProminent)
+                        Button("Reset") {
+                            let def = FileManager.default.homeDirectoryForCurrentUser
+                                .appendingPathComponent("Projects/clawdis").path
+                            self.relayRootInput = def
+                            self.saveRelayRoot()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Text("Used for pnpm/node fallback and PATH population when launching the relay.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Relay stdout/stderr")
-                    .font(.caption.weight(.semibold))
-                ScrollView {
-                    Text(self.relayManager.log.isEmpty ? "—" : self.relayManager.log)
-                        .font(.caption.monospaced())
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                }
-                .frame(height: 180)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.2)))
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Clawdis project root")
-                    .font(.caption.weight(.semibold))
-                HStack(spacing: 8) {
-                    TextField("Path to clawdis repo", text: self.$relayRootInput)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.caption.monospaced())
-                        .onSubmit { self.saveRelayRoot() }
-                    Button("Save") { self.saveRelayRoot() }
-                        .buttonStyle(.borderedProminent)
-                    Button("Reset") {
-                        let def = FileManager.default.homeDirectoryForCurrentUser
-                            .appendingPathComponent("Projects/clawdis").path
-                        self.relayRootInput = def
-                        self.saveRelayRoot()
+                LabeledContent("Session store") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            TextField("Path", text: self.$sessionStorePath)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.caption.monospaced())
+                                .frame(width: 340)
+                            Button("Save") { self.saveSessionStorePath() }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        if let sessionStoreSaveError {
+                            Text(sessionStoreSaveError)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Used by the CLI session loader; stored in ~/.clawdis/clawdis.json.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .buttonStyle(.bordered)
                 }
-                Text("Used for pnpm/node fallback and PATH population when launching the relay.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            LabeledContent("Session store") {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        TextField("Path", text: self.$sessionStorePath)
-                            .textFieldStyle(.roundedBorder)
+                LabeledContent("Model catalog") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(self.modelCatalogPath)
                             .font(.caption.monospaced())
-                            .frame(width: 340)
-                        Button("Save") { self.saveSessionStorePath() }
-                            .buttonStyle(.borderedProminent)
-                    }
-                    if let sessionStoreSaveError {
-                        Text(sessionStoreSaveError)
-                            .font(.footnote)
                             .foregroundStyle(.secondary)
-                    } else {
-                        Text("Used by the CLI session loader; stored in ~/.clawdis/clawdis.json.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            LabeledContent("Model catalog") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(self.modelCatalogPath)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                    HStack(spacing: 8) {
-                        Button {
-                            self.chooseCatalogFile()
-                        } label: {
-                            Label("Choose models.generated.ts…", systemImage: "folder")
-                        }
-                        .buttonStyle(.bordered)
+                            .lineLimit(2)
+                        HStack(spacing: 8) {
+                            Button {
+                                self.chooseCatalogFile()
+                            } label: {
+                                Label("Choose models.generated.ts…", systemImage: "folder")
+                            }
+                            .buttonStyle(.bordered)
 
-                        Button {
-                            Task { await self.reloadModels() }
-                        } label: {
-                            Label(self.modelsLoading ? "Reloading…" : "Reload models", systemImage: "arrow.clockwise")
+                            Button {
+                                Task { await self.reloadModels() }
+                            } label: {
+                                Label(self.modelsLoading ? "Reloading…" : "Reload models", systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(self.modelsLoading)
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(self.modelsLoading)
-                    }
-                    if let modelsError {
-                        Text(modelsError)
+                        if let modelsError {
+                            Text(modelsError)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        } else if let modelsCount {
+                            Text("Loaded \(modelsCount) models")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        Text("Used by the Config tab model picker; point at a different build when debugging.")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    } else if let modelsCount {
-                        Text("Loaded \(modelsCount) models")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.tertiary)
                     }
-                    Text("Used by the Config tab model picker; point at a different build when debugging.")
-                        .font(.footnote)
-                        .foregroundStyle(.tertiary)
                 }
+                Button("Send Test Notification") {
+                    Task { _ = await NotificationManager().send(title: "Clawdis", body: "Test notification", sound: nil) }
+                }
+                .buttonStyle(.bordered)
+                HStack {
+                    Button("Restart app") { self.relaunch() }
+                    Button("Reveal app in Finder") { self.revealApp() }
+                    Button("Restart relay") { self.restartRelay() }
+                }
+                .buttonStyle(.bordered)
+                Spacer(minLength: 8)
             }
-            Button("Send Test Notification") {
-                Task { _ = await NotificationManager().send(title: "Clawdis", body: "Test notification", sound: nil) }
-            }
-            .buttonStyle(.bordered)
-            HStack {
-                Button("Restart app") { self.relaunch() }
-                Button("Reveal app in Finder") { self.revealApp() }
-                Button("Restart relay") { self.restartRelay() }
-            }
-            .buttonStyle(.bordered)
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
         .task {
             await self.reloadModels()
             self.loadSessionStorePath()

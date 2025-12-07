@@ -94,7 +94,7 @@ final class HealthStore: ObservableObject {
         defer { self.isRefreshing = false }
 
         let response = await ShellRunner.run(
-            command: ["clawdis", "health", "--json"],
+            command: CommandResolver.clawdisCommand(subcommand: "health", extraArgs: ["--json"]),
             cwd: nil,
             env: nil,
             timeout: 15)

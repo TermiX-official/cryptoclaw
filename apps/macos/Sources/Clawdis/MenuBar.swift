@@ -59,7 +59,10 @@ private struct MenuContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle(isOn: self.activeBinding) { Text("Clawdis Active") }
+            Toggle(isOn: self.activeBinding) {
+                let label = self.state.connectionMode == .remote ? "Remote Clawdis Active" : "Clawdis Active"
+                Text(label)
+            }
             self.statusRow
             Toggle(isOn: self.heartbeatsBinding) { Text("Send Heartbeats") }
             Toggle(isOn: self.voiceWakeBinding) { Text("Voice Wake") }

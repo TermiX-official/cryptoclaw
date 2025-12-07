@@ -14,10 +14,6 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(self.isPaused, forKey: pauseDefaultsKey) }
     }
 
-    @Published var defaultSound: String {
-        didSet { UserDefaults.standard.set(self.defaultSound, forKey: "clawdis.defaultSound") }
-    }
-
     @Published var launchAtLogin: Bool {
         didSet { Task { AppStateStore.updateLaunchAtLogin(enabled: self.launchAtLogin) } }
     }
@@ -130,7 +126,6 @@ final class AppState: ObservableObject {
 
     init() {
         self.isPaused = UserDefaults.standard.bool(forKey: pauseDefaultsKey)
-        self.defaultSound = UserDefaults.standard.string(forKey: "clawdis.defaultSound") ?? ""
         self.launchAtLogin = LaunchAgentManager.status()
         self.onboardingSeen = UserDefaults.standard.bool(forKey: "clawdis.onboardingSeen")
         self.debugPaneEnabled = UserDefaults.standard.bool(forKey: "clawdis.debugPaneEnabled")
@@ -224,7 +219,6 @@ final class AppState: ObservableObject {
 enum AppStateStore {
     static let shared = AppState()
     static var isPausedFlag: Bool { UserDefaults.standard.bool(forKey: pauseDefaultsKey) }
-    static var defaultSound: String { UserDefaults.standard.string(forKey: "clawdis.defaultSound") ?? "" }
 
     static func updateLaunchAtLogin(enabled: Bool) {
         LaunchAgentManager.set(enabled: enabled, bundlePath: Bundle.main.bundlePath)

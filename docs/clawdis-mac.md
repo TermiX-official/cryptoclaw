@@ -42,7 +42,7 @@ struct Response { ok: Bool; message?: String; payload?: Data }
 - MenuBarExtra icon only (LSUIElement; no Dock).
 - Menu items: Status, Permissions…, **Pause Clawdis** toggle (temporarily deny privileged actions/notifications without quitting), Quit.
 - Settings window (Trimmy-style tabs):
-  - General: launch at login toggle, default sound, logging verbosity.
+- General: launch at login toggle and debug/visibility toggles (no per-user default sound; pass sounds per notification via CLI).
   - Permissions: live status + “Request” buttons for Notifications/Accessibility/Screen Recording; links to System Settings.
   - Debug (when enabled): PID/log links, restart/reveal app shortcuts, manual test notification.
   - About: version, links, license.
@@ -50,7 +50,7 @@ struct Response { ok: Bool; message?: String; payload?: Data }
 - Onboarding (VibeTunnel-inspired): Welcome → What it does → Install CLI (shows `ln -s .../clawdis-mac /usr/local/bin`) → Permissions checklist with live status → Test notification → Done. Re-show when `welcomeVersion` bumps or CLI/app version mismatch.
 
 ## Built-in services
-- NotificationManager: UNUserNotificationCenter primary; AppleScript `display notification` fallback; respects sound setting.
+- NotificationManager: UNUserNotificationCenter primary; AppleScript `display notification` fallback; respects the `--sound` value on each request.
 - PermissionManager: checks/requests Notifications, Accessibility (AX), Screen Recording (capture probe); publishes changes for UI.
 - ScreenCaptureManager: window/display PNG capture; gated on permission.
 - ShellRunner: executes `Process` with timeout; rejects when `needsScreenRecording` and permission missing; returns stdout/stderr in payload.
@@ -63,6 +63,7 @@ struct Response { ok: Bool; message?: String; payload?: Data }
   - `screenshot [--display-id N | --window-id N] [--out path]`
   - `run -- cmd args... [--cwd] [--env KEY=VAL] [--timeout 30] [--needs-screen-recording]`
   - `status`
+- Sounds: supply any macOS alert name with `--sound` per notification; omit the flag to use the system default. There is no longer a persisted “default sound” in the app UI.
 - Internals: builds Request, connects via AsyncXPCConnection, prints Response as JSON to stdout.
 
 ## Integration with clawdis/Clawdis (Node/TS)

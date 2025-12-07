@@ -37,7 +37,7 @@ final class ClawdisXPCService: NSObject, ClawdisXPCProtocol {
 
         switch request {
         case let .notify(title, body, sound):
-            let chosenSound: String = if let sound { sound } else { await MainActor.run { AppStateStore.defaultSound } }
+            let chosenSound = sound?.trimmingCharacters(in: .whitespacesAndNewlines)
             let ok = await notifier.send(title: title, body: body, sound: chosenSound)
             return ok ? Response(ok: true) : Response(ok: false, message: "notification not authorized")
 

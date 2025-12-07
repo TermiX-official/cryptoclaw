@@ -48,17 +48,6 @@ var body: some View {
                         title: "Enable debug tools",
                         subtitle: "Show the Debug tab with development utilities.",
                         binding: self.$state.debugPaneEnabled)
-
-                    LabeledContent("Default sound") {
-                        Picker("Sound", selection: self.$state.defaultSound) {
-                            Text("None").tag("")
-                            Text("Glass").tag("Glass")
-                            Text("Basso").tag("Basso")
-                            Text("Ping").tag("Ping")
-                        }
-                        .labelsHidden()
-                        .frame(width: 140)
-                    }
                 }
 
                 Spacer(minLength: 12)

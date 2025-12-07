@@ -85,21 +85,33 @@ private struct MenuContent: View {
         let relay = self.relayManager.status
         let health = self.healthStore.state
         let isRefreshing = self.healthStore.isRefreshing
+        let lastAge = self.healthStore.lastSuccess.map { age(from: $0) }
 
         let label: String
         let color: Color
 
         if isRefreshing {
             // Prefer health while the probe is running.
-            label = self.healthStore.summaryLine
+            label = "Health check running…"
             color = health.tint
-        } else if health == .ok {
-            // Healthy implies relay running is the primary signal.
-            label = self.relayLabel(relay)
-            color = self.statusColor(relay)
         } else {
-            label = self.healthStore.summaryLine
-            color = health.tint
+            // Show last health result + age; relay is implicit when healthy.
+            switch health {
+            case .ok:
+                let ageText = lastAge.map { " · checked \($0) ago" } ?? ""
+                label = "Health ok\(ageText)"
+                color = .green
+            case .linkingNeeded:
+                label = "Health: login required"
+                color = .red
+            case let .degraded(reason):
+                let ageText = lastAge.map { " · \(reason)" } ?? " · \(reason)"
+                label = "Health degraded\(ageText)"
+                color = .orange
+            case .unknown:
+                label = "Health pending"
+                color = .secondary
+            }
         }
 
         return HStack(spacing: 8) {

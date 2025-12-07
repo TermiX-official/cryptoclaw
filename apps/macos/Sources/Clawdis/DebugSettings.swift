@@ -137,7 +137,7 @@ struct DebugSettings: View {
                         Task { await self.sendVoiceDebug() }
                     } label: {
                         Label(
-                            self.debugSendInFlight ? "Sending debug voice…" : "Send debug voice via forwarder",
+                            self.debugSendInFlight ? "Sending debug voice…" : "Send debug voice",
                             systemImage: self.debugSendInFlight ? "bolt.horizontal.circle" : "waveform")
                     }
                     .buttonStyle(.borderedProminent)
@@ -152,7 +152,7 @@ struct DebugSettings: View {
                             .font(.caption)
                             .foregroundStyle(.red)
                     } else {
-                        Text("Sends the same command path as Voice Wake (ssh target + clawdis-mac agent → rpc → node cli → p-agent → WhatsApp).")
+                        Text("Uses the Voice Wake path: forwards over SSH when configured, otherwise runs locally via rpc.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -248,16 +248,52 @@ struct DebugSettings: View {
 
         let message = "This is a debug test from the Mac app. Reply with \"Debug test works (and a funny pun)\" if you received that."
         let config = await MainActor.run { AppStateStore.shared.voiceWakeForwardConfig }
-        let result = await VoiceWakeForwarder.forward(transcript: message, config: config)
+        let trimmedTarget = config.target.trimmingCharacters(in: .whitespacesAndNewlines)
+        let shouldForward = config.enabled && !trimmedTarget.isEmpty
 
-        await MainActor.run {
-            self.debugSendInFlight = false
-            switch result {
-            case .success:
-                self.debugSendStatus = "Sent via \(config.target). Await WhatsApp reply."
-                self.debugSendError = nil
-            case let .failure(error):
-                self.debugSendStatus = "Target: \(config.target)" + (config.identityPath.isEmpty ? "" : " · identity: \(config.identityPath)")
+        if shouldForward {
+            let result = await VoiceWakeForwarder.forward(transcript: message, config: config)
+            await MainActor.run {
+                self.debugSendInFlight = false
+                switch result {
+                case .success:
+                    self.debugSendStatus = "Forwarded via \(trimmedTarget). Await reply."
+                    self.debugSendError = nil
+                case let .failure(error):
+                    self.debugSendStatus = "Target: \(config.target)" + (config.identityPath.isEmpty ? "" : " · identity: \(config.identityPath)")
+                    self.debugSendError = error.localizedDescription
+                }
+            }
+            return
+        }
+
+        do {
+            let status = await AgentRPC.shared.status()
+            if !status.ok {
+                try await AgentRPC.shared.start()
+            }
+
+            let rpcResult = await AgentRPC.shared.send(
+                text: message,
+                thinking: "low",
+                session: "main",
+                deliver: true,
+                to: nil)
+
+            await MainActor.run {
+                self.debugSendInFlight = false
+                if rpcResult.ok {
+                    self.debugSendStatus = "Sent locally via voice wake path."
+                    self.debugSendError = nil
+                } else {
+                    self.debugSendStatus = "Local voice wake send failed"
+                    self.debugSendError = rpcResult.error ?? "Unknown error"
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.debugSendInFlight = false
+                self.debugSendStatus = "Local voice wake send failed"
                 self.debugSendError = error.localizedDescription
             }
         }

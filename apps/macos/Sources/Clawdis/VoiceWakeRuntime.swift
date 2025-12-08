@@ -119,7 +119,7 @@ actor VoiceWakeRuntime {
         }
     }
 
-    private func stop() {
+    private func stop(dismissOverlay: Bool = true) {
         self.captureTask?.cancel()
         self.captureTask = nil
         self.isCapturing = false
@@ -135,6 +135,7 @@ actor VoiceWakeRuntime {
         self.currentConfig = nil
         self.logger.debug("voicewake runtime stopped")
 
+        guard dismissOverlay else { return }
         Task { @MainActor in
             VoiceWakeOverlayController.shared.dismiss()
         }
@@ -298,7 +299,7 @@ actor VoiceWakeRuntime {
     private func restartRecognizer() {
         // Restart the recognizer so we listen for the next trigger with a clean buffer.
         let current = self.currentConfig
-        self.stop()
+        self.stop(dismissOverlay: false)
         if let current {
             Task { await self.start(with: current) }
         }

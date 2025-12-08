@@ -58,6 +58,7 @@ private struct MenuContent: View {
     @ObservedObject private var relayManager = RelayProcessManager.shared
     @ObservedObject private var healthStore = HealthStore.shared
     @ObservedObject private var heartbeatStore = HeartbeatStore.shared
+    @ObservedObject private var controlChannel = ControlChannel.shared
     @Environment(\.openSettings) private var openSettings
     @State private var availableMics: [AudioInputDevice] = []
     @State private var loadingMics = false
@@ -176,7 +177,10 @@ private struct MenuContent: View {
         let label: String
         let color: Color
 
-        if let evt = self.heartbeatStore.lastEvent {
+        if case .degraded = self.controlChannel.state {
+            label = "Control channel disconnected"
+            color = .red
+        } else if let evt = self.heartbeatStore.lastEvent {
             let ageText = age(from: Date(timeIntervalSince1970: evt.ts / 1000))
             switch evt.status {
             case "sent":

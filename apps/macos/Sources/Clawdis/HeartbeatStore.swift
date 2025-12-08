@@ -19,6 +19,14 @@ final class HeartbeatStore: ObservableObject {
                     Task { @MainActor in self?.lastEvent = decoded }
                 }
             }
+
+        Task {
+            if self.lastEvent == nil {
+                if let evt = try? await ControlChannel.shared.lastHeartbeat() {
+                    self.lastEvent = evt
+                }
+            }
+        }
     }
 
     @MainActor

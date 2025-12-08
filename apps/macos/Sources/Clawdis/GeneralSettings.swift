@@ -135,29 +135,58 @@ struct GeneralSettings: View {
                 .disabled(self.remoteStatus == .checking || self.state.remoteTarget
                     .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                switch self.remoteStatus {
-                case .idle:
-                    EmptyView()
-                case .checking:
-                    Text("Checking…").font(.caption).foregroundStyle(.secondary)
+            switch self.remoteStatus {
+            case .idle:
+                EmptyView()
+            case .checking:
+                Text("Checking…").font(.caption).foregroundStyle(.secondary)
                 case .ok:
                     Label("Ready", systemImage: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
                 case let .failed(message):
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
+        }
 
-            Text("Tip: enable Tailscale for stable remote access.")
-                .font(.footnote)
+        // Diagnostics
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Control channel")
+                .font(.caption.weight(.semibold))
+            Text(self.controlStatusLine)
+                .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+            if let ping = ControlChannel.shared.lastPingMs {
+                Text("Last ping: \(Int(ping)) ms")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let hb = HeartbeatStore.shared.lastEvent {
+                let ageText = age(from: Date(timeIntervalSince1970: hb.ts / 1000))
+                Text("Last heartbeat: \(hb.status) · \(ageText)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        Text("Tip: enable Tailscale for stable remote access.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
         }
         .transition(.opacity)
+    }
+
+    private var controlStatusLine: String {
+        switch ControlChannel.shared.state {
+        case .connected: return "Connected"
+        case .connecting: return "Connecting…"
+        case .disconnected: return "Disconnected"
+        case let .degraded(msg): return "Degraded: \(msg)"
+        }
     }
 
     private var cliInstaller: some View {

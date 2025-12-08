@@ -74,6 +74,13 @@ final class ControlChannel: ObservableObject {
         case remote(target: String, identity: String)
     }
 
+    enum ConnectionState: Equatable {
+        case disconnected
+        case connecting
+        case connected
+        case degraded(String)
+    }
+
     private let logger = Logger(subsystem: "com.steipete.clawdis", category: "control")
     private var connection: NWConnection?
     private var sshProcess: Process?
@@ -82,6 +89,10 @@ final class ControlChannel: ObservableObject {
     private var listenTask: Task<Void, Never>?
     private var mode: Mode = .local
     private var localPort: UInt16 = 18789
+    private var pingTask: Task<Void, Never>?
+
+    @Published private(set) var state: ConnectionState = .disconnected
+    @Published private(set) var lastPingMs: Double?
 
     func configure(mode: Mode) async throws {
         if mode == self.mode, self.connection != nil { return }
@@ -93,6 +104,8 @@ final class ControlChannel: ObservableObject {
     func disconnect() async {
         self.listenTask?.cancel()
         self.listenTask = nil
+        self.pingTask?.cancel()
+        self.pingTask = nil
         if let conn = self.connection {
             conn.cancel()
         }
@@ -103,12 +116,20 @@ final class ControlChannel: ObservableObject {
             cont.resume(throwing: ControlChannelError.disconnected)
         }
         self.pending.removeAll()
+        self.state = .disconnected
     }
 
     func health(timeout: TimeInterval? = nil) async throws -> Data {
         try await self.ensureConnected()
         let payload = try await self.request(method: "health", params: timeout.map { ["timeoutMs": Int($0 * 1000)] })
         return payload
+    }
+
+    func lastHeartbeat() async throws -> ControlHeartbeatEvent? {
+        try await self.ensureConnected()
+        let data = try await self.request(method: "last-heartbeat")
+        if data.isEmpty { return nil }
+        return try? JSONDecoder().decode(ControlHeartbeatEvent.self, from: data)
     }
 
     private func request(method: String, params: [String: Any]? = nil) async throws -> Data {
@@ -141,6 +162,8 @@ final class ControlChannel: ObservableObject {
             self.localPort = try self.startSSHTunnel(target: target, identity: identity)
         }
 
+        self.state = .connecting
+
         let host = NWEndpoint.Host("127.0.0.1")
         let port = NWEndpoint.Port(rawValue: self.localPort)!
         let conn = NWConnection(host: host, port: port, using: .tcp)
@@ -151,9 +174,12 @@ final class ControlChannel: ObservableObject {
                 switch state {
                 case .ready:
                     cont.resume(returning: ())
+                    Task { @MainActor in self.state = .connected }
                 case let .failed(err):
+                    Task { @MainActor in self.state = .degraded(err.localizedDescription) }
                     cont.resume(throwing: err)
                 case let .waiting(err):
+                    Task { @MainActor in self.state = .degraded(err.localizedDescription) }
                     cont.resume(throwing: err)
                 default:
                     break
@@ -164,6 +190,21 @@ final class ControlChannel: ObservableObject {
 
         self.listenTask = Task.detached { [weak self] in
             await self?.listen()
+        }
+
+        self.pingTask = Task.detached { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(nanoseconds: 30 * 1_000_000_000)
+                    let start = Date()
+                    _ = try await self.request(method: "ping")
+                    let ms = Date().timeIntervalSince(start) * 1000
+                    await MainActor.run { self.lastPingMs = ms; self.state = .connected }
+                } catch {
+                    await MainActor.run { self.state = .degraded(error.localizedDescription) }
+                }
+            }
         }
     }
 

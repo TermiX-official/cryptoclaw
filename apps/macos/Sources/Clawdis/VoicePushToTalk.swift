@@ -137,7 +137,7 @@ actor VoicePushToTalk {
             forward = await MainActor.run { AppStateStore.shared.voiceWakeForwardConfig }
         }
 
-        if let chime = self.activeConfig?.sendChime, chime != .none {
+        if !finalText.isEmpty, let chime = self.activeConfig?.sendChime, chime != .none {
             await MainActor.run { VoiceWakeChimePlayer.play(chime) }
         }
 

@@ -275,7 +275,7 @@ actor VoiceWakeRuntime {
             committed: finalTranscript,
             volatile: "",
             isFinal: true)
-        if config.sendChime != .none {
+        if !finalTranscript.isEmpty, config.sendChime != .none {
             await MainActor.run { VoiceWakeChimePlayer.play(config.sendChime) }
         }
         await MainActor.run {

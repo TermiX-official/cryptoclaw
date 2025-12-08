@@ -20,6 +20,8 @@ final class WebChatWindowController: NSWindowController, WKScriptMessageHandler,
     private let sessionKey: String
     private var initialMessagesJSON: String = "[]"
     private var tunnel: WebChatTunnel?
+    private var baseEndpoint: URL?
+    private var apiToken: String?
 
     init(sessionKey: String) {
         webChatLogger.debug("init WebChatWindowController sessionKey=\(sessionKey, privacy: .public)")
@@ -109,6 +111,7 @@ final class WebChatWindowController: NSWindowController, WKScriptMessageHandler,
         do {
             let cliInfo = try await self.fetchWebChatCliInfo()
             let endpoint = try await self.prepareEndpoint(remotePort: cliInfo.port)
+            self.baseEndpoint = endpoint
             let infoURL = endpoint.appendingPathComponent("webchat/info")
                 .appending(queryItems: [URLQueryItem(name: "session", value: self.sessionKey)])
 
@@ -119,6 +122,10 @@ final class WebChatWindowController: NSWindowController, WKScriptMessageHandler,
                 if let json = try? JSONSerialization.data(withJSONObject: msgs, options: []) {
                     self.initialMessagesJSON = String(data: json, encoding: .utf8) ?? "[]"
                 }
+            }
+            if let token = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+               let tk = token["token"] as? String, !tk.isEmpty {
+                self.apiToken = tk
             }
             await MainActor.run {
                 self.loadPage(baseURL: endpoint.appendingPathComponent("webchat/"))
@@ -202,6 +209,43 @@ final class WebChatWindowController: NSWindowController, WKScriptMessageHandler,
     private func runAgent(text: String, sessionKey: String) async -> (text: String?, error: String?) {
         await MainActor.run { AppStateStore.shared.setWorking(true) }
         defer { Task { await MainActor.run { AppStateStore.shared.setWorking(false) } } }
+        if let base = self.baseEndpoint {
+            do {
+                var req = URLRequest(url: base.appendingPathComponent("webchat/rpc"))
+                req.httpMethod = "POST"
+                var headers: [String: String] = ["Content-Type": "application/json"]
+                if let apiToken, !apiToken.isEmpty { headers["Authorization"] = "Bearer \(apiToken)" }
+                req.allHTTPHeaderFields = headers
+                let body: [String: Any] = [
+                    "text": text,
+                    "session": sessionKey,
+                    "thinking": "default",
+                    "deliver": false,
+                    "to": sessionKey,
+                ]
+                req.httpBody = try JSONSerialization.data(withJSONObject: body)
+                let (data, _) = try await URLSession.shared.data(for: req)
+                if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let ok = obj["ok"] as? Bool,
+                   ok == true
+                {
+                    if let payloads = obj["payloads"] as? [[String: Any]],
+                       let first = payloads.first,
+                       let txt = first["text"] as? String
+                    {
+                        return (txt, nil)
+                    }
+                    return (nil, nil)
+                }
+                let errObj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                let err = (errObj?["error"] as? String) ?? "rpc failed"
+                return (nil, err)
+            } catch {
+                return (nil, error.localizedDescription)
+            }
+        }
+
+        // Fallback to AgentRPC when no base endpoint is known (should not happen after bootstrap).
         let result = await AgentRPC.shared.send(
             text: text,
             thinking: "default",

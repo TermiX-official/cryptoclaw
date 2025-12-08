@@ -224,7 +224,6 @@ actor VoiceWakeRuntime {
     private func monitorCapture(config: RuntimeConfig) async {
         let start = self.captureStartedAt ?? Date()
         let hardStop = start.addingTimeInterval(self.captureHardStop)
-        var silentStrikes = 0
 
         while self.isCapturing {
             let now = Date()
@@ -234,13 +233,8 @@ actor VoiceWakeRuntime {
             }
 
             if let last = self.lastHeard, now.timeIntervalSince(last) >= self.silenceWindow {
-                silentStrikes += 1
-                if silentStrikes >= 2 {
-                    await self.finalizeCapture(config: config)
-                    return
-                }
-            } else {
-                silentStrikes = 0
+                await self.finalizeCapture(config: config)
+                return
             }
 
             try? await Task.sleep(nanoseconds: 200_000_000)

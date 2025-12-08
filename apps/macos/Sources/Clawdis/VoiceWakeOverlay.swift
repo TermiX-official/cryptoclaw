@@ -261,15 +261,13 @@ final class VoiceWakeOverlayController: ObservableObject {
     private func scheduleAutoSend(after delay: TimeInterval, sendChime: VoiceWakeChime) {
         guard let forwardConfig, forwardConfig.enabled else { return }
         self.autoSendTask?.cancel()
-        self.autoSendTask = Task { [weak self, sendChime] in
-            do {
-                let nanos = UInt64(delay * 1_000_000_000)
-                try await Task.sleep(nanoseconds: nanos)
-                try Task.checkCancellation()
+        self.autoSendTask = Task<Void, Never> { [weak self, sendChime] in
+            let nanos = UInt64(max(0, delay) * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanos)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
                 guard let self else { return }
-                await self.sendNow(sendChime: sendChime)
-            } catch is CancellationError {
-                return
+                self.sendNow(sendChime: sendChime)
             }
         }
     }

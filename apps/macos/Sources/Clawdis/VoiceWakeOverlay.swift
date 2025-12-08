@@ -89,7 +89,7 @@ final class VoiceWakeOverlayController: ObservableObject {
         self.updateWindowFrame(animate: true)
     }
 
-    func sendNow() {
+    func sendNow(sendChime: VoiceWakeChime = .none) {
         self.autoSendTask?.cancel()
         self.model.isEditing = false
         guard let forwardConfig, forwardConfig.enabled else {
@@ -100,6 +100,10 @@ final class VoiceWakeOverlayController: ObservableObject {
         guard !text.isEmpty else {
             self.dismiss(reason: .empty)
             return
+        }
+
+        if sendChime != .none {
+            VoiceWakeChimePlayer.play(sendChime)
         }
 
         self.model.isSending = true
@@ -256,13 +260,17 @@ final class VoiceWakeOverlayController: ObservableObject {
 
     private func scheduleAutoSend(after delay: TimeInterval, sendChime: VoiceWakeChime) {
         guard let forwardConfig, forwardConfig.enabled else { return }
-        self.autoSendTask = Task { [weak self] in
-            let nanos = UInt64(delay * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: nanos)
-            if sendChime != .none {
-                VoiceWakeChimePlayer.play(sendChime)
+        self.autoSendTask?.cancel()
+        self.autoSendTask = Task { [weak self, sendChime] in
+            do {
+                let nanos = UInt64(delay * 1_000_000_000)
+                try await Task.sleep(nanoseconds: nanos)
+                try Task.checkCancellation()
+                guard let self else { return }
+                await self.sendNow(sendChime: sendChime)
+            } catch is CancellationError {
+                return
             }
-            self?.sendNow()
         }
     }
 
@@ -285,9 +293,9 @@ private struct CloseHoverButton: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color.white.opacity(0.85))
                 .frame(width: 22, height: 22)
-                .background(Color.black.opacity(0.35))
+                .background(Color.black.opacity(0.42))
                 .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.35), radius: 6, y: 2)
+                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
         .focusable(false)
@@ -365,16 +373,17 @@ private struct VoiceWakeOverlayView: View {
             .padding(.vertical, 8)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(
+                .regularMaterial,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .onHover { self.isHovering = $0 }
 
             if self.controller.model.isEditing || self.isHovering {
                 CloseHoverButton(onClose: {
                     self.controller.cancelEditingAndDismiss()
                 })
-                .offset(x: -10, y: -10)
-                .transition(AnyTransition.scale.combined(with: .opacity))
+                .offset(x: -8, y: -8)
+                .transition(.opacity)
             }
         }
         .onAppear { self.textFocused = false }

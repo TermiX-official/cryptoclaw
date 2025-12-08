@@ -26,7 +26,14 @@ let state: WebChatServerState | null = null;
 
 function resolveWebRoot() {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  // repo-relative: apps/macos/Sources/Clawdis/Resources/WebChat
+
+  // 1) Packaged app: resources live next to the relay bundle at
+  //    Contents/Resources/WebChat. The relay binary runs from
+  //    Contents/Resources/Relay/bun, so walk up one and check.
+  const packagedRoot = path.resolve(path.dirname(process.execPath), "../WebChat");
+  if (fs.existsSync(packagedRoot)) return packagedRoot;
+
+  // 2) Dev / source checkout: repo-relative path.
   return path.resolve(here, "../../apps/macos/Sources/Clawdis/Resources/WebChat");
 }
 

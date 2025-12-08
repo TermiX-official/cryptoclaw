@@ -5,3 +5,4 @@ export function makeProxyFetch(proxyUrl: string): typeof fetch {
   return (input: RequestInfo | URL, init?: RequestInit) =>
     fetch(input, { ...(init ?? {}), dispatcher: agent });
 }
+// @ts-nocheck

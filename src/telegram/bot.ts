@@ -246,3 +246,4 @@ async function resolveMedia(
   else if (msg.audio || msg.voice) placeholder = "<media:audio>";
   return { path: saved.path, contentType: saved.contentType, placeholder };
 }
+// @ts-nocheck

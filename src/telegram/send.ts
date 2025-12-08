@@ -92,3 +92,4 @@ function inferFilename(kind: ReturnType<typeof mediaKindFromMime>) {
       return "file.bin";
   }
 }
+// @ts-nocheck

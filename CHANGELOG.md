@@ -36,7 +36,7 @@ First Clawdis release after the Warelay rebrand. This is a semver-major because 
 
 ### Docs
 - Added `docs/telegram.md` outlining the Telegram Bot API provider (grammY) and how it shares the `main` session. Default grammY throttler keeps Bot API calls under rate limits.
-- CLI exposes `relay:telegram` (grammY) and text/media sends via `--provider telegram`; webhook/proxy options documented.
+- CLI relay now auto-starts WhatsApp and Telegram when configured (single `relay` command with `--provider` selector); text/media sends still use `--provider telegram`; webhook/proxy options documented.
 
 ## 1.5.0 — 2025-12-05
 
@@ -148,7 +148,7 @@ First Clawdis release after the Warelay rebrand. This is a semver-major because 
 
 ### Changes
 - Heartbeat interval default 10m for command mode; prompt `HEARTBEAT /think:high`; skips don’t refresh session; session `heartbeatIdleMinutes` support.
-- Heartbeat tooling: `--session-id`, `--heartbeat-now`, and a relay helper `relay:heartbeat` for immediate startup probes.
+- Heartbeat tooling: `--session-id`, `--heartbeat-now` (inline flag on `relay`) for immediate startup probes.
 - Prompt structure: `sessionIntro` plus per-message `/think:high`; session idle up to 7 days.
 - Thinking directives: `/think:<level>`; Pi uses `--thinking`; others append cue; `/think:off` no-op.
 - Robustness: Baileys/WebSocket guards; global unhandled error handlers; WhatsApp LID mapping; hosted media MIME-sniffing and cleanup.

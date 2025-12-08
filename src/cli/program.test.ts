@@ -57,7 +57,7 @@ describe("cli program", () => {
     monitorWebProvider.mockResolvedValue(undefined);
     const program = buildProgram();
     await program.parseAsync(
-      ["relay", "--web-heartbeat", "90", "--heartbeat-now"],
+      ["relay", "--web-heartbeat", "90", "--heartbeat-now", "--provider", "web"],
       {
         from: "user",
       },
@@ -69,28 +69,37 @@ describe("cli program", () => {
       true,
       undefined,
       runtime,
-      undefined,
+      expect.any(AbortSignal),
       { heartbeatSeconds: 90, replyHeartbeatNow: true },
     );
-  });
-
-  it("runs relay heartbeat command", async () => {
-    monitorWebProvider.mockResolvedValue(undefined);
-    const originalExit = runtime.exit;
-    runtime.exit = vi.fn();
-    const program = buildProgram();
-    await program.parseAsync(["relay:heartbeat"], { from: "user" });
-    expect(logWebSelfId).toHaveBeenCalled();
-    expect(runtime.exit).not.toHaveBeenCalled();
-    runtime.exit = originalExit;
+    expect(monitorTelegramProvider).not.toHaveBeenCalled();
   });
 
   it("runs telegram relay when token set", async () => {
     const program = buildProgram();
     const prev = process.env.TELEGRAM_BOT_TOKEN;
     process.env.TELEGRAM_BOT_TOKEN = "token123";
-    await program.parseAsync(["relay:telegram"], { from: "user" });
-    expect(monitorTelegramProvider).toHaveBeenCalled();
+    await program.parseAsync(["relay", "--provider", "telegram"], {
+      from: "user",
+    });
+    expect(monitorTelegramProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ token: "token123" }),
+    );
+    expect(monitorWebProvider).not.toHaveBeenCalled();
+    process.env.TELEGRAM_BOT_TOKEN = prev;
+  });
+
+  it("errors when telegram provider requested without token", async () => {
+    const program = buildProgram();
+    const prev = process.env.TELEGRAM_BOT_TOKEN;
+    process.env.TELEGRAM_BOT_TOKEN = "";
+    await expect(
+      program.parseAsync(["relay", "--provider", "telegram"], {
+        from: "user",
+      }),
+    ).rejects.toThrow();
+    expect(runtime.error).toHaveBeenCalled();
+    expect(runtime.exit).toHaveBeenCalled();
     process.env.TELEGRAM_BOT_TOKEN = prev;
   });
 

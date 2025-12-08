@@ -12,7 +12,7 @@ Status: ready for bot-mode use with grammY (long-poll + webhook). Text + media s
 ## How it will work (Bot API)
 1) Create a bot with @BotFather and grab the token.
 2) Configure Clawdis with `TELEGRAM_BOT_TOKEN` (or `telegram.botToken` in `~/.clawdis/clawdis.json`).
-3) Run the relay with provider `telegram` via `clawdis relay:telegram` (grammY long-poll). Webhook mode: `clawdis relay:telegram --webhook --port 8787 --webhook-secret <secret>` (optionally `--webhook-url` when the public URL differs).
+3) Run the relay; it auto-starts Telegram when the bot token is set. To force Telegram-only: `clawdis relay --provider telegram`. Webhook mode: `clawdis relay --provider telegram --webhook --port 8787 --webhook-secret <secret>` (optionally `--webhook-url` when the public URL differs).
 4) Direct chats: user sends the first message; all subsequent turns land in the shared `main` session (default, no extra config).
 5) Groups: add the bot, disable privacy mode (or make it admin) so it can read messages; group threads stay on `group:<chatId>` and require mention/command to trigger replies.
 6) Optional allowlist: reuse `inbound.allowFrom` for direct chats by chat id (`123456789` or `telegram:123456789`).

@@ -403,7 +403,13 @@ Examples:
 
   program
     .command("relay")
-    .description("Auto-reply to inbound WhatsApp messages (web provider)")
+    .description(
+      "Auto-reply to inbound messages across configured providers (web, Telegram)",
+    )
+    .option(
+      "--provider <auto|web|telegram|all>",
+      "Which providers to start: auto (default), web, telegram, or all",
+    )
     .option(
       "--web-heartbeat <seconds>",
       "Heartbeat interval for web relay health logs (seconds)",
@@ -422,13 +428,30 @@ Examples:
       "Run a heartbeat immediately when relay starts",
       false,
     )
+    .option("--webhook", "Run Telegram webhook server instead of long-poll", false)
+    .option(
+      "--webhook-path <path>",
+      "Telegram webhook path (default /telegram-webhook when webhook enabled)",
+    )
+    .option(
+      "--webhook-secret <secret>",
+      "Secret token to verify Telegram webhook requests",
+    )
+    .option("--port <port>", "Port for Telegram webhook server (default 8787)")
+    .option(
+      "--webhook-url <url>",
+      "Public Telegram webhook URL to register (overrides localhost autodetect)",
+    )
     .option("--verbose", "Verbose logging", false)
     .addHelpText(
       "after",
       `
 Examples:
-  clawdis relay                     # uses your linked web session
-  clawdis relay --web-heartbeat 60  # override heartbeat interval
+  clawdis relay                     # starts WhatsApp; also Telegram if bot token set
+  clawdis relay --provider web      # force WhatsApp-only
+  clawdis relay --provider telegram # Telegram-only (needs TELEGRAM_BOT_TOKEN)
+  clawdis relay --heartbeat-now     # send immediate agent heartbeat on start (web)
+  clawdis relay --web-heartbeat 60  # override WhatsApp heartbeat interval
   # Troubleshooting: docs/refactor/web-relay-troubleshooting.md
 `,
     )
@@ -436,6 +459,50 @@ Examples:
       setVerbose(Boolean(opts.verbose));
       const { file: logFile, level: logLevel } = getResolvedLoggerSettings();
       defaultRuntime.log(info(`logs: ${logFile} (level ${logLevel})`));
+
+      const providerOpt = (opts.provider ?? "auto").toLowerCase();
+      const cfg = loadConfig();
+      const telegramToken =
+        process.env.TELEGRAM_BOT_TOKEN ?? cfg.telegram?.botToken;
+
+      let startWeb = false;
+      let startTelegram = false;
+      switch (providerOpt) {
+        case "web":
+          startWeb = true;
+          break;
+        case "telegram":
+          startTelegram = true;
+          break;
+        case "all":
+          startWeb = true;
+          startTelegram = true;
+          break;
+        case "auto":
+        default:
+          startWeb = true;
+          startTelegram = Boolean(telegramToken);
+          break;
+      }
+
+      if (startTelegram && !telegramToken) {
+        defaultRuntime.error(
+          danger(
+            "Telegram relay requires TELEGRAM_BOT_TOKEN or telegram.botToken in config",
+          ),
+        );
+        defaultRuntime.exit(1);
+        return;
+      }
+
+      if (!startWeb && !startTelegram) {
+        defaultRuntime.error(
+          danger("No providers selected. Use --provider web|telegram|all."),
+        );
+        defaultRuntime.exit(1);
+        return;
+      }
+
       const webHeartbeat =
         opts.webHeartbeat !== undefined
           ? Number.parseInt(String(opts.webHeartbeat), 10)
@@ -490,30 +557,37 @@ Examples:
         defaultRuntime.exit(1);
       }
 
-      const webTuning: WebMonitorTuning = {};
-      if (webHeartbeat !== undefined) webTuning.heartbeatSeconds = webHeartbeat;
-      if (heartbeatNow) webTuning.replyHeartbeatNow = true;
-      const reconnect: WebMonitorTuning["reconnect"] = {};
-      if (webRetries !== undefined) reconnect.maxAttempts = webRetries;
-      if (webRetryInitial !== undefined) reconnect.initialMs = webRetryInitial;
-      if (webRetryMax !== undefined) reconnect.maxMs = webRetryMax;
-      if (Object.keys(reconnect).length > 0) {
-        webTuning.reconnect = reconnect;
-      }
-      logWebSelfId(defaultRuntime, true);
-      const cfg = loadConfig();
-      const effectiveHeartbeat = resolveHeartbeatSeconds(
-        cfg,
-        webTuning.heartbeatSeconds,
-      );
-      const effectivePolicy = resolveReconnectPolicy(cfg, webTuning.reconnect);
-      defaultRuntime.log(
-        info(
-          `Web relay health: heartbeat ${effectiveHeartbeat}s, retries ${effectivePolicy.maxAttempts || "∞"}, backoff ${effectivePolicy.initialMs}→${effectivePolicy.maxMs}ms x${effectivePolicy.factor} (jitter ${Math.round(effectivePolicy.jitter * 100)}%)`,
-        ),
-      );
-      try {
-        // Start loopback web chat server unless disabled.
+      const controller = new AbortController();
+      const stopAll = () => controller.abort();
+      process.once("SIGINT", stopAll);
+
+      const runners: Array<Promise<unknown>> = [];
+
+      if (startWeb) {
+        const webTuning: WebMonitorTuning = {};
+        if (webHeartbeat !== undefined)
+          webTuning.heartbeatSeconds = webHeartbeat;
+        if (heartbeatNow) webTuning.replyHeartbeatNow = true;
+        const reconnect: WebMonitorTuning["reconnect"] = {};
+        if (webRetries !== undefined) reconnect.maxAttempts = webRetries;
+        if (webRetryInitial !== undefined)
+          reconnect.initialMs = webRetryInitial;
+        if (webRetryMax !== undefined) reconnect.maxMs = webRetryMax;
+        if (Object.keys(reconnect).length > 0) {
+          webTuning.reconnect = reconnect;
+        }
+        logWebSelfId(defaultRuntime, true);
+        const effectiveHeartbeat = resolveHeartbeatSeconds(
+          cfg,
+          webTuning.heartbeatSeconds,
+        );
+        const effectivePolicy = resolveReconnectPolicy(cfg, webTuning.reconnect);
+        defaultRuntime.log(
+          info(
+            `Web relay health: heartbeat ${effectiveHeartbeat}s, retries ${effectivePolicy.maxAttempts || "∞"}, backoff ${effectivePolicy.initialMs}→${effectivePolicy.maxMs}ms x${effectivePolicy.factor} (jitter ${Math.round(effectivePolicy.jitter * 100)}%)`,
+          ),
+        );
+
         const webchatServer = await ensureWebChatServerFromConfig();
         if (webchatServer) {
           defaultRuntime.log(
@@ -523,145 +597,58 @@ Examples:
           );
         }
 
-        await monitorWebProvider(
-          Boolean(opts.verbose),
-          undefined,
-          true,
-          undefined,
-          defaultRuntime,
-          undefined,
-          webTuning,
-        );
-        return;
-      } catch (err) {
-        defaultRuntime.error(
-          danger(
-            `Web relay failed: ${String(err)}. Re-link with 'clawdis login --verbose'.`,
+        runners.push(
+          monitorWebProvider(
+            Boolean(opts.verbose),
+            undefined,
+            true,
+            undefined,
+            defaultRuntime,
+            controller.signal,
+            webTuning,
           ),
         );
-        defaultRuntime.exit(1);
       }
-    });
 
-  program
-    .command("relay:heartbeat")
-    .description("Run relay with an immediate heartbeat; requires web provider")
-    .option("--verbose", "Verbose logging", false)
-    .action(async (opts) => {
-      setVerbose(Boolean(opts.verbose));
-      const { file: logFile, level: logLevel } = getResolvedLoggerSettings();
-      defaultRuntime.log(info(`logs: ${logFile} (level ${logLevel})`));
-
-      logWebSelfId(defaultRuntime, true);
-      const cfg = loadConfig();
-      const effectiveHeartbeat = resolveHeartbeatSeconds(cfg, undefined);
-      const effectivePolicy = resolveReconnectPolicy(cfg, undefined);
-      defaultRuntime.log(
-        info(
-          `Web relay health: heartbeat ${effectiveHeartbeat}s, retries ${effectivePolicy.maxAttempts || "∞"}, backoff ${effectivePolicy.initialMs}→${effectivePolicy.maxMs}ms x${effectivePolicy.factor} (jitter ${Math.round(effectivePolicy.jitter * 100)}%)`,
-        ),
-      );
-
-      try {
-        await monitorWebProvider(
-          Boolean(opts.verbose),
-          undefined,
-          true,
-          undefined,
-          defaultRuntime,
-          undefined,
-          { replyHeartbeatNow: true },
-        );
-      } catch (err) {
-        defaultRuntime.error(
-          danger(
-            `Web relay failed: ${String(err)}. Re-link with 'clawdis login --provider web'.`,
-          ),
-        );
-        defaultRuntime.exit(1);
-      }
-    });
-
-  program
-    .command("relay:telegram")
-    .description("Auto-reply to Telegram (Bot API via grammY)")
-    .option("--verbose", "Verbose logging", false)
-    .option("--webhook", "Run webhook server instead of long-poll", false)
-    .option(
-      "--webhook-path <path>",
-      "Webhook path (default /telegram-webhook when webhook enabled)",
-    )
-    .option(
-      "--webhook-secret <secret>",
-      "Secret token to verify Telegram webhook requests",
-    )
-    .option("--port <port>", "Port for webhook server (default 8787)")
-    .option(
-      "--webhook-url <url>",
-      "Public webhook URL to register (overrides localhost autodetect)",
-    )
-    .addHelpText(
-      "after",
-      `
-Examples:
-  clawdis relay:telegram                # uses TELEGRAM_BOT_TOKEN env
-  TELEGRAM_BOT_TOKEN=xxx clawdis relay:telegram --verbose
-  TELEGRAM_BOT_TOKEN=xxx clawdis relay:telegram --webhook --port 9000 --webhook-secret secret
-`,
-    )
-    .action(async (opts) => {
-      setVerbose(Boolean(opts.verbose));
-      const token =
-        process.env.TELEGRAM_BOT_TOKEN ?? loadConfig().telegram?.botToken;
-      if (!token) {
-        defaultRuntime.error(
-          danger(
-            "Set TELEGRAM_BOT_TOKEN or telegram.botToken to use telegram relay",
-          ),
-        );
-        defaultRuntime.exit(1);
-        return;
-      }
-      const useWebhook = Boolean(opts.webhook);
-      if (useWebhook) {
-        const port = opts.port ? Number.parseInt(String(opts.port), 10) : 8787;
-        const path = opts.webhookPath ?? "/telegram-webhook";
-        try {
+      if (startTelegram) {
+        const useWebhook = Boolean(opts.webhook);
+        const telegramRunner = (async () => {
           const { monitorTelegramProvider } = await import(
             "../telegram/monitor.js"
           );
-          await monitorTelegramProvider({
-            token,
-            useWebhook: true,
-            webhookPath: path,
-            webhookPort: port,
-            webhookSecret:
-              opts.webhookSecret ?? loadConfig().telegram?.webhookSecret,
+          const sharedOpts = {
+            token: telegramToken,
             runtime: defaultRuntime,
-            proxyFetch: undefined,
-            // register with provided public URL when given
-            webhookUrl: opts.webhookUrl,
-          });
-        } catch (err) {
-          defaultRuntime.error(
-            danger(`Telegram webhook server failed: ${String(err)}`),
-          );
-          defaultRuntime.exit(1);
-        }
-        return;
+            abortSignal: controller.signal,
+          } as const;
+          if (useWebhook) {
+            const port = opts.port
+              ? Number.parseInt(String(opts.port), 10)
+              : 8787;
+            const path = opts.webhookPath ?? "/telegram-webhook";
+            return monitorTelegramProvider({
+              ...sharedOpts,
+              useWebhook: true,
+              webhookPath: path,
+              webhookPort: port,
+              webhookSecret: opts.webhookSecret ?? cfg.telegram?.webhookSecret,
+              webhookUrl: opts.webhookUrl ?? cfg.telegram?.webhookUrl,
+            });
+          }
+          return monitorTelegramProvider(sharedOpts);
+        })();
+        runners.push(telegramRunner);
       }
+
       try {
-        await import("../telegram/monitor.js").then((m) =>
-          m.monitorTelegramProvider({
-            token,
-            runtime: defaultRuntime,
-          }),
-        );
+        await Promise.all(runners);
       } catch (err) {
-        defaultRuntime.error(danger(`Telegram relay failed: ${String(err)}`));
+        defaultRuntime.error(danger(`Relay failed: ${String(err)}`));
         defaultRuntime.exit(1);
       }
     });
+
+  // relay is the single entry point; heartbeat/Telegram helpers removed.
 
   program
     .command("status")

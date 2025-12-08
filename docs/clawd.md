@@ -241,7 +241,7 @@ Include `MEDIA:/path/to/file.png` in Claude's output to attach images. clawdis h
 clawdis relay --provider web --verbose
 
 # With immediate heartbeat on startup
-clawdis relay:heartbeat
+clawdis relay --heartbeat-now
 ```
 
 For backgrounding, run the relay under your preferred supervisor (e.g., launchd/systemd) and point it at the same `clawdis relay --provider web --verbose` command.

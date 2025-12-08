@@ -123,7 +123,7 @@ clawdis relay      # Start listening
 ```
 
 ### Telegram (Bot API)
-Bot-mode support (grammY only) shares the same `main` session as WhatsApp/WebChat, with groups kept isolated. Text and media send work via `clawdis send --provider telegram`; a relay is available via `clawdis relay:telegram` (TELEGRAM_BOT_TOKEN or telegram.botToken in config). Webhook mode: `--webhook --port … --webhook-secret … --webhook-url …` (or register via BotFather). See `docs/telegram.md` for setup and limits.
+Bot-mode support (grammY only) shares the same `main` session as WhatsApp/WebChat, with groups kept isolated. Text and media send work via `clawdis send --provider telegram`. The unified `clawdis relay` starts WhatsApp and, when `TELEGRAM_BOT_TOKEN` or `telegram.botToken` is set, Telegram too (use `--provider` to force web|telegram|all). Webhook mode: `--webhook --port … --webhook-secret … --webhook-url …` (or register via BotFather). See `docs/telegram.md` for setup and limits.
 
 ## Commands
 
@@ -132,8 +132,7 @@ Bot-mode support (grammY only) shares the same `main` session as WhatsApp/WebCha
 | `clawdis login` | Link WhatsApp Web via QR |
 | `clawdis send` | Send a message (WhatsApp default; `--provider telegram` for bot mode, text + media) |
 | `clawdis agent` | Talk directly to the agent (no WhatsApp send) |
-| `clawdis relay` | Start auto-reply loop |
-| `clawdis relay:telegram` | Start Telegram bot long-poll relay (Bot API) |
+| `clawdis relay` | Start auto-reply loop (WhatsApp + Telegram when configured) |
 | `clawdis status` | Web session health + session store summary |
 | `clawdis heartbeat` | Trigger a heartbeat |
 

@@ -13,7 +13,8 @@ import {
 } from "../config/sessions.js";
 import { danger, info } from "../globals.js";
 import { logDebug } from "../logger.js";
-import { runCommandWithTimeout } from "../process/exec.js";
+import { agentCommand } from "../commands/agent.js";
+import type { RuntimeEnv } from "../runtime.js";
 
 const WEBCHAT_DEFAULT_PORT = 18788;
 
@@ -100,23 +101,39 @@ async function handleRpc(body: any, sessionKey: string): Promise<{ ok: boolean; 
   const store = loadSessionStore(storePath);
   const sessionId = pickSessionId(sessionKey, store) ?? crypto.randomUUID();
 
-  const cmd = ["clawdis", "agent", "--message", text, "--json", "--session-id", sessionId];
-  if (body?.thinking) cmd.push("--thinking", String(body.thinking));
-  if (body?.deliver) cmd.push("--deliver");
-  if (body?.to) cmd.push("--to", String(body.to));
+  // Run the agent in-process and capture JSON output instead of spawning the CLI.
+  const logs: string[] = [];
+  const runtime: RuntimeEnv = {
+    log: (msg: string) => void logs.push(String(msg)),
+    error: (_msg: string) => {},
+    exit: (code: number) => {
+      throw new Error(`agent exited ${code}`);
+    },
+  };
 
   try {
-    const { stdout, stderr, code } = await runCommandWithTimeout(cmd, {
-      timeoutMs: 120_000,
-      cwd: path.dirname(storePath),
-    });
-    if (code !== 0) {
-      return { ok: false, error: stderr.trim() || `agent exited ${code}` };
-    }
-    const parsed = JSON.parse(stdout || "{}");
-    return { ok: true, payloads: parsed.payloads ?? [] };
+    await agentCommand(
+      {
+        message: text,
+        sessionId,
+        thinking: body?.thinking,
+        deliver: Boolean(body?.deliver),
+        to: body?.to,
+        json: true,
+      },
+      runtime,
+    );
   } catch (err) {
     return { ok: false, error: String(err) };
+  }
+
+  const jsonLine = logs.find((l) => l.trim().startsWith("{"));
+  if (!jsonLine) return { ok: false, error: "no agent output" };
+  try {
+    const parsed = JSON.parse(jsonLine);
+    return { ok: true, payloads: parsed.payloads ?? [] };
+  } catch (err) {
+    return { ok: false, error: `parse error: ${String(err)}` };
   }
 }
 

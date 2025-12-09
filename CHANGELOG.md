@@ -123,7 +123,7 @@ First Clawdis release after the Warelay rebrand. This is a semver-major because 
 - Web send respects media kind (image/audio/video/document) with correct limits.
 
 ### Changes
-- IPC relay socket at `~/.clawdis/relay.sock` with automatic CLI fallback.
+- IPC gateway socket at `~/.clawdis/ipc/gateway.sock` with automatic CLI fallback.
 - Batched inbound messages with timestamps; typing indicator after IPC sends.
 - Watchdog restarts WhatsApp after long inactivity; heartbeat logging includes minutes since last message.
 - Early `allowFrom` filtering before decryption.

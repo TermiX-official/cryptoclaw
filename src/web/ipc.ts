@@ -16,7 +16,7 @@ import { getChildLogger } from "../logging.js";
 import { CONFIG_DIR } from "../utils.js";
 
 const SOCKET_DIR = path.join(CONFIG_DIR, "ipc");
-const SOCKET_PATH = path.join(SOCKET_DIR, "relay.sock");
+const SOCKET_PATH = path.join(SOCKET_DIR, "gateway.sock");
 
 export interface IpcSendRequest {
   type: "send";

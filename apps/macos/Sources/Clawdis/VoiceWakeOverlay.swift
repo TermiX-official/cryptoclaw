@@ -10,6 +10,8 @@ final class VoiceWakeOverlayController: ObservableObject {
 
     private let logger = Logger(subsystem: "com.steipete.clawdis", category: "voicewake.overlay")
 
+    enum Source: String { case wakeWord, pushToTalk }
+
     @Published private(set) var model = Model()
 
     struct Model {
@@ -27,8 +29,10 @@ final class VoiceWakeOverlayController: ObservableObject {
     private var window: NSPanel?
     private var hostingView: NSHostingView<VoiceWakeOverlayView>?
     private var autoSendTask: Task<Void, Never>?
-    private var safetyDismissTask: Task<Void, Never>?
+    private var autoSendToken: UUID?
     private var forwardConfig: VoiceWakeForwardConfig?
+    private var activeToken: UUID?
+    private var activeSource: Source?
 
     private let width: CGFloat = 360
     private let padding: CGFloat = 10
@@ -39,10 +43,41 @@ final class VoiceWakeOverlayController: ObservableObject {
     private let minHeight: CGFloat = 48
     let closeOverflow: CGFloat = 10
 
-    func showPartial(transcript: String, attributed: NSAttributedString? = nil) {
-        self.logger.log(level: .info, "overlay showPartial len=\(transcript.count, privacy: .public) visible=\(self.model.isVisible, privacy: .public) isFinal=false")
-        self.autoSendTask?.cancel()
-        self.safetyDismissTask?.cancel()
+    @discardableResult
+    func startSession(
+        source: Source,
+        transcript: String,
+        attributed: NSAttributedString? = nil,
+        forwardEnabled: Bool = false,
+        isFinal: Bool = false) -> UUID
+    {
+        let token = UUID()
+        self.logger.log(level: .info, "overlay session_start source=\(source.rawValue, privacy: .public) len=\(transcript.count, privacy: .public)")
+        self.activeToken = token
+        self.activeSource = source
+        self.forwardConfig = nil
+        self.autoSendTask?.cancel(); self.autoSendTask = nil; self.autoSendToken = nil
+        self.model.text = transcript
+        self.model.isFinal = isFinal
+        self.model.forwardEnabled = forwardEnabled
+        self.model.isSending = false
+        self.model.isEditing = false
+        self.model.attributed = attributed ?? self.makeAttributed(from: transcript)
+        self.model.level = 0
+        self.present()
+        self.updateWindowFrame(animate: true)
+        return token
+    }
+
+    func snapshot() -> (token: UUID?, source: Source?, text: String, isVisible: Bool) {
+        (self.activeToken, self.activeSource, self.model.text, self.model.isVisible)
+    }
+
+    func updatePartial(token: UUID, transcript: String, attributed: NSAttributedString? = nil) {
+        guard self.guardToken(token, context: "partial") else { return }
+        guard !self.model.isFinal else { return }
+        self.logger.log(level: .info, "overlay partial token=\(token.uuidString, privacy: .public) len=\(transcript.count, privacy: .public)")
+        self.autoSendTask?.cancel(); self.autoSendTask = nil; self.autoSendToken = nil
         self.forwardConfig = nil
         self.model.text = transcript
         self.model.isFinal = false
@@ -56,15 +91,17 @@ final class VoiceWakeOverlayController: ObservableObject {
     }
 
     func presentFinal(
+        token: UUID,
         transcript: String,
         forwardConfig: VoiceWakeForwardConfig,
         autoSendAfter delay: TimeInterval?,
         sendChime: VoiceWakeChime = .none,
         attributed: NSAttributedString? = nil)
     {
-        self.logger.log(level: .info, "overlay presentFinal len=\(transcript.count, privacy: .public) autoSendAfter=\(delay ?? -1, privacy: .public) forwardEnabled=\(forwardConfig.enabled, privacy: .public)")
+        guard self.guardToken(token, context: "final") else { return }
+        self.logger.log(level: .info, "overlay presentFinal token=\(token.uuidString, privacy: .public) len=\(transcript.count, privacy: .public) autoSendAfter=\(delay ?? -1, privacy: .public) forwardEnabled=\(forwardConfig.enabled, privacy: .public)")
         self.autoSendTask?.cancel()
-        self.safetyDismissTask?.cancel()
+        self.autoSendToken = token
         self.forwardConfig = forwardConfig
         self.model.text = transcript
         self.model.isFinal = true
@@ -75,10 +112,8 @@ final class VoiceWakeOverlayController: ObservableObject {
         self.model.level = 0
         self.present()
         if let delay {
-            self.scheduleAutoSend(after: delay, sendChime: sendChime)
+            self.scheduleAutoSend(token: token, after: delay, sendChime: sendChime)
         }
-        // Safety net: ensure the overlay cannot stick around indefinitely.
-        self.scheduleSafetyDismiss()
     }
 
     func userBeganEditing() {
@@ -105,11 +140,10 @@ final class VoiceWakeOverlayController: ObservableObject {
         self.updateWindowFrame(animate: true)
     }
 
-    func sendNow(sendChime: VoiceWakeChime = .none) {
-        self.logger.log(level: .info, "overlay sendNow called isSending=\(self.model.isSending, privacy: .public) forwardEnabled=\(self.model.forwardEnabled, privacy: .public) textLen=\(self.model.text.count, privacy: .public)")
-        self.autoSendTask?.cancel()
-        self.autoSendTask = nil
-        self.safetyDismissTask?.cancel()
+    func sendNow(token: UUID? = nil, sendChime: VoiceWakeChime = .none) {
+        guard self.guardToken(token, context: "send") else { return }
+        self.logger.log(level: .info, "overlay sendNow called token=\(self.activeToken?.uuidString ?? "nil", privacy: .public) isSending=\(self.model.isSending, privacy: .public) forwardEnabled=\(self.model.forwardEnabled, privacy: .public) textLen=\(self.model.text.count, privacy: .public)")
+        self.autoSendTask?.cancel(); self.autoSendToken = nil
         if self.model.isSending { return }
         self.model.isEditing = false
         guard let forwardConfig, forwardConfig.enabled else {
@@ -126,7 +160,7 @@ final class VoiceWakeOverlayController: ObservableObject {
 
         if sendChime != .none {
             self.logger.log(level: .info, "overlay sendNow playing sendChime=\(String(describing: sendChime), privacy: .public)")
-            VoiceWakeChimePlayer.play(sendChime)
+            VoiceWakeChimePlayer.play(sendChime, reason: "overlay.send")
         }
 
         self.model.isSending = true
@@ -136,14 +170,14 @@ final class VoiceWakeOverlayController: ObservableObject {
             await VoiceWakeForwarder.forward(transcript: payload, config: forwardConfig)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-            self.dismiss(reason: .explicit, outcome: .sent)
+            self.dismiss(token: token, reason: .explicit, outcome: .sent)
         }
     }
 
-    func dismiss(reason: DismissReason = .explicit, outcome: SendOutcome = .empty) {
-        self.logger.log(level: .info, "overlay dismiss reason=\(String(describing: reason), privacy: .public) outcome=\(String(describing: outcome), privacy: .public) visible=\(self.model.isVisible, privacy: .public) sending=\(self.model.isSending, privacy: .public)")
-        self.autoSendTask?.cancel()
-        self.safetyDismissTask?.cancel()
+    func dismiss(token: UUID? = nil, reason: DismissReason = .explicit, outcome: SendOutcome = .empty) {
+        guard self.guardToken(token, context: "dismiss") else { return }
+        self.logger.log(level: .info, "overlay dismiss token=\(self.activeToken?.uuidString ?? "nil", privacy: .public) reason=\(String(describing: reason), privacy: .public) outcome=\(String(describing: outcome), privacy: .public) visible=\(self.model.isVisible, privacy: .public) sending=\(self.model.isSending, privacy: .public)")
+        self.autoSendTask?.cancel(); self.autoSendToken = nil
         self.model.isSending = false
         self.model.isEditing = false
         guard let window else { return }
@@ -160,6 +194,9 @@ final class VoiceWakeOverlayController: ObservableObject {
                 window.orderOut(nil)
                 self.model.isVisible = false
                 self.model.level = 0
+                self.activeToken = nil
+                self.activeSource = nil
+                self.forwardConfig = nil
                 if outcome == .empty {
                     AppStateStore.shared.blinkOnce()
                 } else if outcome == .sent {
@@ -170,7 +207,8 @@ final class VoiceWakeOverlayController: ObservableObject {
         }
     }
 
-    func updateLevel(_ level: Double) {
+    func updateLevel(token: UUID, _ level: Double) {
+        guard self.guardToken(token, context: "level") else { return }
         self.model.level = max(0, min(1, level))
     }
 
@@ -178,6 +216,18 @@ final class VoiceWakeOverlayController: ObservableObject {
     enum SendOutcome { case sent, empty }
 
     // MARK: - Private
+
+    private func guardToken(_ token: UUID?, context: String) -> Bool {
+        guard let active = self.activeToken else {
+            self.logger.debug("overlay drop \(context, privacy: .public) no_active")
+            return false
+        }
+        if let token, token != active {
+            self.logger.debug("overlay drop \(context, privacy: .public) token_mismatch")
+            return false
+        }
+        return true
+    }
 
     private func present() {
         self.ensureWindow()
@@ -299,32 +349,20 @@ final class VoiceWakeOverlayController: ObservableObject {
         }
     }
 
-    private func scheduleAutoSend(after delay: TimeInterval, sendChime: VoiceWakeChime) {
-        self.logger.log(level: .info, "overlay scheduleAutoSend after=\(delay, privacy: .public) sendChime=\(String(describing: sendChime), privacy: .public)")
+    private func scheduleAutoSend(token: UUID, after delay: TimeInterval, sendChime: VoiceWakeChime) {
+        self.logger.log(level: .info, "overlay scheduleAutoSend token=\(token.uuidString, privacy: .public) after=\(delay, privacy: .public) sendChime=\(String(describing: sendChime), privacy: .public)")
         self.autoSendTask?.cancel()
-        self.autoSendTask = Task<Void, Never> { [weak self, sendChime] in
+        self.autoSendToken = token
+        self.autoSendTask = Task<Void, Never> { [weak self, sendChime, token] in
             let nanos = UInt64(max(0, delay) * 1_000_000_000)
             try? await Task.sleep(nanoseconds: nanos)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard let self else { return }
-                self.logger.log(level: .info, "overlay autoSend firing")
-                self.sendNow(sendChime: sendChime)
+                guard self.guardToken(token, context: "autoSend") else { return }
+                self.logger.log(level: .info, "overlay autoSend firing token=\(token.uuidString, privacy: .public)")
+                self.sendNow(token: token, sendChime: sendChime)
                 self.autoSendTask = nil
-            }
-        }
-    }
-
-    private func scheduleSafetyDismiss() {
-        self.safetyDismissTask?.cancel()
-        self.safetyDismissTask = Task<Void, Never> { [weak self] in
-            try? await Task.sleep(nanoseconds: 6_000_000_000) // 6s
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard let self, self.model.isVisible else { return }
-                self.logger.log(level: .info, "overlay safety dismiss firing")
-                self.dismiss(reason: .explicit)
-                self.safetyDismissTask = nil
             }
         }
     }

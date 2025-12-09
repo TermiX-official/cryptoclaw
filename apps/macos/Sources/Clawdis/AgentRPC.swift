@@ -350,11 +350,13 @@ actor AgentRPC {
             return true
         }
         if parsed.ok {
-            let payloadData: Data = if let payload = parsed.payload {
-                (try? JSONEncoder().encode(payload)) ?? Data()
-            } else {
-                Data()
-            }
+            let payloadData: Data = {
+                if let payload = parsed.payload {
+                    return (try? JSONEncoder().encode(payload)) ?? Data()
+                }
+                // Use an empty JSON array to keep callers happy when payload is missing.
+                return Data("[]".utf8)
+            }()
             waiter.resume(returning: payloadData)
         } else {
             waiter.resume(throwing: RpcError(message: parsed.error ?? "control error"))

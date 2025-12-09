@@ -234,7 +234,7 @@ final class WebChatTunnel {
 
     static func create(remotePort: Int, preferredLocalPort: UInt16? = nil) async throws -> WebChatTunnel {
         let settings = CommandResolver.connectionSettings()
-        guard settings.mode == .remote, let parsed = VoiceWakeForwarder.parse(target: settings.target) else {
+        guard settings.mode == .remote, let parsed = CommandResolver.parseSSHTarget(settings.target) else {
             throw NSError(domain: "WebChat", code: 3, userInfo: [NSLocalizedDescriptionKey: "remote not configured"])
         }
 

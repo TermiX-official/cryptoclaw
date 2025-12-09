@@ -1,3 +1,4 @@
+import Cocoa
 import Foundation
 import OSLog
 
@@ -58,6 +59,13 @@ final class InstancesStore: ObservableObject {
         defer { self.isLoading = false }
         do {
             let data = try await ControlChannel.shared.request(method: "system-presence")
+            self.lastPayload = data
+            if data.isEmpty {
+                self.logger.error("instances fetch returned empty payload")
+                self.instances = [self.localFallbackInstance()]
+                self.lastError = "No presence data returned from relay yet."
+                return
+            }
             let decoded = try JSONDecoder().decode([InstanceInfo].self, from: data)
             let withIDs = decoded.map { entry -> InstanceInfo in
                 let key = entry.host ?? entry.ip ?? entry.text
@@ -72,11 +80,93 @@ final class InstancesStore: ObservableObject {
                     text: entry.text,
                     ts: entry.ts)
             }
-            self.instances = withIDs
-            self.lastError = nil
+            if withIDs.isEmpty {
+                self.instances = [self.localFallbackInstance()]
+                self.lastError = nil
+            } else {
+                self.instances = withIDs
+                self.lastError = nil
+            }
         } catch {
-            self.logger.error("instances fetch failed: \(error.localizedDescription, privacy: .public)")
-            self.lastError = error.localizedDescription
+            self.logger.error(
+                """
+                instances fetch failed: \(error.localizedDescription, privacy: .public) \
+                len=\(self.lastPayload?.count ?? 0, privacy: .public) \
+                utf8=\(self.snippet(self.lastPayload), privacy: .public)
+                """
+            )
+            self.instances = [self.localFallbackInstance()]
+            self.lastError = "Decode failed: \(error.localizedDescription)"
         }
+    }
+
+    private func localFallbackInstance() -> InstanceInfo {
+        let host = Host.current().localizedName ?? "this-mac"
+        let ip = Self.primaryIPv4Address()
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let text = "Local node: \(host)\(ip.map { " (\($0))" } ?? "") · app \(version ?? "dev")"
+        let ts = Date().timeIntervalSince1970 * 1000
+        return InstanceInfo(
+            id: "local-\(host)",
+            host: host,
+            ip: ip,
+            version: version,
+            lastInputSeconds: Self.lastInputSeconds(),
+            mode: "local",
+            reason: "fallback",
+            text: text,
+            ts: ts)
+    }
+
+    private static func lastInputSeconds() -> Int? {
+        let anyEvent = CGEventType(rawValue: UInt32.max) ?? .null
+        let seconds = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyEvent)
+        if seconds.isNaN || seconds.isInfinite || seconds < 0 { return nil }
+        return Int(seconds.rounded())
+    }
+
+    private static func primaryIPv4Address() -> String? {
+        var addrList: UnsafeMutablePointer<ifaddrs>? = nil
+        guard getifaddrs(&addrList) == 0, let first = addrList else { return nil }
+        defer { freeifaddrs(addrList) }
+
+        var fallback: String?
+        var en0: String?
+
+        for ptr in sequence(first: first, next: { $0.pointee.ifa_next }) {
+            let flags = Int32(ptr.pointee.ifa_flags)
+            let isUp = (flags & IFF_UP) != 0
+            let isLoopback = (flags & IFF_LOOPBACK) != 0
+            let name = String(cString: ptr.pointee.ifa_name)
+            let family = ptr.pointee.ifa_addr.pointee.sa_family
+            if !isUp || isLoopback || family != UInt8(AF_INET) { continue }
+
+            var addr = ptr.pointee.ifa_addr.pointee
+            var buffer = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            let result = getnameinfo(&addr, socklen_t(ptr.pointee.ifa_addr.pointee.sa_len), &buffer, socklen_t(buffer.count), nil, 0, NI_NUMERICHOST)
+            guard result == 0 else { continue }
+            let len = buffer.prefix { $0 != 0 }
+            let ip = String(decoding: len.map { UInt8(bitPattern: $0) }, as: UTF8.self)
+
+            if name == "en0" { en0 = ip; break }
+            if fallback == nil { fallback = ip }
+        }
+
+        return en0 ?? fallback
+    }
+
+    // MARK: - Helpers
+
+    /// Keep the last raw payload for logging.
+    private var lastPayload: Data?
+
+    private func snippet(_ data: Data?, limit: Int = 256) -> String {
+        guard let data else { return "<none>" }
+        if data.isEmpty { return "<empty>" }
+        let prefix = data.prefix(limit)
+        if let asString = String(data: prefix, encoding: .utf8) {
+            return asString.replacingOccurrences(of: "\n", with: " ")
+        }
+        return "<\(data.count) bytes non-utf8>"
     }
 }

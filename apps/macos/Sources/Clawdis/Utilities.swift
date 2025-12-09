@@ -379,7 +379,7 @@ enum CommandResolver {
 
     private static func sshNodeCommand(subcommand: String, extraArgs: [String], settings: RemoteSettings) -> [String]? {
         guard !settings.target.isEmpty else { return nil }
-        guard let parsed = VoiceWakeForwarder.parse(target: settings.target) else { return nil }
+        guard let parsed = self.parseSSHTarget(settings.target) else { return nil }
 
         var args: [String] = ["-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes"]
         if parsed.port > 0 { args.append(contentsOf: ["-p", String(parsed.port)]) }
@@ -450,7 +450,7 @@ enum CommandResolver {
 
     private static func sshMacHelperCommand(subcommand: String, extraArgs: [String], settings: RemoteSettings) -> [String]? {
         guard !settings.target.isEmpty else { return nil }
-        guard let parsed = VoiceWakeForwarder.parse(target: settings.target) else { return nil }
+        guard let parsed = self.parseSSHTarget(settings.target) else { return nil }
 
         var args: [String] = ["-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes"]
         if parsed.port > 0 { args.append(contentsOf: ["-p", String(parsed.port)]) }
@@ -506,6 +506,39 @@ enum CommandResolver {
             return trimmed.replacingOccurrences(of: "ssh ", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return trimmed
+    }
+
+    struct SSHParsedTarget {
+        let user: String?
+        let host: String
+        let port: Int
+    }
+
+    static func parseSSHTarget(_ target: String) -> SSHParsedTarget? {
+        let trimmed = target.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let userHostPort: String
+        let user: String?
+        if let atRange = trimmed.range(of: "@") {
+            user = String(trimmed[..<atRange.lowerBound])
+            userHostPort = String(trimmed[atRange.upperBound...])
+        } else {
+            user = nil
+            userHostPort = trimmed
+        }
+
+        let host: String
+        let port: Int
+        if let colon = userHostPort.lastIndex(of: ":"), colon != userHostPort.startIndex {
+            host = String(userHostPort[..<colon])
+            let portStr = String(userHostPort[userHostPort.index(after: colon)...])
+            port = Int(portStr) ?? 22
+        } else {
+            host = userHostPort
+            port = 22
+        }
+
+        return SSHParsedTarget(user: user, host: host, port: port)
     }
 
     private static func shellQuote(_ text: String) -> String {

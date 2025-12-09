@@ -291,8 +291,7 @@ struct DebugSettings: View {
 
         let message = "This is a debug test from the Mac app. Reply with \"Debug test works (and a funny pun)\" if you received that."
         let config = await MainActor.run { AppStateStore.shared.voiceWakeForwardConfig }
-        let trimmedTarget = config.target.trimmingCharacters(in: .whitespacesAndNewlines)
-        let shouldForward = config.enabled && !trimmedTarget.isEmpty
+        let shouldForward = config.enabled
 
         if shouldForward {
             let result = await VoiceWakeForwarder.forward(transcript: message, config: config)
@@ -300,7 +299,7 @@ struct DebugSettings: View {
                 self.debugSendInFlight = false
                 switch result {
                 case .success:
-                    self.debugSendStatus = "Forwarded via \(trimmedTarget). Await reply."
+                    self.debugSendStatus = "Forwarded. Await reply."
                     self.debugSendError = nil
                 case let .failure(error):
                     let detail = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)

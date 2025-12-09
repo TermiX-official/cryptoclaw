@@ -33,10 +33,34 @@ private actor GatewayChannelActor {
     private var tickIntervalMs: Double = 30000
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
+    private var watchdogTask: Task<Void, Never>?
 
     init(url: URL, token: String?) {
         self.url = url
         self.token = token
+        self.startWatchdog()
+    }
+
+    private func startWatchdog() {
+        self.watchdogTask?.cancel()
+        self.watchdogTask = Task { [weak self] in
+            guard let self else { return }
+            await self.watchdogLoop()
+        }
+    }
+
+    private func watchdogLoop() async {
+        // Keep nudging reconnect in case exponential backoff stalls.
+        while self.shouldReconnect {
+            try? await Task.sleep(nanoseconds: 30 * 1_000_000_000) // 30s cadence
+            if self.connected { continue }
+            do {
+                try await self.connect()
+            } catch {
+                let wrapped = self.wrap(error, context: "gateway watchdog reconnect")
+                self.logger.error("gateway watchdog reconnect failed \(wrapped.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
     func connect() async throws {

@@ -104,7 +104,9 @@ export function createTelegramBot(opts: TelegramBotOptions) {
 
       const body = formatAgentEnvelope({
         surface: "Telegram",
-        from: isGroup ? `group:${chatId}` : `telegram:${chatId}`,
+        from: isGroup
+          ? buildGroupLabel(msg, chatId)
+          : buildSenderLabel(msg, chatId),
         timestamp: msg.date ? msg.date * 1000 : undefined,
         body: rawBody,
       });
@@ -206,6 +208,25 @@ function buildSenderName(msg: TelegramMessage) {
       .join(" ")
       .trim() || msg.from?.username;
   return name || undefined;
+}
+
+function buildSenderLabel(msg: TelegramMessage, chatId: number | string) {
+  const name = buildSenderName(msg);
+  const username = msg.from?.username ? `@${msg.from.username}` : undefined;
+  let label = name;
+  if (name && username) {
+    label = `${name} (${username})`;
+  } else if (!name && username) {
+    label = username;
+  }
+  const idPart = `id:${chatId}`;
+  return label ? `${label} ${idPart}` : idPart;
+}
+
+function buildGroupLabel(msg: TelegramMessage, chatId: number | string) {
+  const title = msg.chat?.title;
+  if (title) return `${title} id:${chatId}`;
+  return `group:${chatId}`;
 }
 
 function hasBotMention(msg: TelegramMessage, botUsername: string) {

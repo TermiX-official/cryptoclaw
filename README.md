@@ -152,7 +152,7 @@ In chat, send `/status` to see if the agent is reachable, how much context the s
 - Inbound contexts carry a `Surface` hint (e.g., `whatsapp`, `webchat`, `telegram`) for logging; replies still go back to the originating surface deterministically.
 - Every inbound message is wrapped for the agent as `[Surface FROM HOST/IP TIMESTAMP] body`:
   - WhatsApp: `[WhatsApp +15551234567 2025-12-09 12:34] …`
-  - Telegram: `[Telegram telegram:123456789 2025-12-09 12:34] …`
+- Telegram: `[Telegram Ada Lovelace (@ada_bot) id:123456789 2025-12-09 12:34] …`
   - WebChat: `[WebChat my-mac.local 10.0.0.5 2025-12-09 12:34] …`
   This keeps the model aware of the transport, sender, host, and time without relying on implicit context.
 

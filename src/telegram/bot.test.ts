@@ -53,6 +53,11 @@ describe("createTelegramBot", () => {
       chat: { id: 1234, type: "private" },
       text: "hello world",
       date: 1736380800, // 2025-01-09T00:00:00Z
+      from: {
+        first_name: "Ada",
+        last_name: "Lovelace",
+        username: "ada_bot",
+      },
     };
     await handler({
       message,
@@ -62,7 +67,9 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
-    expect(payload.Body).toMatch(/^\[Telegram telegram:1234 2025-01-09 00:00]/);
+    expect(payload.Body).toMatch(
+      /^\[Telegram Ada Lovelace \(@ada_bot\) id:1234 2025-01-09 00:00]/,
+    );
     expect(payload.Body).toContain("hello world");
   });
 });

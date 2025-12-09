@@ -410,12 +410,15 @@ actor VoiceWakeRuntime {
         Task { [weak self] in
             let nanos = UInt64(max(0, delay) * 1_000_000_000)
             try? await Task.sleep(nanoseconds: nanos)
-            guard let self else { return }
-            if self.isCapturing { return }
-            let overlayVisible = await MainActor.run { VoiceWakeOverlayController.shared.isVisible }
-            if overlayVisible { return }
-            self.restartRecognizer()
+            await self?.restartIfIdleAfterDelay()
         }
+    }
+
+    private func restartIfIdleAfterDelay() async {
+        if self.isCapturing { return }
+        let overlayVisible = await MainActor.run { VoiceWakeOverlayController.shared.isVisible }
+        if overlayVisible { return }
+        self.restartRecognizer()
     }
 
     func applyPushToTalkCooldown() {

@@ -122,7 +122,7 @@ actor AgentRPC {
             if let err = parsed["error"] as? String {
                 return (false, nil, err)
             }
-            return (false, nil, "rpc returned unexpected response: \(line)")
+            return (false, nil, "rpc returned unexpected response: \(parsed)")
         } catch {
             self.logger.error("rpc send failed: \(error.localizedDescription, privacy: .public)")
             await self.stop()

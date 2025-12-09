@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import chalk from "chalk";
 import { Command } from "commander";
 import { agentCommand } from "../commands/agent.js";
@@ -273,14 +272,6 @@ Examples:
             return;
           }
 
-          const jobId = cmd.jobId ? String(cmd.jobId) : randomUUID();
-          const startedAt = Date.now();
-          respond({
-            type: "event",
-            event: "job-state",
-            payload: { id: jobId, state: "started", startedAt },
-          });
-
           const logs: string[] = [];
           const runtime: RuntimeEnv = {
             log: (msg: string) => logs.push(String(msg)),
@@ -308,31 +299,9 @@ Examples:
 
           try {
             await agentCommand(opts, runtime, createDefaultDeps());
-            const endedAt = Date.now();
-            respond({
-              type: "event",
-              event: "job-state",
-              payload: {
-                id: jobId,
-                state: "done",
-                durationMs: endedAt - startedAt,
-                endedAt,
-              },
-            });
             const payload = extractPayload(logs);
             respond({ type: "result", ok: true, payload });
           } catch (err) {
-            const endedAt = Date.now();
-            respond({
-              type: "event",
-              event: "job-state",
-              payload: {
-                id: jobId,
-                state: "error",
-                durationMs: endedAt - startedAt,
-                endedAt,
-              },
-            });
             respond({ type: "error", error: String(err) });
           }
         } catch (err) {

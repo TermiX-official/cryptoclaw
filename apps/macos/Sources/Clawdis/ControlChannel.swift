@@ -190,7 +190,7 @@ final class ControlChannel: ObservableObject {
     private var mode: Mode = .local
     private var localPort: UInt16 = 18789
     private var pingTask: Task<Void, Never>?
-    private var activeJobs: Int = 0
+    private var jobStates: [String: String] = [:]
 
     @Published private(set) var state: ConnectionState = .disconnected
     @Published private(set) var lastPingMs: Double?
@@ -208,13 +208,7 @@ final class ControlChannel: ObservableObject {
         { note in
             if let evt = note.object as? ControlAgentEvent {
                 DispatchQueue.main.async { @MainActor in
-                    let payload = ControlAgentEvent(
-                        runId: evt.runId,
-                        seq: evt.seq,
-                        stream: evt.stream,
-                        ts: evt.ts,
-                        data: evt.data.mapValues { AnyCodable($0.value) })
-                    AgentEventStore.shared.append(payload)
+                    AgentEventStore.shared.append(evt)
                 }
             }
         }
@@ -459,15 +453,15 @@ final class ControlChannel: ObservableObject {
     private func handleAgentEvent(_ event: ControlAgentEvent) {
         if event.stream == "job" {
             if let state = event.data["state"]?.value as? String {
-                switch state.lowercased() {
-                case "started", "streaming":
-                    self.activeJobs &+= 1
-                case "done", "error":
-                    self.activeJobs = max(0, self.activeJobs - 1)
-                default:
-                    break
+                let normalized = state.lowercased()
+                if normalized == "done" || normalized == "error" {
+                    self.jobStates.removeValue(forKey: event.runId)
+                } else {
+                    self.jobStates[event.runId] = normalized
                 }
-                let working = self.activeJobs > 0
+
+                let workingStates: Set<String> = ["started", "streaming", "running", "queued", "waiting"]
+                let working = self.jobStates.values.contains { workingStates.contains($0) }
                 Task { @MainActor in
                     AppStateStore.shared.setWorking(working)
                 }

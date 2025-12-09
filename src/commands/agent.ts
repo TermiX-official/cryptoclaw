@@ -300,6 +300,7 @@ export async function agentCommand(
     stream: "job",
     data: {
       state: "started",
+      startedAt,
       to: opts.to,
       sessionId,
       isNewSession,
@@ -327,6 +328,8 @@ export async function agentCommand(
       stream: "job",
       data: {
         state: "done",
+        startedAt,
+        endedAt: Date.now(),
         to: opts.to,
         sessionId,
         durationMs: Date.now() - startedAt,
@@ -338,6 +341,8 @@ export async function agentCommand(
       stream: "job",
       data: {
         state: "error",
+        startedAt,
+        endedAt: Date.now(),
         to: opts.to,
         sessionId,
         durationMs: Date.now() - startedAt,

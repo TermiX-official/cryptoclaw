@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Testing
 @testable import Clawdis
@@ -35,7 +36,19 @@ import Testing
         let nodePath = tmp.appendingPathComponent("node_modules/.bin/node")
         let scriptPath = tmp.appendingPathComponent("bin/clawdis.js")
         try makeExec(at: nodePath)
+        try "#!/bin/sh\necho v22.0.0\n".write(to: nodePath, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: nodePath.path)
         try makeExec(at: scriptPath)
+
+        let previous = getenv("CLAWDIS_RUNTIME").flatMap { String(validatingCString: $0) }
+        setenv("CLAWDIS_RUNTIME", "node", 1)
+        defer {
+            if let previous {
+                setenv("CLAWDIS_RUNTIME", previous, 1)
+            } else {
+                unsetenv("CLAWDIS_RUNTIME")
+            }
+        }
 
         let cmd = CommandResolver.clawdisCommand(subcommand: "rpc")
 

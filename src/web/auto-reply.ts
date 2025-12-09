@@ -12,6 +12,7 @@ import {
 } from "../config/sessions.js";
 import { danger, info, isVerbose, logVerbose, success } from "../globals.js";
 import { emitHeartbeatEvent } from "../infra/heartbeat-events.js";
+import { enqueueSystemEvent } from "../infra/system-events.js";
 import { logInfo } from "../logger.js";
 import { getChildLogger } from "../logging.js";
 import { getQueueSize } from "../process/command-queue.js";
@@ -29,7 +30,7 @@ import {
   resolveReconnectPolicy,
   sleepWithAbort,
 } from "./reconnect.js";
-import { getWebAuthAgeMs } from "./session.js";
+import { getWebAuthAgeMs, readWebSelfId } from "./session.js";
 
 const WEB_TEXT_LIMIT = 4000;
 const DEFAULT_GROUP_HISTORY_LIMIT = 50;
@@ -969,6 +970,12 @@ export async function monitorWebProvider(
       },
     });
 
+    // Surface a concise connection event for the next main-session turn/heartbeat.
+    const { e164: selfE164 } = readWebSelfId();
+    enqueueSystemEvent(
+      `WhatsApp relay connected${selfE164 ? ` as ${selfE164}` : ""}.`,
+    );
+
     // Start IPC server so `clawdis send` can use this connection
     // instead of creating a new one (which would corrupt Signal session)
     if ("sendMessage" in listener && "sendComposingTo" in listener) {
@@ -1337,6 +1344,10 @@ export async function monitorWebProvider(
         reconnectAttempts,
       },
       "web reconnect: connection closed",
+    );
+
+    enqueueSystemEvent(
+      `WhatsApp relay disconnected (status ${status ?? "unknown"})`,
     );
 
     if (loggedOut) {

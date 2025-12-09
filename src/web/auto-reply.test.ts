@@ -154,6 +154,55 @@ describe("resolveHeartbeatRecipients", () => {
   });
 });
 
+describe("partial reply gating", () => {
+  it("does not send partial replies for WhatsApp surface", async () => {
+    const reply = vi.fn().mockResolvedValue(undefined);
+    const sendComposing = vi.fn().mockResolvedValue(undefined);
+    const sendMedia = vi.fn().mockResolvedValue(undefined);
+
+    const replyResolver = vi.fn().mockResolvedValue({ text: "final reply" });
+
+    const mockConfig: WarelayConfig = {
+      inbound: {
+        reply: { mode: "command" },
+        allowFrom: ["*"],
+      },
+    };
+
+    setLoadConfigMock(mockConfig);
+
+    await monitorWebProvider(
+      false,
+      async ({ onMessage }) => {
+        await onMessage({
+          id: "m1",
+          from: "+1000",
+          conversationId: "+1000",
+          to: "+2000",
+          body: "hello",
+          timestamp: Date.now(),
+          chatType: "direct",
+          chatId: "direct:+1000",
+          sendComposing,
+          reply,
+          sendMedia,
+        });
+        return { close: vi.fn().mockResolvedValue(undefined) };
+      },
+      false,
+      replyResolver,
+    );
+
+    resetLoadConfigMock();
+
+    expect(replyResolver).toHaveBeenCalledTimes(1);
+    const resolverOptions = replyResolver.mock.calls[0]?.[1] ?? {};
+    expect("onPartialReply" in resolverOptions).toBe(false);
+    expect(reply).toHaveBeenCalledTimes(1);
+    expect(reply).toHaveBeenCalledWith("final reply");
+  });
+});
+
 describe("runWebHeartbeatOnce", () => {
   it("skips when heartbeat token returned", async () => {
     const store = await makeSessionStore();

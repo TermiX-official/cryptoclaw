@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   resolveStorePath: vi.fn().mockReturnValue("/tmp/sessions.json"),
   webAuthExists: vi.fn().mockResolvedValue(true),
   getWebAuthAgeMs: vi.fn().mockReturnValue(5000),
+  readWebSelfId: vi.fn().mockReturnValue({ e164: "+1999" }),
   logWebSelfId: vi.fn(),
 }));
 
@@ -17,6 +18,7 @@ vi.mock("../config/sessions.js", () => ({
 vi.mock("../web/session.js", () => ({
   webAuthExists: mocks.webAuthExists,
   getWebAuthAgeMs: mocks.getWebAuthAgeMs,
+  readWebSelfId: mocks.readWebSelfId,
   logWebSelfId: mocks.logWebSelfId,
 }));
 vi.mock("../config/config.js", () => ({

@@ -6,6 +6,7 @@ import { getReplyFromConfig } from "./reply.js";
 const webMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),
   getWebAuthAgeMs: vi.fn().mockReturnValue(120_000),
+  readWebSelfId: vi.fn().mockReturnValue({ e164: "+1999" }),
 }));
 
 vi.mock("../web/session.js", () => webMocks);

@@ -179,7 +179,9 @@ export async function startControlChannel(
           respond(undefined, false, `unknown method: ${parsed.method}`);
           break;
       }
-      logDebug(`control: ${parsed.method} responded in ${Date.now() - started}ms`);
+      logDebug(
+        `control: ${parsed.method} responded in ${Date.now() - started}ms`,
+      );
     } catch (err) {
       logError(
         `control: ${parsed.method} failed in ${Date.now() - started}ms: ${String(err)}`,

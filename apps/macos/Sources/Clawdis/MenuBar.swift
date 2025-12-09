@@ -35,6 +35,7 @@ struct ClawdisApp: App {
         .menuBarExtraAccess(isPresented: self.$isMenuPresented) { item in
             self.statusItem = item
             self.applyStatusItemAppearance(paused: self.state.isPaused)
+            self.installStatusItemMouseHandler(for: item)
         }
         .onChange(of: self.state.isPaused) { _, paused in
             self.applyStatusItemAppearance(paused: paused)
@@ -53,6 +54,39 @@ struct ClawdisApp: App {
         self.statusItem?.button?.appearsDisabled = paused
     }
 
+    @MainActor
+    private func installStatusItemMouseHandler(for item: NSStatusItem) {
+        guard let button = item.button else { return }
+        if button.subviews.contains(where: { $0 is StatusItemMouseHandlerView }) { return }
+
+        let handler = StatusItemMouseHandlerView()
+        handler.translatesAutoresizingMaskIntoConstraints = false
+        handler.onLeftClick = { [self] in self.toggleWebChatPanel() }
+        handler.onRightClick = { WebChatManager.shared.closePanel() }
+
+        button.addSubview(handler)
+        NSLayoutConstraint.activate([
+            handler.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+            handler.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+            handler.topAnchor.constraint(equalTo: button.topAnchor),
+            handler.bottomAnchor.constraint(equalTo: button.bottomAnchor)
+        ])
+    }
+
+    @MainActor
+    private func toggleWebChatPanel() {
+        self.isMenuPresented = false
+        WebChatManager.shared.togglePanel(
+            sessionKey: WebChatManager.shared.preferredSessionKey(),
+            anchorProvider: { [self] in self.statusButtonScreenFrame() })
+    }
+
+    @MainActor
+    private func statusButtonScreenFrame() -> NSRect? {
+        guard let button = self.statusItem?.button, let window = button.window else { return nil }
+        return window.convertToScreen(button.frame)
+    }
+
     private var effectiveIconState: IconState {
         let selection = self.state.iconOverride
         if selection == .system {
@@ -65,6 +99,25 @@ struct ClawdisApp: App {
         case .idle: return .idle
         case let .overridden(kind): return .overridden(kind)
         }
+    }
+}
+
+/// Transparent overlay that intercepts clicks without stealing MenuBarExtra ownership.
+private final class StatusItemMouseHandlerView: NSView {
+    var onLeftClick: (() -> Void)?
+    var onRightClick: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        if let onLeftClick {
+            onLeftClick()
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        self.onRightClick?()
+        super.rightMouseDown(with: event) // forward to MenuBarExtra so the menu still opens
     }
 }
 

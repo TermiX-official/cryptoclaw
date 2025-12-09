@@ -6,8 +6,18 @@ import WebKit
 
 private let webChatLogger = Logger(subsystem: "com.steipete.clawdis", category: "WebChat")
 
+enum WebChatPresentation {
+    case window
+    case panel(anchorProvider: () -> NSRect?)
+
+    var isPanel: Bool {
+        if case .panel = self { return true }
+        return false
+    }
+}
+
 @MainActor
-final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
+final class WebChatWindowController: NSWindowController, WKNavigationDelegate, NSWindowDelegate {
     private let webView: WKWebView
     private let sessionKey: String
     private var tunnel: WebChatTunnel?
@@ -15,11 +25,13 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
     private let remotePort: Int
     private var reachabilityTask: Task<Void, Never>?
     private var tunnelRestartEnabled = false
+    let presentation: WebChatPresentation
 
-    init(sessionKey: String) {
+    init(sessionKey: String, presentation: WebChatPresentation = .window) {
         webChatLogger.debug("init WebChatWindowController sessionKey=\(sessionKey, privacy: .public)")
         self.sessionKey = sessionKey
         self.remotePort = AppStateStore.webChatPort
+        self.presentation = presentation
 
         let config = WKWebViewConfiguration()
         let contentController = WKUserContentController()
@@ -28,15 +40,10 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
 
         self.webView = WKWebView(frame: .zero, configuration: config)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 960, height: 720),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false)
-        window.title = "Clawd Web Chat"
-        window.contentView = self.webView
+        let window = Self.makeWindow(for: presentation, contentView: self.webView)
         super.init(window: window)
         self.webView.navigationDelegate = self
+        self.window?.delegate = self
 
         self.loadPlaceholder()
         Task { await self.bootstrap() }
@@ -48,6 +55,38 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
     @MainActor deinit {
         self.reachabilityTask?.cancel()
         self.stopTunnel(allowRestart: false)
+    }
+
+    private static func makeWindow(for presentation: WebChatPresentation, contentView: NSView) -> NSWindow {
+        switch presentation {
+        case .window:
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 960, height: 720),
+                styleMask: [.titled, .closable, .resizable, .miniaturizable],
+                backing: .buffered,
+                defer: false)
+            window.title = "Clawd Web Chat"
+            window.contentView = contentView
+            return window
+        case .panel:
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
+                styleMask: [.nonactivatingPanel, .borderless],
+                backing: .buffered,
+                defer: false)
+            panel.level = .statusBar
+            panel.hidesOnDeactivate = true
+            panel.hasShadow = true
+            panel.isMovable = false
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            panel.titleVisibility = .hidden
+            panel.titlebarAppearsTransparent = true
+            panel.backgroundColor = .windowBackgroundColor
+            panel.isOpaque = false
+            panel.contentView = contentView
+            panel.becomesKeyOnlyIfNeeded = true
+            return panel
+        }
     }
 
     private func loadPlaceholder() {
@@ -176,6 +215,29 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
         self.tunnel = nil
     }
 
+    func presentAnchoredPanel(anchorProvider: @escaping () -> NSRect?) {
+        guard case .panel = self.presentation, let window else { return }
+        self.repositionPanel(using: anchorProvider)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeFirstResponder(self.webView)
+    }
+
+    func closePanel() {
+        guard case .panel = self.presentation else { return }
+        self.window?.orderOut(nil)
+    }
+
+    private func repositionPanel(using anchorProvider: () -> NSRect?) {
+        guard let panel = self.window else { return }
+        guard let anchor = anchorProvider() else { return }
+
+        var frame = panel.frame
+        frame.origin.x = round(anchor.midX - frame.width / 2)
+        frame.origin.y = anchor.minY - frame.height - 6
+        panel.setFrame(frame, display: false)
+    }
+
     private func showError(_ text: String) {
         let html = """
         <html><body style='font-family:-apple-system;padding:24px;color:#c00'>Web chat failed to connect.<br><br>\(
@@ -201,6 +263,11 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         webChatLogger.error("webchat navigation failed: \(error.localizedDescription, privacy: .public)")
         self.showError(error.localizedDescription)
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        guard case .panel = self.presentation else { return }
+        self.closePanel()
     }
 }
 
@@ -244,10 +311,6 @@ final class WebChatManager {
     static let shared = WebChatManager()
     private var controller: WebChatWindowController?
 
-    func preferredSessionKey() -> String {
-        WorkActivityStore.shared.current?.sessionKey ?? "main"
-    }
-
     func show(sessionKey: String) {
         if self.controller == nil {
             self.controller = WebChatWindowController(sessionKey: sessionKey)
@@ -255,6 +318,48 @@ final class WebChatManager {
         self.controller?.showWindow(nil)
         self.controller?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func togglePanel(sessionKey: String, anchorProvider: @escaping () -> NSRect?) {
+        if let controller, controller.window?.isVisible == true, controller.presentation.isPanel {
+            controller.shutdown()
+            controller.closePanel()
+            self.controller = nil
+            return
+        }
+        if let existing = self.controller {
+            existing.shutdown()
+            existing.close()
+        }
+
+        let controller = WebChatWindowController(sessionKey: sessionKey, presentation: .panel(anchorProvider: anchorProvider))
+        self.controller = controller
+        controller.presentAnchoredPanel(anchorProvider: anchorProvider)
+    }
+
+    func closePanel() {
+        guard let controller, controller.presentation.isPanel else { return }
+        controller.shutdown()
+        controller.closePanel()
+        self.controller = nil
+    }
+
+    func preferredSessionKey() -> String {
+        // Prefer canonical main session; fall back to most recent.
+        let storePath = SessionLoader.defaultStorePath
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: storePath)),
+           let decoded = try? JSONDecoder().decode([String: SessionEntryRecord].self, from: data)
+        {
+            if decoded.keys.contains("main") { return "main" }
+
+            let sorted = decoded.sorted { a, b -> Bool in
+                let lhs = a.value.updatedAt ?? 0
+                let rhs = b.value.updatedAt ?? 0
+                return lhs > rhs
+            }
+            if let first = sorted.first { return first.key }
+        }
+        return "+1003"
     }
 
     func close() {

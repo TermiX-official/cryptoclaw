@@ -160,10 +160,10 @@ enum DebugActions {
     static func restartApp() {
         let url = Bundle.main.bundleURL
         let task = Process()
-        task.launchPath = "/usr/bin/open"
-        task.arguments = [url.path]
+        // Relaunch shortly after this instance exits so we get a true restart even in debug.
+        task.launchPath = "/bin/sh"
+        task.arguments = ["-c", "sleep 0.2; open -n \"$1\"", "_", url.path]
         try? task.run()
-        task.waitUntilExit()
         NSApp.terminate(nil)
     }
 

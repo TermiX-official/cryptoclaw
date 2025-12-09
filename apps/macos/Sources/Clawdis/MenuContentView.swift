@@ -15,6 +15,7 @@ struct MenuContent: View {
     @Environment(\.openSettings) private var openSettings
     @State private var availableMics: [AudioInputDevice] = []
     @State private var loadingMics = false
+    @State private var sessionMenu: [SessionRow] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -43,6 +44,49 @@ struct MenuContent: View {
             }
             if self.state.debugPaneEnabled {
                 Menu("Debug") {
+                    Menu("Sessions") {
+                        ForEach(self.sessionMenu) { row in
+                            Menu(row.key) {
+                                Menu("Thinking") {
+                                    ForEach(["low", "medium", "high", "default"], id: \.self) { level in
+                                        let normalized = level == "default" ? nil : level
+                                        Button {
+                                            Task {
+                                                try? await DebugActions.updateSession(
+                                                    key: row.key,
+                                                    thinking: normalized,
+                                                    verbose: row.verboseLevel)
+                                                await self.reloadSessionMenu()
+                                            }
+                                        } label: {
+                                            Label(level.capitalized, systemImage: row.thinkingLevel == normalized ? "checkmark" : "")
+                                        }
+                                    }
+                                }
+                                Menu("Verbose") {
+                                    ForEach(["on", "off", "default"], id: \.self) { level in
+                                        let normalized = level == "default" ? nil : level
+                                        Button {
+                                            Task {
+                                                try? await DebugActions.updateSession(
+                                                    key: row.key,
+                                                    thinking: row.thinkingLevel,
+                                                    verbose: normalized)
+                                                await self.reloadSessionMenu()
+                                            }
+                                        } label: {
+                                            Label(level.capitalized, systemImage: row.verboseLevel == normalized ? "checkmark" : "")
+                                        }
+                                    }
+                                }
+                                Button {
+                                    DebugActions.openSessionStoreInCode()
+                                } label: {
+                                    Label("Open Session Log", systemImage: "doc.text")
+                                }
+                            }
+                        }
+                    }
                     Button {
                         DebugActions.openConfigFolder()
                     } label: {
@@ -112,6 +156,9 @@ struct MenuContent: View {
             if self.state.swabbleEnabled {
                 await self.loadMicrophones(force: true)
             }
+        }
+        .task {
+            await self.reloadSessionMenu()
         }
         .task {
             VoicePushToTalkHotkey.shared.setEnabled(voiceWakeSupported && self.state.voicePushToTalkEnabled)
@@ -304,6 +351,11 @@ struct MenuContent: View {
             return "Auto-detect (\(host))"
         }
         return "System default"
+    }
+
+    @MainActor
+    private func reloadSessionMenu() async {
+        self.sessionMenu = await DebugActions.recentSessions()
     }
 
     @MainActor

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct SessionEntryRecord: Decodable {
+struct SessionEntryRecord: Codable {
     let sessionId: String?
     let updatedAt: Double?
     let systemSent: Bool?

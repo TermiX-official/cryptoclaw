@@ -73,6 +73,14 @@ final class GatewayProcessManager: ObservableObject {
     private let crashWindow: TimeInterval = 120 // seconds
 
     func setActive(_ active: Bool) {
+        // Remote mode should never spawn a local gateway; treat as stopped.
+        if CommandResolver.connectionModeIsRemote() {
+            self.desiredActive = false
+            self.stop()
+            self.status = .stopped
+            self.appendLog("[gateway] remote mode active; skipping local gateway\n")
+            return
+        }
         self.desiredActive = active
         self.refreshEnvironmentStatus()
         if active {
@@ -84,6 +92,11 @@ final class GatewayProcessManager: ObservableObject {
 
     func startIfNeeded() {
         guard self.execution == nil, self.desiredActive else { return }
+        // Do not spawn in remote mode (the gateway should run on the remote host).
+        guard !CommandResolver.connectionModeIsRemote() else {
+            self.status = .stopped
+            return
+        }
         if self.shouldGiveUpAfterCrashes() {
             self.status = .failed("Too many crashes; giving up")
             return

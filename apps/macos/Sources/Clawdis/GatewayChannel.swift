@@ -158,18 +158,19 @@ actor GatewayChannelActor {
         let osVersion = ProcessInfo.processInfo.operatingSystemVersion
         let platform = "macos \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
         let primaryLocale = Locale.preferredLanguages.first ?? Locale.current.identifier
+        let clientName = InstanceIdentity.displayName
 
         let hello = Hello(
             type: "hello",
             minprotocol: GATEWAY_PROTOCOL_VERSION,
             maxprotocol: GATEWAY_PROTOCOL_VERSION,
             client: [
-                "name": ClawdisProtocol.AnyCodable("clawdis-mac"),
+                "name": ClawdisProtocol.AnyCodable(clientName),
                 "version": ClawdisProtocol.AnyCodable(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"),
                 "platform": ClawdisProtocol.AnyCodable(platform),
                 "mode": ClawdisProtocol.AnyCodable("app"),
-                "instanceId": ClawdisProtocol.AnyCodable(Host.current().localizedName ?? UUID().uuidString),
+                "instanceId": ClawdisProtocol.AnyCodable(InstanceIdentity.instanceId),
             ],
             caps: [],
             auth: self.token.map { ["token": ClawdisProtocol.AnyCodable($0)] },

@@ -290,7 +290,7 @@ final class InstancesStore: ObservableObject {
 
     private func normalizePresence(_ entries: [PresenceEntry]) -> [InstanceInfo] {
         entries.map { entry -> InstanceInfo in
-            let key = entry.host ?? entry.ip ?? entry.text ?? entry.instanceid ?? "entry-\(entry.ts)"
+            let key = entry.instanceid ?? entry.host ?? entry.ip ?? entry.text ?? "entry-\(entry.ts)"
             return InstanceInfo(
                 id: key,
                 host: entry.host,

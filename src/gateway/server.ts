@@ -78,6 +78,15 @@ export type GatewayServer = {
   close: () => Promise<void>;
 };
 
+function isLoopbackAddress(ip: string | undefined): boolean {
+  if (!ip) return false;
+  if (ip === "127.0.0.1") return true;
+  if (ip.startsWith("127.")) return true;
+  if (ip === "::1") return true;
+  if (ip.startsWith("::ffff:127.")) return true;
+  return false;
+}
+
 let presenceVersion = 1;
 let healthVersion = 1;
 let seq = 0;
@@ -648,7 +657,7 @@ export async function startGatewayServer(
           }
           upsertPresence(presenceKey, {
             host: hello.client.name || os.hostname(),
-            ip: remoteAddr,
+            ip: isLoopbackAddress(remoteAddr) ? undefined : remoteAddr,
             version: hello.client.version,
             mode: hello.client.mode,
             instanceId: hello.client.instanceId,

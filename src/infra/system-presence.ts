@@ -16,6 +16,13 @@ const entries = new Map<string, SystemPresence>();
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_ENTRIES = 200;
 
+function normalizePresenceKey(key: string | undefined): string | undefined {
+  if (!key) return undefined;
+  const trimmed = key.trim();
+  if (!trimmed) return undefined;
+  return trimmed.toLowerCase();
+}
+
 function resolvePrimaryIPv4(): string | undefined {
   const nets = os.networkInterfaces();
   const prefer = ["en0", "eth0"];
@@ -116,9 +123,9 @@ export function updateSystemPresence(payload: SystemPresencePayload) {
   ensureSelfPresence();
   const parsed = parsePresence(payload.text);
   const key =
-    payload.instanceId?.toLowerCase() ||
-    parsed.instanceId?.toLowerCase() ||
-    parsed.host?.toLowerCase() ||
+    normalizePresenceKey(payload.instanceId) ||
+    normalizePresenceKey(parsed.instanceId) ||
+    normalizePresenceKey(parsed.host) ||
     parsed.ip ||
     parsed.text.slice(0, 64) ||
     os.hostname().toLowerCase();
@@ -144,7 +151,9 @@ export function updateSystemPresence(payload: SystemPresencePayload) {
 
 export function upsertPresence(key: string, presence: Partial<SystemPresence>) {
   ensureSelfPresence();
-  const existing = entries.get(key) ?? ({} as SystemPresence);
+  const normalizedKey =
+    normalizePresenceKey(key) ?? os.hostname().toLowerCase();
+  const existing = entries.get(normalizedKey) ?? ({} as SystemPresence);
   const merged: SystemPresence = {
     ...existing,
     ...presence,
@@ -156,7 +165,7 @@ export function upsertPresence(key: string, presence: Partial<SystemPresence>) {
         presence.mode ?? existing.mode ?? "unknown"
       }`,
   };
-  entries.set(key, merged);
+  entries.set(normalizedKey, merged);
 }
 
 export function listSystemPresence(): SystemPresence[] {

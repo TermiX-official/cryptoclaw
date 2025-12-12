@@ -10,7 +10,7 @@ final class PresenceReporter {
     private let logger = Logger(subsystem: "com.steipete.clawdis", category: "presence")
     private var task: Task<Void, Never>?
     private let interval: TimeInterval = 180 // a few minutes
-    private let instanceId: String = Host.current().localizedName ?? UUID().uuidString
+    private let instanceId: String = InstanceIdentity.instanceId
 
     func start() {
         guard self.task == nil else { return }
@@ -32,7 +32,7 @@ final class PresenceReporter {
     @Sendable
     private func push(reason: String) async {
         let mode = await MainActor.run { AppStateStore.shared.connectionMode.rawValue }
-        let host = Host.current().localizedName ?? "unknown-host"
+        let host = InstanceIdentity.displayName
         let ip = Self.primaryIPv4Address() ?? "ip-unknown"
         let version = Self.appVersionString()
         let lastInput = Self.lastInputSeconds()
@@ -59,7 +59,7 @@ final class PresenceReporter {
     }
 
     private static func composePresenceSummary(mode: String, reason: String) -> String {
-        let host = Host.current().localizedName ?? "unknown-host"
+        let host = InstanceIdentity.displayName
         let ip = Self.primaryIPv4Address() ?? "ip-unknown"
         let version = Self.appVersionString()
         let lastInput = Self.lastInputSeconds()

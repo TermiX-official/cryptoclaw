@@ -12,6 +12,7 @@ enum ControlRequestHandler {
         if paused {
             return Response(ok: false, message: "clawdis paused")
         }
+        let canvasEnabled = await MainActor.run { AppStateStore.canvasEnabled }
 
         switch request {
         case let .notify(title, body, sound, priority, delivery):
@@ -83,6 +84,54 @@ enum ControlRequestHandler {
             return rpcResult.ok
                 ? Response(ok: true, message: rpcResult.text ?? "sent")
                 : Response(ok: false, message: rpcResult.error ?? "failed to send")
+
+        case let .canvasShow(session, path):
+            guard canvasEnabled else {
+                return Response(ok: false, message: "Canvas disabled by user")
+            }
+            do {
+                let dir = try await MainActor.run { try CanvasManager.shared.show(sessionKey: session, path: path) }
+                return Response(ok: true, message: dir)
+            } catch {
+                return Response(ok: false, message: error.localizedDescription)
+            }
+
+        case let .canvasHide(session):
+            await MainActor.run { CanvasManager.shared.hide(sessionKey: session) }
+            return Response(ok: true)
+
+        case let .canvasGoto(session, path):
+            guard canvasEnabled else {
+                return Response(ok: false, message: "Canvas disabled by user")
+            }
+            do {
+                try await MainActor.run { try CanvasManager.shared.goto(sessionKey: session, path: path) }
+                return Response(ok: true)
+            } catch {
+                return Response(ok: false, message: error.localizedDescription)
+            }
+
+        case let .canvasEval(session, javaScript):
+            guard canvasEnabled else {
+                return Response(ok: false, message: "Canvas disabled by user")
+            }
+            do {
+                let result = try await CanvasManager.shared.eval(sessionKey: session, javaScript: javaScript)
+                return Response(ok: true, payload: Data(result.utf8))
+            } catch {
+                return Response(ok: false, message: error.localizedDescription)
+            }
+
+        case let .canvasSnapshot(session, outPath):
+            guard canvasEnabled else {
+                return Response(ok: false, message: "Canvas disabled by user")
+            }
+            do {
+                let path = try await CanvasManager.shared.snapshot(sessionKey: session, outPath: outPath)
+                return Response(ok: true, message: path)
+            } catch {
+                return Response(ok: false, message: error.localizedDescription)
+            }
         }
     }
 }

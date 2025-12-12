@@ -149,6 +149,10 @@ final class AppState: ObservableObject {
         didSet { self.ifNotPreview { UserDefaults.standard.set(self.webChatPort, forKey: webChatPortKey) } }
     }
 
+    @Published var canvasEnabled: Bool {
+        didSet { self.ifNotPreview { UserDefaults.standard.set(self.canvasEnabled, forKey: canvasEnabledKey) } }
+    }
+
     @Published var attachExistingGatewayOnly: Bool {
         didSet {
             self.ifNotPreview {
@@ -224,6 +228,7 @@ final class AppState: ObservableObject {
         self.webChatSwiftUIEnabled = UserDefaults.standard.object(forKey: webChatSwiftUIEnabledKey) as? Bool ?? false
         let storedPort = UserDefaults.standard.integer(forKey: webChatPortKey)
         self.webChatPort = storedPort > 0 ? storedPort : 18788
+        self.canvasEnabled = UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
         self.attachExistingGatewayOnly = UserDefaults.standard.bool(forKey: attachExistingGatewayOnlyKey)
 
         if !self.isPreview {
@@ -335,6 +340,7 @@ extension AppState {
         state.webChatEnabled = true
         state.webChatSwiftUIEnabled = false
         state.webChatPort = 18788
+        state.canvasEnabled = true
         state.remoteTarget = "user@example.com"
         state.remoteIdentity = "~/.ssh/id_ed25519"
         state.remoteProjectRoot = "~/Projects/clawdis"
@@ -365,6 +371,10 @@ enum AppStateStore {
     static var webChatPort: Int {
         let stored = UserDefaults.standard.integer(forKey: webChatPortKey)
         return stored > 0 ? stored : 18788
+    }
+
+    static var canvasEnabled: Bool {
+        UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
     }
 
     static var attachExistingGatewayOnly: Bool {

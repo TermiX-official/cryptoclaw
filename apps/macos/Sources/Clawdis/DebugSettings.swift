@@ -7,6 +7,7 @@ struct DebugSettings: View {
     @AppStorage(modelCatalogPathKey) private var modelCatalogPath: String = ModelCatalogLoader.defaultPath
     @AppStorage(modelCatalogReloadKey) private var modelCatalogReloadBump: Int = 0
     @AppStorage(iconOverrideKey) private var iconOverrideRaw: String = IconOverrideSelection.system.rawValue
+    @AppStorage(canvasEnabledKey) private var canvasEnabled: Bool = true
     @State private var modelsCount: Int?
     @State private var modelsLoading = false
     @State private var modelsError: String?
@@ -24,6 +25,13 @@ struct DebugSettings: View {
     @State private var pendingKill: DebugActions.PortListener?
     @AppStorage(webChatSwiftUIEnabledKey) private var webChatSwiftUIEnabled: Bool = false
     @AppStorage(attachExistingGatewayOnlyKey) private var attachExistingGatewayOnly: Bool = false
+
+    @State private var canvasSessionKey: String = "main"
+    @State private var canvasStatus: String?
+    @State private var canvasError: String?
+    @State private var canvasEvalJS: String = "document.title"
+    @State private var canvasEvalResult: String?
+    @State private var canvasSnapshotPath: String?
 
     var body: some View {
         ScrollView(.vertical) {
@@ -260,6 +268,84 @@ struct DebugSettings: View {
                 }
                 .buttonStyle(.bordered)
                 Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Canvas")
+                        .font(.caption.weight(.semibold))
+                    Toggle("Allow Canvas (agent)", isOn: self.$canvasEnabled)
+                        .toggleStyle(.switch)
+                        .help("When off, agent Canvas requests return “Canvas disabled by user”. Manual debug actions still work.")
+                    HStack(spacing: 8) {
+                        TextField("Session", text: self.$canvasSessionKey)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption.monospaced())
+                            .frame(width: 160)
+                        Button("Show panel") {
+                            Task { await self.canvasShow() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        Button("Hide panel") {
+                            CanvasManager.shared.hideAll()
+                            self.canvasStatus = "hidden"
+                            self.canvasError = nil
+                        }
+                        .buttonStyle(.bordered)
+                        Button("Write sample page") {
+                            Task { await self.canvasWriteSamplePage() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    HStack(spacing: 8) {
+                        TextField("Eval JS", text: self.$canvasEvalJS)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption.monospaced())
+                            .frame(maxWidth: 420)
+                        Button("Eval") {
+                            Task { await self.canvasEval() }
+                        }
+                        .buttonStyle(.bordered)
+                        Button("Snapshot") {
+                            Task { await self.canvasSnapshot() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    if let canvasStatus {
+                        Text(canvasStatus)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    if let canvasEvalResult {
+                        Text("eval → \(canvasEvalResult)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    }
+                    if let canvasSnapshotPath {
+                        HStack(spacing: 8) {
+                            Text("snapshot → \(canvasSnapshotPath)")
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .textSelection(.enabled)
+                            Button("Reveal") {
+                                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: canvasSnapshotPath)])
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    if let canvasError {
+                        Text(canvasError)
+                            .font(.caption2)
+                            .foregroundStyle(.red)
+                    } else {
+                        Text("Tip: the session directory is returned by “Show panel”.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
                 LabeledContent("Icon override") {
                     Picker("Icon override", selection: self.bindingOverride) {
                         ForEach(IconOverrideSelection.allCases) { option in
@@ -450,6 +536,117 @@ struct DebugSettings: View {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".clawdis")
             .appendingPathComponent("clawdis.json")
+    }
+
+    // MARK: - Canvas debug actions
+
+    @MainActor
+    private func canvasShow() async {
+        self.canvasError = nil
+        let session = self.canvasSessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let dir = try CanvasManager.shared.show(sessionKey: session.isEmpty ? "main" : session, path: "/")
+            self.canvasStatus = "dir: \(dir)"
+        } catch {
+            self.canvasError = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func canvasWriteSamplePage() async {
+        self.canvasError = nil
+        let session = self.canvasSessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let dir = try CanvasManager.shared.show(sessionKey: session.isEmpty ? "main" : session, path: "/")
+            let url = URL(fileURLWithPath: dir).appendingPathComponent("index.html", isDirectory: false)
+            let now = ISO8601DateFormatter().string(from: Date())
+            let html = """
+            <!doctype html>
+            <html>
+              <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Canvas Debug</title>
+                <style>
+                  :root { color-scheme: dark; }
+                  html,body { height:100%; margin:0; background:#0b1020; color:#e5e7eb; }
+                  body { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+                  .wrap { padding:16px; }
+                  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+                  .pill { padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
+                  button { background:#22c55e; color:#04110a; border:0; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
+                  button:active { transform: translateY(1px); }
+                  .panel { margin-top:14px; padding:14px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+                  .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:10px; margin-top:12px; }
+                  .box { grid-column: span 4; height:80px; border-radius:14px; background: linear-gradient(135deg, rgba(59,130,246,.35), rgba(168,85,247,.25)); border:1px solid rgba(255,255,255,.12); }
+                  .muted { color: rgba(229,231,235,.7); }
+                </style>
+              </head>
+              <body>
+                <div class="wrap">
+                  <div class="row">
+                    <div class="pill">Canvas Debug</div>
+                    <div class="pill muted">generated: \(now)</div>
+                    <div class="pill muted">userAgent: <span id="ua"></span></div>
+                    <button id="btn">Click me</button>
+                    <div class="pill">count: <span id="count">0</span></div>
+                  </div>
+                  <div class="panel">
+                    <div class="muted">This is a local file served by the WKURLSchemeHandler.</div>
+                    <div class="grid">
+                      <div class="box"></div><div class="box"></div><div class="box"></div>
+                      <div class="box"></div><div class="box"></div><div class="box"></div>
+                    </div>
+                  </div>
+                </div>
+                <script>
+                  document.getElementById('ua').textContent = navigator.userAgent;
+                  let n = 0;
+                  document.getElementById('btn').addEventListener('click', () => {
+                    n++;
+                    document.getElementById('count').textContent = String(n);
+                    document.title = 'Canvas Debug (' + n + ')';
+                  });
+                </script>
+              </body>
+            </html>
+            """
+            try html.write(to: url, atomically: true, encoding: .utf8)
+            self.canvasStatus = "wrote: \(url.path)"
+            try CanvasManager.shared.goto(sessionKey: session.isEmpty ? "main" : session, path: "/")
+        } catch {
+            self.canvasError = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func canvasEval() async {
+        self.canvasError = nil
+        self.canvasEvalResult = nil
+        do {
+            let session = self.canvasSessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            let result = try await CanvasManager.shared.eval(
+                sessionKey: session.isEmpty ? "main" : session,
+                javaScript: self.canvasEvalJS)
+            self.canvasEvalResult = result
+        } catch {
+            self.canvasError = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func canvasSnapshot() async {
+        self.canvasError = nil
+        self.canvasSnapshotPath = nil
+        do {
+            let session = self.canvasSessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            let path = try await CanvasManager.shared.snapshot(
+                sessionKey: session.isEmpty ? "main" : session,
+                outPath: nil)
+            self.canvasSnapshotPath = path
+        } catch {
+            self.canvasError = error.localizedDescription
+        }
     }
 }
 

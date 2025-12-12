@@ -163,6 +163,80 @@ struct ClawdisCLI {
             guard let message else { throw CLIError.help }
             return .agent(message: message, thinking: thinking, session: session, deliver: deliver, to: to)
 
+        case "canvas":
+            guard let sub = args.first else { throw CLIError.help }
+            args = Array(args.dropFirst())
+
+            switch sub {
+            case "show":
+                var session = "main"
+                var path: String?
+                while !args.isEmpty {
+                    let arg = args.removeFirst()
+                    switch arg {
+                    case "--session": session = args.popFirst() ?? session
+                    case "--path": path = args.popFirst()
+                    default: break
+                    }
+                }
+                return .canvasShow(session: session, path: path)
+
+            case "hide":
+                var session = "main"
+                while !args.isEmpty {
+                    let arg = args.removeFirst()
+                    switch arg {
+                    case "--session": session = args.popFirst() ?? session
+                    default: break
+                    }
+                }
+                return .canvasHide(session: session)
+
+            case "goto":
+                var session = "main"
+                var path: String?
+                while !args.isEmpty {
+                    let arg = args.removeFirst()
+                    switch arg {
+                    case "--session": session = args.popFirst() ?? session
+                    case "--path": path = args.popFirst()
+                    default: break
+                    }
+                }
+                guard let path else { throw CLIError.help }
+                return .canvasGoto(session: session, path: path)
+
+            case "eval":
+                var session = "main"
+                var js: String?
+                while !args.isEmpty {
+                    let arg = args.removeFirst()
+                    switch arg {
+                    case "--session": session = args.popFirst() ?? session
+                    case "--js": js = args.popFirst()
+                    default: break
+                    }
+                }
+                guard let js else { throw CLIError.help }
+                return .canvasEval(session: session, javaScript: js)
+
+            case "snapshot":
+                var session = "main"
+                var outPath: String?
+                while !args.isEmpty {
+                    let arg = args.removeFirst()
+                    switch arg {
+                    case "--session": session = args.popFirst() ?? session
+                    case "--out": outPath = args.popFirst()
+                    default: break
+                    }
+                }
+                return .canvasSnapshot(session: session, outPath: outPath)
+
+            default:
+                throw CLIError.help
+            }
+
         default:
             throw CLIError.help
         }
@@ -185,6 +259,11 @@ struct ClawdisCLI {
           clawdis-mac rpc-status
           clawdis-mac agent --message <text> [--thinking <low|default|high>]
             [--session <key>] [--deliver] [--to <E.164>]
+          clawdis-mac canvas show [--session <key>] [--path </...>]
+          clawdis-mac canvas hide [--session <key>]
+          clawdis-mac canvas goto --path </...> [--session <key>]
+          clawdis-mac canvas eval --js <code> [--session <key>]
+          clawdis-mac canvas snapshot [--out <path>] [--session <key>]
           clawdis-mac --help
 
         Returns JSON to stdout:

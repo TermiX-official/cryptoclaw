@@ -49,6 +49,11 @@ public enum Request: Sendable {
     case status
     case agent(message: String, thinking: String?, session: String?, deliver: Bool, to: String?)
     case rpcStatus
+    case canvasShow(session: String, path: String?)
+    case canvasHide(session: String)
+    case canvasGoto(session: String, path: String)
+    case canvasEval(session: String, javaScript: String)
+    case canvasSnapshot(session: String, outPath: String?)
 }
 
 // MARK: - Responses
@@ -77,6 +82,9 @@ extension Request: Codable {
         case command, cwd, env, timeoutSec, needsScreenRecording
         case message, thinking, session, deliver, to
         case rpcStatus
+        case path
+        case javaScript
+        case outPath
     }
 
     private enum Kind: String, Codable {
@@ -87,6 +95,11 @@ extension Request: Codable {
         case status
         case agent
         case rpcStatus
+        case canvasShow
+        case canvasHide
+        case canvasGoto
+        case canvasEval
+        case canvasSnapshot
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -132,6 +145,30 @@ extension Request: Codable {
 
         case .rpcStatus:
             try container.encode(Kind.rpcStatus, forKey: .type)
+
+        case let .canvasShow(session, path):
+            try container.encode(Kind.canvasShow, forKey: .type)
+            try container.encode(session, forKey: .session)
+            try container.encodeIfPresent(path, forKey: .path)
+
+        case let .canvasHide(session):
+            try container.encode(Kind.canvasHide, forKey: .type)
+            try container.encode(session, forKey: .session)
+
+        case let .canvasGoto(session, path):
+            try container.encode(Kind.canvasGoto, forKey: .type)
+            try container.encode(session, forKey: .session)
+            try container.encode(path, forKey: .path)
+
+        case let .canvasEval(session, javaScript):
+            try container.encode(Kind.canvasEval, forKey: .type)
+            try container.encode(session, forKey: .session)
+            try container.encode(javaScript, forKey: .javaScript)
+
+        case let .canvasSnapshot(session, outPath):
+            try container.encode(Kind.canvasSnapshot, forKey: .type)
+            try container.encode(session, forKey: .session)
+            try container.encodeIfPresent(outPath, forKey: .outPath)
         }
     }
 
@@ -179,6 +216,30 @@ extension Request: Codable {
 
         case .rpcStatus:
             self = .rpcStatus
+
+        case .canvasShow:
+            let session = try container.decode(String.self, forKey: .session)
+            let path = try container.decodeIfPresent(String.self, forKey: .path)
+            self = .canvasShow(session: session, path: path)
+
+        case .canvasHide:
+            let session = try container.decode(String.self, forKey: .session)
+            self = .canvasHide(session: session)
+
+        case .canvasGoto:
+            let session = try container.decode(String.self, forKey: .session)
+            let path = try container.decode(String.self, forKey: .path)
+            self = .canvasGoto(session: session, path: path)
+
+        case .canvasEval:
+            let session = try container.decode(String.self, forKey: .session)
+            let javaScript = try container.decode(String.self, forKey: .javaScript)
+            self = .canvasEval(session: session, javaScript: javaScript)
+
+        case .canvasSnapshot:
+            let session = try container.decode(String.self, forKey: .session)
+            let outPath = try container.decodeIfPresent(String.self, forKey: .outPath)
+            self = .canvasSnapshot(session: session, outPath: outPath)
         }
     }
 }

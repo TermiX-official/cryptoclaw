@@ -37,6 +37,14 @@ struct MenuContent: View {
                     WebChatManager.shared.show(sessionKey: WebChatManager.shared.preferredSessionKey())
                 }
             }
+            Toggle(isOn: Binding(get: { self.state.canvasEnabled }, set: { self.state.canvasEnabled = $0 })) {
+                Text("Allow Canvas")
+            }
+            .onChange(of: self.state.canvasEnabled) { _, enabled in
+                if !enabled {
+                    CanvasManager.shared.hideAll()
+                }
+            }
             Divider()
             Button("Settings…") { self.open(tab: .general) }
                 .keyboardShortcut(",", modifiers: [.command])

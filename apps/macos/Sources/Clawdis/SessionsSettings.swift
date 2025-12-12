@@ -108,54 +108,81 @@ struct SessionsSettings: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, 6)
             } else {
-                Table(self.rows) {
-                    TableColumn("Key") { row in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(row.key)
-                                .font(.body.weight(.semibold))
-                            HStack(spacing: 6) {
-                                if row.kind != .direct {
-                                    SessionKindBadge(kind: row.kind)
-                                }
-                                if !row.flagLabels.isEmpty {
-                                    ForEach(row.flagLabels, id: \.self) { flag in
-                                        Badge(text: flag)
-                                    }
-                                }
-                            }
-                        }
+                List(self.rows) { row in
+                    self.sessionRow(row)
+                }
+                .listStyle(.inset)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sessionRow(_ row: SessionRow) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(row.key)
+                    .font(.subheadline.bold())
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                Text(row.ageText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 6) {
+                if row.kind != .direct {
+                    SessionKindBadge(kind: row.kind)
+                }
+                if !row.flagLabels.isEmpty {
+                    ForEach(row.flagLabels, id: \.self) { flag in
+                        Badge(text: flag)
                     }
-                    .width(220)
+                }
+            }
 
-                    TableColumn("Updated", value: \.ageText)
-                        .width(70)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("Context")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(row.tokens.contextSummaryShort)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                ContextUsageBar(usedTokens: row.tokens.total, contextTokens: row.tokens.contextTokens)
+            }
 
-                    TableColumn("Tokens") { row in
-                        Text(row.tokens.summary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .width(170)
-
-                    TableColumn("Model") { row in
-                        Text(row.model ?? "—")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .width(120)
-
-                    TableColumn("Session ID") { row in
-                        Text(row.sessionId ?? "—")
-                            .font(.caption.monospaced())
+            HStack(spacing: 10) {
+                if let model = row.model, !model.isEmpty {
+                    self.label(icon: "cpu", text: model)
+                }
+                self.label(icon: "arrow.down.left", text: "\(row.tokens.input) in")
+                self.label(icon: "arrow.up.right", text: "\(row.tokens.output) out")
+                if let sessionId = row.sessionId, !sessionId.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "number").foregroundStyle(.secondary).font(.caption)
+                        Text(sessionId)
+                            .font(.footnote.monospaced())
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
+                    .help(sessionId)
                 }
-                .tableStyle(.inset(alternatesRowBackgrounds: true))
-                .frame(maxHeight: .infinity, alignment: .top)
             }
         }
+        .padding(.vertical, 6)
+    }
+
+    private func label(icon: String, text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon).foregroundStyle(.secondary).font(.caption)
+            Text(text)
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
     }
 
     private func refresh() async {

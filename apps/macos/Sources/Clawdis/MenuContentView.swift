@@ -16,6 +16,7 @@ struct MenuContent: View {
     @State private var availableMics: [AudioInputDevice] = []
     @State private var loadingMics = false
     @State private var sessionMenu: [SessionRow] = []
+    @State private var mainSessionRow: SessionRow?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -24,6 +25,7 @@ struct MenuContent: View {
                 Text(label)
             }
             self.statusRow
+            self.mainSessionContextRow
             Toggle(isOn: self.heartbeatsBinding) { Text("Send Heartbeats") }
             self.heartbeatStatusRow
             Toggle(isOn: self.voiceWakeBinding) { Text("Voice Wake") }
@@ -182,6 +184,7 @@ struct MenuContent: View {
         }
         .task {
             await self.reloadSessionMenu()
+            await self.reloadMainSessionRow()
         }
         .task {
             VoicePushToTalkHotkey.shared.setEnabled(voiceWakeSupported && self.state.voicePushToTalkEnabled)
@@ -245,6 +248,38 @@ struct MenuContent: View {
             })
             .buttonStyle(.plain)
             .disabled(true)
+    }
+
+    @ViewBuilder
+    private var mainSessionContextRow: some View {
+        if let row = self.mainSessionRow {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("Context (\(row.key))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(row.tokens.contextSummaryShort)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                ContextUsageBar(
+                    usedTokens: row.tokens.total,
+                    contextTokens: row.tokens.contextTokens)
+            }
+            .padding(.vertical, 2)
+        } else {
+            HStack(spacing: 8) {
+                Text("Context (main)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("—")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 2)
+        }
     }
 
     private var heartbeatStatusRow: some View {
@@ -396,5 +431,23 @@ struct MenuContent: View {
         let uid: String
         let name: String
         var id: String { self.uid }
+    }
+
+    private func reloadMainSessionRow() async {
+        let hints = SessionLoader.configHints()
+        let store = SessionLoader.resolveStorePath(override: hints.storePath)
+        let defaults = SessionDefaults(
+            model: hints.model ?? SessionLoader.fallbackModel,
+            contextTokens: hints.contextTokens ?? SessionLoader.fallbackContextTokens)
+
+        guard let rows = try? await SessionLoader.loadRows(at: store, defaults: defaults) else {
+            self.mainSessionRow = nil
+            return
+        }
+        let preferred = WebChatManager.shared.preferredSessionKey()
+        self.mainSessionRow =
+            rows.first(where: { $0.key == "main" }) ??
+            rows.first(where: { $0.key == preferred }) ??
+            rows.first
     }
 }

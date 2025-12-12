@@ -21,6 +21,10 @@ struct SessionTokenStats {
     let total: Int
     let contextTokens: Int
 
+    var contextSummaryShort: String {
+        "\(Self.formatKTokens(self.total))/\(Self.formatKTokens(self.contextTokens))"
+    }
+
     var percentUsed: Int? {
         guard self.contextTokens > 0, self.total > 0 else { return nil }
         return min(100, Int(round((Double(self.total) / Double(self.contextTokens)) * 100)))
@@ -33,6 +37,13 @@ struct SessionTokenStats {
             text += " (\(percentUsed)% of \(self.contextTokens))"
         }
         return text
+    }
+
+    static func formatKTokens(_ value: Int) -> String {
+        if value < 1000 { return "\(value)" }
+        let thousands = Double(value) / 1000
+        let decimals = value >= 10_000 ? 0 : 1
+        return String(format: "%.\(decimals)fk", thousands)
     }
 }
 

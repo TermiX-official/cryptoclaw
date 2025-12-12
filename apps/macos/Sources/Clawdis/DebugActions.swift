@@ -75,9 +75,32 @@ enum DebugActions {
 
     static func restartGateway() {
         Task { @MainActor in
-            GatewayProcessManager.shared.stop()
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            GatewayProcessManager.shared.setActive(true)
+            switch AppStateStore.shared.connectionMode {
+            case .local:
+                GatewayProcessManager.shared.stop()
+                // Kick the control channel + health check so the UI recovers immediately.
+                await GatewayConnection.shared.shutdown()
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                GatewayProcessManager.shared.setActive(true)
+                Task { try? await ControlChannel.shared.configure(mode: .local) }
+                Task { await HealthStore.shared.refresh(onDemand: true) }
+
+            case .remote:
+                // In remote mode, there is no local gateway to restart. "Restart Gateway" should
+                // reset the SSH control tunnel + reconnect so the menu recovers.
+                await RemoteTunnelManager.shared.stopAll()
+                await GatewayConnection.shared.shutdown()
+                do {
+                    _ = try await RemoteTunnelManager.shared.ensureControlTunnel()
+                    let settings = CommandResolver.connectionSettings()
+                    try await ControlChannel.shared.configure(mode: .remote(
+                        target: settings.target,
+                        identity: settings.identity))
+                } catch {
+                    // ControlChannel will surface a degraded state; also refresh health to update the menu text.
+                    Task { await HealthStore.shared.refresh(onDemand: true) }
+                }
+            }
         }
     }
 

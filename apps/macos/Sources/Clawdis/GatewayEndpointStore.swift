@@ -94,8 +94,24 @@ actor GatewayEndpointStore {
         switch self.state {
         case let .ready(_, url, token):
             return (url, token)
-        case let .unavailable(_, reason):
-            throw NSError(domain: "GatewayEndpoint", code: 1, userInfo: [NSLocalizedDescriptionKey: reason])
+        case let .unavailable(mode, reason):
+            guard mode == .remote else {
+                throw NSError(domain: "GatewayEndpoint", code: 1, userInfo: [NSLocalizedDescriptionKey: reason])
+            }
+
+            // Auto-recover for remote mode: if the SSH control tunnel died (or hasn't been created yet),
+            // recreate it on demand so callers can recover without a manual reconnect.
+            do {
+                let forwarded = try await self.deps.ensureRemoteTunnel()
+                let token = self.deps.token()
+                let url = URL(string: "ws://127.0.0.1:\(Int(forwarded))")!
+                self.setState(.ready(mode: .remote, url: url, token: token))
+                return (url, token)
+            } catch {
+                let msg = "\(reason) (\(error.localizedDescription))"
+                self.setState(.unavailable(mode: .remote, reason: msg))
+                throw NSError(domain: "GatewayEndpoint", code: 1, userInfo: [NSLocalizedDescriptionKey: msg])
+            }
         }
     }
 
@@ -111,10 +127,13 @@ actor GatewayEndpointStore {
         }
         switch next {
         case let .ready(mode, url, _):
-            self.logger.debug("resolved endpoint mode=\(String(describing: mode), privacy: .public) url=\(url.absoluteString, privacy: .public)")
+            self.logger
+                .debug(
+                    "resolved endpoint mode=\(String(describing: mode), privacy: .public) url=\(url.absoluteString, privacy: .public)")
         case let .unavailable(mode, reason):
-            self.logger.debug("endpoint unavailable mode=\(String(describing: mode), privacy: .public) reason=\(reason, privacy: .public)")
+            self.logger
+                .debug(
+                    "endpoint unavailable mode=\(String(describing: mode), privacy: .public) reason=\(reason, privacy: .public)")
         }
     }
 }
-

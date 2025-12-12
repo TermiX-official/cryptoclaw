@@ -12,6 +12,12 @@ private enum WebChatLayout {
     static let anchorPadding: CGFloat = 8
 }
 
+/// A borderless panel that can still accept key focus (needed for typing into the embedded WebChat).
+final class WebChatPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 enum WebChatPresentation {
     case window
     case panel(anchorProvider: () -> NSRect?)
@@ -92,9 +98,9 @@ final class WebChatWindowController: NSWindowController, WKNavigationDelegate, N
             window.minSize = NSSize(width: 880, height: 680)
             return window
         case .panel:
-            let panel = NSPanel(
+            let panel = WebChatPanel(
                 contentRect: NSRect(origin: .zero, size: WebChatLayout.panelSize),
-                styleMask: [.nonactivatingPanel, .borderless],
+                styleMask: [.borderless],
                 backing: .buffered,
                 defer: false)
             panel.level = .statusBar

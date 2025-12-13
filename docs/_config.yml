@@ -1,0 +1,39 @@
+title: "CLAWDIS Docs"
+description: "A WhatsApp + Telegram gateway for AI agents (Pi)."
+markdown: kramdown
+highlighter: rouge
+
+# Keep GitHub Pages' default page URLs (e.g. /gateway.html). Many docs links
+# are written as relative *.md links and are rewritten during the build.
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+nav:
+  - title: "Home"
+    url: "/"
+  - title: "Gateway"
+    url: "/gateway.html"
+  - title: "Configuration"
+    url: "/configuration.html"
+  - title: "WebChat"
+    url: "/webchat.html"
+  - title: "Telegram"
+    url: "/telegram.html"
+  - title: "Troubleshooting"
+    url: "/troubleshooting.html"
+
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge

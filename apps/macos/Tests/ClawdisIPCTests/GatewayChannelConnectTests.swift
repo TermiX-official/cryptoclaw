@@ -53,12 +53,16 @@ import Testing
         }
 
         func receive() async throws -> URLSessionWebSocketTask.Message {
-            let (delayMs, msg): (Int, URLSessionWebSocketTask.Message) = switch self.response {
-            case let .helloOk(delayMs):
+            let delayMs: Int
+            let msg: URLSessionWebSocketTask.Message
+            switch self.response {
+            case let .helloOk(ms):
+                delayMs = ms
                 let id = self.connectRequestID.withLock { $0 } ?? "connect"
-                (delayMs, .data(Self.connectOkData(id: id)))
-            case let .invalid(delayMs):
-                (delayMs, .string("not json"))
+                msg = .data(Self.connectOkData(id: id))
+            case let .invalid(ms):
+                delayMs = ms
+                msg = .string("not json")
             }
             try await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
             return msg

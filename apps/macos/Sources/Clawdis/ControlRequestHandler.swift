@@ -8,11 +8,16 @@ enum ControlRequestHandler {
         notifier: NotificationManager = NotificationManager(),
         logger: Logger = Logger(subsystem: "com.steipete.clawdis", category: "control")) async throws -> Response
     {
-        let paused = await MainActor.run { AppStateStore.isPausedFlag }
+        // Keep `status` responsive even if the main actor is busy.
+        let paused = UserDefaults.standard.bool(forKey: pauseDefaultsKey)
         if paused {
-            return Response(ok: false, message: "clawdis paused")
+            switch request {
+            case .status:
+                break
+            default:
+                return Response(ok: false, message: "clawdis paused")
+            }
         }
-        let canvasEnabled = await MainActor.run { AppStateStore.canvasEnabled }
 
         switch request {
         case let .notify(title, body, sound, priority, delivery):
@@ -47,7 +52,7 @@ enum ControlRequestHandler {
             return Response(ok: ok, message: msg)
 
         case .status:
-            return Response(ok: true, message: "ready")
+            return paused ? Response(ok: false, message: "clawdis paused") : Response(ok: true, message: "ready")
 
         case .rpcStatus:
             let result = await AgentRPC.shared.status()
@@ -86,6 +91,7 @@ enum ControlRequestHandler {
                 : Response(ok: false, message: rpcResult.error ?? "failed to send")
 
         case let .canvasShow(session, path, placement):
+            let canvasEnabled = UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
             guard canvasEnabled else {
                 return Response(ok: false, message: "Canvas disabled by user")
             }
@@ -104,6 +110,7 @@ enum ControlRequestHandler {
             return Response(ok: true)
 
         case let .canvasGoto(session, path, placement):
+            let canvasEnabled = UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
             guard canvasEnabled else {
                 return Response(ok: false, message: "Canvas disabled by user")
             }
@@ -118,6 +125,7 @@ enum ControlRequestHandler {
             }
 
         case let .canvasEval(session, javaScript):
+            let canvasEnabled = UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
             guard canvasEnabled else {
                 return Response(ok: false, message: "Canvas disabled by user")
             }
@@ -129,6 +137,7 @@ enum ControlRequestHandler {
             }
 
         case let .canvasSnapshot(session, outPath):
+            let canvasEnabled = UserDefaults.standard.object(forKey: canvasEnabledKey) as? Bool ?? true
             guard canvasEnabled else {
                 return Response(ok: false, message: "Canvas disabled by user")
             }

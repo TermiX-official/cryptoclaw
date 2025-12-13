@@ -3,129 +3,133 @@ summary: "All configuration options for ~/.clawdis/clawdis.json with examples"
 read_when:
   - Adding or modifying config fields
 ---
+<!-- {% raw %} -->
 # Configuration 🔧
 
-CLAWDIS uses a JSON configuration file at `~/.clawdis/clawdis.json`.
+CLAWDIS reads an optional **JSON5** config from `~/.clawdis/clawdis.json` (comments + trailing commas allowed).
 
-## Minimal Config
+If the file is missing, CLAWDIS uses safe-ish defaults (bundled Pi in RPC mode + per-sender sessions). You usually only need a config to:
+- restrict who can trigger the bot (`inbound.allowFrom`)
+- tune group mention behavior (`inbound.groupChat`)
+- customize the agent command (`inbound.reply.command`)
 
-```json
+## Minimal config (recommended starting point)
+
+```json5
 {
-  "inbound": {
-    "allowFrom": ["+15555550123"],
-    "reply": {
-      "mode": "command",
-      "command": ["tau", "{{Body}}"]
-    }
+  inbound: {
+    allowFrom: ["+15555550123"]
   }
 }
 ```
 
-## Full Configuration
-
-```json
-{
-  "logging": {
-    "level": "info",
-    "file": "/tmp/clawdis/clawdis.log"
-  },
-  "inbound": {
-    "allowFrom": [
-      "+15555550123",
-      "+447700900123"
-    ],
-    "groupChat": {
-      "requireMention": true,
-      "mentionPatterns": [
-        "@clawd",
-        "clawdbot",
-        "clawd"
-      ],
-      "historyLimit": 50
-    },
-    "timestampPrefix": "Europe/London",
-    "reply": {
-      "mode": "command",
-      "agent": {
-        "kind": "pi",
-        "format": "json",
-        "model": "claude-opus-4-5",
-        "contextTokens": 200000
-      },
-      "cwd": "/Users/you/clawd",
-      "command": [
-        "tau",
-        "--mode", "json",
-        "{{BodyStripped}}"
-      ],
-      "session": {
-        "scope": "per-sender",
-        "idleMinutes": 10080,
-        "sessionIntro": "You are Clawd. Be a good lobster."
-      },
-      "heartbeatMinutes": 10,
-      "heartbeatBody": "HEARTBEAT",
-      "timeoutSeconds": 1800
-    }
-  }
-}
-```
-
-## Configuration Options
+## Common options
 
 ### `logging`
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `level` | string | `"info"` | Log level: trace, debug, info, warn, error |
-| `file` | string | `/tmp/clawdis/clawdis.log` | Log file path |
+- Default log file: `/tmp/clawdis/clawdis-YYYY-MM-DD.log`
+- If you want a stable path, set `logging.file` to `/tmp/clawdis/clawdis.log`.
+
+```json5
+{
+  logging: { level: "info", file: "/tmp/clawdis/clawdis.log" }
+}
+```
 
 ### `inbound.allowFrom`
 
-Array of E.164 phone numbers allowed to trigger the AI. Use `["*"]` to allow everyone (dangerous!).
+Allowlist of E.164 phone numbers that may trigger auto-replies.
 
-```json
-"allowFrom": ["+15555550123", "+447700900123"]
+```json5
+{
+  inbound: { allowFrom: ["+15555550123", "+447700900123"] }
+}
 ```
 
 ### `inbound.groupChat`
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `requireMention` | boolean | `true` | Only respond when mentioned |
-| `mentionPatterns` | string[] | `[]` | Regex patterns that trigger response |
-| `historyLimit` | number | `50` | Max messages to include as context |
+Group messages default to **require mention** (either metadata mention or regex patterns).
+
+```json5
+{
+  inbound: {
+    groupChat: {
+      requireMention: true,
+      mentionPatterns: ["@clawd", "clawdbot", "clawd"],
+      historyLimit: 50
+    }
+  }
+}
+```
 
 ### `inbound.reply`
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `mode` | string | `"command"` for CLI agents |
-| `command` | string[] | Command and args. Use `{{Body}}` for message |
-| `cwd` | string | Working directory for the agent |
-| `timeoutSeconds` | number | Max time for agent to respond |
-| `heartbeatMinutes` | number | Interval for heartbeat pings |
-| `heartbeatBody` | string | Message sent on heartbeat |
-| `agent.kind` | string | Only `"pi"` is supported |
-| `agent.model` | string | Optional model name to annotate sessions (defaults to `claude-opus-4-5`) |
-| `agent.contextTokens` | number | Optional context window size; used for session token % reporting (defaults to ~200,000 for Opus 4.5) |
+Controls how CLAWDIS produces replies. Two modes:
+- `mode: "text"` — static reply from config (useful for testing)
+- `mode: "command"` — run a local command and use its stdout as the reply (typical)
 
-> Quick start: If you omit `inbound.reply`, CLAWDIS falls back to the bundled `@mariozechner/pi-coding-agent` with `--mode rpc`, per-sender sessions, and a 200k-token window. No extra install or config needed to get a reply.
+If you **omit** `inbound.reply`, CLAWDIS defaults to the bundled Pi binary in **RPC** mode:
+- command: `pi --mode rpc {{BodyStripped}}`
+- per-sender sessions + `/new` resets
 
-### `cron`
+Example command-mode config:
 
-Cron is a Gateway-owned scheduler for wakeups and scheduled jobs. See `docs/cron.md` for the full RFC and CLI examples.
+```json5
+{
+  inbound: {
+    reply: {
+      mode: "command",
+      // Example: run the bundled agent (Pi) in RPC mode
+      command: ["pi", "--mode", "rpc", "{{BodyStripped}}"],
+      timeoutSeconds: 1800,
+      heartbeatMinutes: 30,
+      // Optional: override the command used for heartbeat runs
+      heartbeatCommand: ["pi", "--mode", "rpc", "HEARTBEAT /think:high"],
+      session: {
+        scope: "per-sender",
+        idleMinutes: 10080,
+        resetTriggers: ["/new"],
+        sessionIntro: "You are Clawd. Be a good lobster."
+      },
+      agent: {
+        kind: "pi",
+        format: "json",
+        // Only used for status/usage labeling (Pi may report its own model)
+        model: "claude-opus-4-5",
+        contextTokens: 200000
+      }
+    }
+  }
+}
+```
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `enabled` | boolean | `true` | Enable the cron scheduler inside the Gateway (set to `false` to disable) |
-| `store` | string | `~/.clawdis/cron/jobs.json` | Override the cron job store path |
-| `maxConcurrentRuns` | number | `1` | Max concurrent isolated cron runs (command-queue lane `"cron"`) |
+## Template variables
 
-Run history:
-- The Gateway appends a JSONL run ledger on each job completion (see `docs/cron.md`). Location is derived from `cron.store` / the resolved store path.
+Template placeholders are expanded in `inbound.reply.command`, `sessionIntro`, `bodyPrefix`, and other templated strings.
 
-Example:
+| Variable | Description |
+|----------|-------------|
+| `{{Body}}` | Full inbound message body |
+| `{{BodyStripped}}` | Body with group mentions stripped (best default for agents) |
+| `{{From}}` | Sender identifier (E.164 for WhatsApp; may differ per surface) |
+| `{{To}}` | Destination identifier |
+| `{{MessageSid}}` | Provider message id (when available) |
+| `{{SessionId}}` | Current session UUID |
+| `{{IsNewSession}}` | `"true"` when a new session was created |
+| `{{MediaUrl}}` | Inbound media pseudo-URL (if present) |
+| `{{MediaPath}}` | Local media path (if downloaded) |
+| `{{MediaType}}` | Media type (image/audio/document/…) |
+| `{{Transcript}}` | Audio transcript (when enabled) |
+| `{{ChatType}}` | `"direct"` or `"group"` |
+| `{{GroupSubject}}` | Group subject (best effort) |
+| `{{GroupMembers}}` | Group members preview (best effort) |
+| `{{SenderName}}` | Sender display name (best effort) |
+| `{{SenderE164}}` | Sender phone number (best effort) |
+| `{{Surface}}` | Surface hint (whatsapp|telegram|webchat|…) |
+
+## Cron (Gateway scheduler)
+
+Cron is a Gateway-owned scheduler for wakeups and scheduled jobs. See [Cron + wakeups](./cron.md) for the full RFC and CLI examples.
 
 ```json5
 {
@@ -136,59 +140,7 @@ Example:
 }
 ```
 
-### Template Variables
-
-Use these in your command:
-
-| Variable | Description |
-|----------|-------------|
-| `{{Body}}` | Full message body |
-| `{{BodyStripped}}` | Message without mention |
-| `{{From}}` | Sender phone number |
-| `{{SessionId}}` | Current session UUID |
-
-## Session Configuration
-
-```json
-"session": {
-  "scope": "per-sender",
-  "resetTriggers": ["/new"],
-  "idleMinutes": 10080,
-  "sessionIntro": "You are Clawd.",
-  "sessionArgNew": ["--session", "{{SessionId}}.jsonl"],
-  "sessionArgResume": ["--session", "{{SessionId}}.jsonl", "--continue"]
-}
-```
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `scope` | string | `"per-sender"` or `"global"` |
-| `resetTriggers` | string[] | Messages that start a new session |
-| `idleMinutes` | number | Session timeout |
-| `sessionIntro` | string | System prompt for new sessions |
-
-## Environment Variables
-
-Some settings can also be set via environment:
-
-```bash
-export CLAWDIS_LOG_LEVEL=debug
-export CLAWDIS_CONFIG_PATH=~/.clawdis/clawdis.json
-```
-
-## Migrating from Clawdis
-
-If you're upgrading from the old `clawdis` name:
-
-```bash
-# Move config
-mv ~/.clawdis ~/.clawdis
-mv ~/.clawdis/clawdis.json ~/.clawdis/clawdis.json
-
-# Update any hardcoded paths in your config
-sed -i '' 's/clawdis/clawdis/g' ~/.clawdis/clawdis.json
-```
-
 ---
 
 *Next: [Agent Integration](./agents.md)* 🦞
+<!-- {% endraw %} -->

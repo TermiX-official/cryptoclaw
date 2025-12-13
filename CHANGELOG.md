@@ -6,7 +6,7 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 
 ### Breaking
 - Renamed to **Clawdis**: defaults now live under `~/.clawdis` (sessions in `~/.clawdis/sessions/`, IPC at `~/.clawdis/clawdis.sock`, logs in `/tmp/clawdis`). Launchd labels and config filenames follow the new name; legacy stores are copied forward on first run.
-- Pi/Tau only: `inbound.reply.agent.kind` accepts only `"pi"`, and the agent CLI/CLI flags for Claude/Codex/Gemini were removed. The Pi CLI runs in RPC mode with a persistent worker.
+- Pi only: `inbound.reply.agent.kind` accepts only `"pi"`, and the agent CLI/CLI flags for Claude/Codex/Gemini were removed. The Pi CLI runs in RPC mode with a persistent worker.
 - WhatsApp Web is the only transport; Twilio support and related CLI flags/tests were removed.
 - Direct chats now collapse into a single `main` session by default (no config needed); groups stay isolated as `group:<jid>`.
 - Gateway background helpers were removed; run `clawdis gateway --verbose` under your supervisor of choice if you want it detached.
@@ -27,7 +27,7 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 - New `clawdis agent` command plus a persistent Pi RPC worker (auto-started) enables direct agent chats; `clawdis status` renders a colored session/recipient table.
 - `clawdis health` probes WhatsApp link status, connect latency, heartbeat interval, session-store recency, and IPC socket presence (JSON mode for monitors).
 - Added `--help`/`--version` flags; login/logout accept `--provider` (WhatsApp default). Console output is mirrored into pino logs under `/tmp/clawdis`.
-- RPC stability: stdin/stdout loop for Tau/Pi, auto-restart worker, raw error surfacing, and deliver-via-RPC when JSON agent output is returned.
+- RPC stability: stdin/stdout loop for Pi, auto-restart worker, raw error surfacing, and deliver-via-RPC when JSON agent output is returned.
 
 ### Security & hardening
 - Media server blocks symlink/path traversal, clears temporary downloads, and rotates logs daily (24h retention).
@@ -49,8 +49,8 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 - Documentation updated to reflect Pi-only support and to mark legacy Claude paths as historical.
 - Status command reports web session health + session recipients; config paths are locked to `~/.clawdis` with session metadata stored under `~/.clawdis/sessions/`.
 - Simplified send/agent/gateway/heartbeat to web-only delivery; removed Twilio mocks/tests and dead code.
-- Tau RPC timeout is now inactivity-based (5m without events) and error messages show seconds only.
-- Pi/Tau sessions now write to `~/.clawdis/sessions/` by default (legacy `~/.tau/agent/sessions/clawdis` files are copied over when present).
+- Pi RPC timeout is now inactivity-based (5m without events) and error messages show seconds only.
+- Pi sessions now write to `~/.clawdis/sessions/` by default (legacy session logs from older installs are copied over when present).
 - Directive triggers (`/think`, `/verbose`, `/stop` et al.) now reply immediately using normalized bodies (timestamps/group prefixes stripped) without waiting for the agent.
 - Directive/system acks carry a `⚙️` prefix and verbose parsing rejects typoed `/ver*` strings so unrelated text doesn’t flip verbosity.
 - Batched history blocks no longer trip directive parsing; `/think` in prior messages won't emit stray acknowledgements.
@@ -68,18 +68,18 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 ## 1.4.0 — 2025-12-03
 
 ### Highlights
-- **Thinking directives & state:** `/t|/think|/thinking <level>` (aliases off|minimal|low|medium|high|max/highest). Inline applies to that message; directive-only message pins the level for the session; `/think:off` clears. Resolution: inline > session override > `inbound.reply.thinkingDefault` > off. Pi/Tau get `--thinking <level>` (except off); other agents append cue words (`think` → `think hard` → `think harder` → `ultrathink`). Heartbeat probe uses `HEARTBEAT /think:high`.
+- **Thinking directives & state:** `/t|/think|/thinking <level>` (aliases off|minimal|low|medium|high|max/highest). Inline applies to that message; directive-only message pins the level for the session; `/think:off` clears. Resolution: inline > session override > `inbound.reply.thinkingDefault` > off. Pi gets `--thinking <level>` (except off); other agents append cue words (`think` → `think hard` → `think harder` → `ultrathink`). Heartbeat probe uses `HEARTBEAT /think:high`.
 - **Group chats (web provider):** Clawdis now fully supports WhatsApp groups: mention-gated triggers (including image-only @ mentions), recent group history injection, per-group sessions, sender attribution, and a first-turn primer with group subject/member roster; heartbeats are skipped for groups.
 - **Group session primer:** The first turn of a group session now tells the agent it is in a WhatsApp group and lists known members/subject so it can address the right speaker.
 - **Media failures are surfaced:** When a web auto-reply media fetch/send fails (e.g., HTTP 404), we now append a warning to the fallback text so you know the attachment was skipped.
-- **Verbose directives + session hints:** `/v|/verbose on|full|off` mirrors thinking: inline > session > config default. Directive-only replies with an acknowledgement; invalid levels return a hint. When enabled, tool results from JSON-emitting agents (Pi/Tau, etc.) are forwarded as metadata-only `[🛠️ <tool-name> <arg>]` messages (now streamed as they happen), and new sessions surface a `🧭 New session: <id>` hint.
+- **Verbose directives + session hints:** `/v|/verbose on|full|off` mirrors thinking: inline > session > config default. Directive-only replies with an acknowledgement; invalid levels return a hint. When enabled, tool results from JSON-emitting agents (Pi, etc.) are forwarded as metadata-only `[🛠️ <tool-name> <arg>]` messages (now streamed as they happen), and new sessions surface a `🧭 New session: <id>` hint.
 - **Verbose tool coalescing:** successive tool results of the same tool within ~1s are batched into one `[🛠️ tool] arg1, arg2` message to reduce WhatsApp noise.
 - **Directive confirmations:** Directive-only messages now reply with an acknowledgement (`Thinking level set to high.` / `Thinking disabled.`) and reject unknown levels with a helpful hint (state is unchanged).
-- **Pi/Tau stability:** RPC replies buffered until the assistant turn finishes; parsers return consistent `texts[]`; web auto-replies keep a warm Tau RPC process to avoid cold starts.
+- **Pi stability:** RPC replies buffered until the assistant turn finishes; parsers return consistent `texts[]`; web auto-replies keep a warm Pi RPC process to avoid cold starts.
 - **Claude prompt flow:** One-time `sessionIntro` with per-message `/think:high` bodyPrefix; system prompt always sent on first turn even with `sendSystemOnce`.
 - **Heartbeat UX:** Backpressure skips reply heartbeats while other commands run; skips don’t refresh session `updatedAt`; web heartbeats normalize array payloads and optional `heartbeatCommand`.
 - **Control via WhatsApp:** Send `/restart` to restart the launchd service (`com.steipete.clawdis`) from your allowed numbers.
-- **Tau completion signal:** RPC now resolves on Tau’s `agent_end` (or process exit) so late assistant messages aren’t truncated; 5-minute hard cap only as a failsafe.
+- **Pi completion signal:** RPC now resolves on Pi’s `agent_end` (or process exit) so late assistant messages aren’t truncated; 5-minute hard cap only as a failsafe.
 
 ### Reliability & UX
 - Outbound chunking prefers newlines/word boundaries and enforces caps (~4000 chars for web/WhatsApp).
@@ -101,8 +101,8 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 - Media-only pings now pick up mentions inside captions (image/video/etc.), so @-mentions on media-only messages trigger replies.
 - MIME sniffing and redirect handling for downloads/hosted media.
 - Response prefix applied to heartbeat alerts; heartbeat array payloads handled for both providers.
-- Tau RPC typing exposes `signal`/`killed`; NDJSON parsers normalized across agents.
-- Tau (pi) session resumes now append `--continue`, so existing history/think level are reloaded instead of starting empty.
+- Pi RPC typing exposes `signal`/`killed`; NDJSON parsers normalized across agents.
+- Pi session resumes now append `--continue`, so existing history/think level are reloaded instead of starting empty.
 
 ### Testing
 - Fixtures isolate session stores; added coverage for thinking directives, stateful levels, heartbeat backpressure, and agent parsing.

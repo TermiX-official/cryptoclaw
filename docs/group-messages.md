@@ -12,7 +12,7 @@ Goal: let Clawd sit in WhatsApp groups, wake up only when pinged, and keep that 
 - Group allowlist bypass: we still enforce `allowFrom` on the participant at inbox ingest, but group JIDs themselves no longer block replies.
 - Per-group sessions: session keys look like `group:<jid>` so commands such as `/verbose on` or `/think:high` are scoped to that group; personal DM state is untouched. Heartbeats are skipped for group threads.
 - Context injection: last N (default 50) group messages are prefixed under `[Chat messages since your last reply - for context]`, with the triggering line under `[Current message - respond to this]`.
-- Sender surfacing: every group batch now ends with `[from: Sender Name (+E164)]` so Tau/Pi know who is speaking.
+- Sender surfacing: every group batch now ends with `[from: Sender Name (+E164)]` so Pi knows who is speaking.
 - Ephemeral/view-once: we unwrap those before extracting text/mentions, so pings inside them still trigger.
 - New session primer: on the first turn of a group session we now prepend a short blurb to the model like `You are replying inside the WhatsApp group "<subject>". Group members: +44..., +43..., … Address the specific sender noted in the message context.` If metadata isn’t available we still tell the agent it’s a group chat.
 

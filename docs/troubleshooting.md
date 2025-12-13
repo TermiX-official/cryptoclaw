@@ -35,7 +35,7 @@ cat ~/.clawdis/clawdis.json | jq '.inbound.groupChat'
 
 **Check 3:** Check the logs
 ```bash
-tail -f /tmp/clawdis/clawdis.log | grep "blocked\|skip\|unauthorized"
+tail -f "$(ls -t /tmp/clawdis/clawdis-*.log | head -1)" | grep "blocked\\|skip\\|unauthorized"
 ```
 
 ### Image + Mention Not Working
@@ -81,24 +81,27 @@ Or use the `process` tool to background long commands.
 ### WhatsApp Disconnected
 
 ```bash
-# Check status
+# Check local status (creds, sessions, queued events)
 clawdis status
-# Or from chat: send /status for agent + context usage
+# Probe the running gateway + providers (WA connect + Telegram API)
+clawdis status --deep
 
 # View recent connection events
-tail -100 /tmp/clawdis/clawdis.log | grep "connection\|disconnect\|logout"
+tail -100 /tmp/clawdis/clawdis-*.log | grep "connection\\|disconnect\\|logout"
 ```
 
-**Fix:** Usually reconnects automatically. If not:
+**Fix:** Usually reconnects automatically once the Gateway is running. If you’re stuck, restart the Gateway process (however you supervise it), or run it manually with verbose output:
+
 ```bash
-clawdis restart
+clawdis gateway --verbose
 ```
 
-If you're logged out:
+If you’re logged out / unlinked:
+
 ```bash
-clawdis stop
-rm -rf ~/.clawdis/credentials  # Clear session
-clawdis start  # Re-scan QR code
+clawdis logout
+rm -rf ~/.clawdis/credentials # if logout can't cleanly remove everything
+clawdis login --verbose       # re-scan QR
 ```
 
 ### Media Send Failing
@@ -115,7 +118,7 @@ ls -la /path/to/your/image.jpg
 
 **Check 3:** Check media logs
 ```bash
-grep "media\|fetch\|download" /tmp/clawdis/clawdis.log | tail -20
+grep "media\\|fetch\\|download" "$(ls -t /tmp/clawdis/clawdis-*.log | head -1)" | tail -20
 ```
 
 ### High Memory Usage
@@ -136,22 +139,19 @@ CLAWDIS keeps conversation history in memory.
 Get verbose logging:
 
 ```bash
-# In config
-{
-  "logging": {
-    "level": "trace"
-  }
-}
-
-# Or environment
-CLAWDIS_LOG_LEVEL=trace clawdis start
+# Turn on trace logging in config:
+#   ~/.clawdis/clawdis.json -> { logging: { level: "trace" } }
+#
+# Then run verbose commands to mirror debug output to stdout:
+clawdis gateway --verbose
+clawdis login --verbose
 ```
 
 ## Log Locations
 
 | Log | Location |
 |-----|----------|
-| Main log | `/tmp/clawdis/clawdis.log` |
+| Main logs (default) | `/tmp/clawdis/clawdis-YYYY-MM-DD.log` |
 | Session files | `~/.clawdis/sessions/` |
 | Media cache | `~/.clawdis/media/` |
 | Credentials | `~/.clawdis/credentials/` |
@@ -159,14 +159,14 @@ CLAWDIS_LOG_LEVEL=trace clawdis start
 ## Health Check
 
 ```bash
-# Is it running?
-clawdis status
+# Is the gateway reachable?
+clawdis health --json
 
-# Check the socket
-ls -la ~/.clawdis/clawdis.sock
+# Is something listening on the default port?
+lsof -nP -iTCP:18789 -sTCP:LISTEN
 
 # Recent activity
-tail -20 /tmp/clawdis/clawdis.log
+tail -20 /tmp/clawdis/clawdis-*.log
 ```
 
 ## Reset Everything
@@ -174,16 +174,16 @@ tail -20 /tmp/clawdis/clawdis.log
 Nuclear option:
 
 ```bash
-clawdis stop
 rm -rf ~/.clawdis
-clawdis start  # Fresh setup
+clawdis login         # re-pair WhatsApp
+clawdis gateway        # start the Gateway again
 ```
 
 ⚠️ This loses all sessions and requires re-pairing WhatsApp.
 
 ## Getting Help
 
-1. Check logs first: `/tmp/clawdis/clawdis.log`
+1. Check logs first: `/tmp/clawdis/` (default: `clawdis-YYYY-MM-DD.log`, or your configured `logging.file`)
 2. Search existing issues on GitHub
 3. Open a new issue with:
    - CLAWDIS version

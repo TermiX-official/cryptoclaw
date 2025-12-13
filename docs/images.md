@@ -3,6 +3,7 @@ summary: "Image and media handling rules for send, gateway, and agent replies"
 read_when:
   - Modifying media pipeline or attachments
 ---
+<!-- {% raw %} -->
 # Image & Media Support — 2025-12-05
 
 CLAWDIS is now **web-only** (Baileys). This document captures the current media handling rules for send, gateway, and agent replies.
@@ -32,7 +33,7 @@ CLAWDIS is now **web-only** (Baileys). This document captures the current media 
 - When media is present, the web sender resolves local paths or URLs using the same pipeline as `clawdis send`.
 - Multiple media entries are sent sequentially if provided.
 
-## Inbound Media to Commands (Pi/Tau)
+## Inbound Media to Commands (Pi)
 - When inbound web messages include media, CLAWDIS downloads to a temp file and exposes templating variables:
   - `{{MediaUrl}}` pseudo-URL for the inbound media.
   - `{{MediaPath}}` local temp path written before running the command.
@@ -47,3 +48,4 @@ CLAWDIS is now **web-only** (Baileys). This document captures the current media 
 - Cover send + reply flows for image/audio/document cases.
 - Validate recompression for images (size bound) and voice-note flag for audio.
 - Ensure multi-media replies fan out as sequential sends.
+<!-- {% endraw %} -->

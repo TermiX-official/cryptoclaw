@@ -24,4 +24,4 @@ How to see whether the WhatsApp Web/Baileys bridge is healthy from the menu bar 
 - Cache the last good snapshot and the last error separately to avoid flicker; show the timestamp of each.
 
 ## When in doubt
-- You can still use the CLI flow in `docs/health.md` (status, heartbeat dry-run, gateway heartbeat) and tail `/tmp/clawdis/clawdis.log` for `web-heartbeat` / `web-reconnect`.
+- You can still use the CLI flow in `docs/health.md` (`clawdis status`, `clawdis status --deep`, `clawdis health --json`) and tail `/tmp/clawdis/clawdis-*.log` for `web-heartbeat` / `web-reconnect`.

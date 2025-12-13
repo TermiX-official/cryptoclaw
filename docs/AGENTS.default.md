@@ -7,7 +7,7 @@ read_when:
 # AGENTS.md — Clawdis Personal Assistant (default)
 
 ## What Clawdis Does
-- Runs WhatsApp gateway + Pi/Tau coding agent so the assistant can read/write chats, fetch context, and run tools via the host Mac.
+- Runs WhatsApp gateway + Pi coding agent so the assistant can read/write chats, fetch context, and run tools via the host Mac.
 - macOS app manages permissions (screen recording, notifications, microphone) and exposes a CLI helper `clawdis-mac` for scripts.
 - Sessions are per-sender; heartbeats keep background tasks alive.
 

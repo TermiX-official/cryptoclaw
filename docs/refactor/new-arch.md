@@ -111,7 +111,7 @@ Goal: replace legacy gateway/stdin/TCP control with a single WebSocket Gateway, 
 ## Phase 6 — Send/agent path hardening
 - Ensure only the Gateway can open Baileys; no IPC fallback.
 - `send` executes in-process; respond with explicit result/error, not via heartbeat.
-- `agent` spawns Tau/Pi; respond quickly with `{runId,status:"accepted"}` (ack); stream `event:agent {runId, seq, stream, data, ts}`; final `res:agent {runId, status:"ok"|"error", summary}` completes request (idempotent via key).
+- `agent` spawns Pi; respond quickly with `{runId,status:"accepted"}` (ack); stream `event:agent {runId, seq, stream, data, ts}`; final `res:agent {runId, status:"ok"|"error", summary}` completes request (idempotent via key).
 - Idempotency: side-effecting methods (`send`, `agent`) accept an idempotency key; keep a short-lived dedupe cache to avoid double-send on client retries. Client retry flow: on timeout/close, retry with same key; Gateway returns cached result when available; cache TTL ~5m and bounded.
 - Agent stream ordering: enforce monotonic `seq` per runId; if gap detected by server, terminate stream with error; if detected by client, issue a retry with same idempotency key.
  - Send response shape: `{messageId?, toJid?, error?}` and always include `runId` when available for traceability.

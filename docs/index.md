@@ -3,86 +3,124 @@ summary: "Top-level overview of Clawdis, features, and purpose"
 read_when:
   - Introducing Clawdis to newcomers
 ---
+<!-- {% raw %} -->
 # CLAWDIS 🦞
 
 > *"EXFOLIATE! EXFOLIATE!"* — A space lobster, probably
 
-**CLAWDIS** is a WhatsApp-to-AI gateway that lets your AI assistant live in your pocket. Built for [Clawd](https://clawd.me), a space lobster who needed a TARDIS.
+<p align="center">
+  <img src="whatsapp-clawd.jpg" alt="CLAWDIS" width="420">
+</p>
 
-**Source & Issues:** [github.com/steipete/clawdis](https://github.com/steipete/clawdis)
+<p align="center">
+  <strong>WhatsApp + Telegram gateway for AI agents (Pi).</strong><br>
+  Send a message, get an agent response — from your pocket.
+</p>
 
-## What is this?
+<p align="center">
+  <a href="https://github.com/steipete/clawdis">GitHub</a> ·
+  <a href="https://www.npmjs.com/package/clawdis">npm</a> ·
+  <a href="./clawd.md">Clawd setup</a>
+</p>
 
-CLAWDIS bridges WhatsApp to AI coding agents like [Tau/Pi](https://github.com/badlogic/pi-mono). Send a message, get an AI response. It's like having a genius lobster on call 24/7.
+CLAWDIS bridges WhatsApp (via WhatsApp Web / Baileys) and Telegram (Bot API / grammY) to coding agents like [Pi](https://github.com/badlogic/pi-mono).
+It’s built for [Clawd](https://clawd.me), a space lobster who needed a TARDIS.
+
+## How it works
 
 ```
 ┌─────────────┐      ┌──────────┐      ┌─────────────┐
 │  WhatsApp   │ ───▶ │ CLAWDIS  │ ───▶ │  AI Agent   │
-│  (You)      │ ◀─── │  🦞⏱️💙   │ ◀─── │  (Tau/Pi)   │
+│  Telegram   │ ───▶ │  🦞⏱️💙   │ ◀─── │    (Pi)     │
+│  (You)      │ ◀─── │          │      │             │
 └─────────────┘      └──────────┘      └─────────────┘
 ```
 
-## Features
+Most operations flow through the **Gateway** (`clawdis gateway`), a single long-running process that owns provider connections and the WebSocket control plane.
+
+## Features (high level)
 
 - 📱 **WhatsApp Integration** — Uses Baileys for WhatsApp Web protocol
-- 🤖 **AI Agent Gateway** — Pi/Tau only (Pi CLI in RPC mode)
-- 💬 **Session Management** — Maintains conversation context across messages
-- 🔔 **Heartbeats** — Periodic check-ins so your AI doesn't feel lonely
+- ✈️ **Telegram Bot** — DMs + groups via grammY
+- 🤖 **Agent bridge** — Pi (RPC mode) with tool streaming
+- 💬 **Sessions** — Per-sender (or shared `main`) conversation context
 - 👥 **Group Chat Support** — Mention-based triggering in group chats
 - 📎 **Media Support** — Send and receive images, audio, documents
-- 🎤 **Voice Messages** — Transcription via Whisper
-- 🔧 **Tool Streaming** — Real-time display of AI tool usage (💻📄✍️📝)
+- 🎤 **Voice notes** — Optional transcription hook
+- 🖥️ **WebChat + macOS app** — A local UI + menu bar companion for ops and voice wake
 
-Note: support for Claude, Codex, Gemini, and Opencode has been removed; Pi/Tau is now the only coding agent path.
+Note: legacy Claude/Codex/Gemini/Opencode paths have been removed; Pi is the only coding-agent path.
 
-## The Name
+## Quick start
 
-**CLAWDIS** = CLAW + TARDIS
-
-Because every space lobster needs a time-and-space machine to travel through WhatsApp messages. It's bigger on the inside (130k+ tokens of context).
-
-The Doctor has a TARDIS. Clawd has a CLAWDIS. Both are blue. Both are a bit chaotic. Both are loved.
-
-## Quick Start
+Runtime requirement: **Node ≥ 22**.
 
 ```bash
 # Install
-pnpm install
+npm install -g clawdis
 
-# Configure
-cp ~/.clawdis/clawdis.example.json ~/.clawdis/clawdis.json
-# Edit with your settings
+# Pair WhatsApp Web (shows QR)
+clawdis login
 
-# Run
-clawdis start
+# Run the Gateway (leave running)
+clawdis gateway --port 18789
 
-# Check status
-clawdis status
+# Open the local WebChat UI
+clawdis webchat
 ```
 
-## Documentation
+Send a test message (requires a running Gateway):
 
-- [Configuration Guide](./configuration.md) — Setting up your CLAWDIS
-- [Agent Integration](./agents.md) — Connecting AI agents
-- [Direct Agent CLI](./agent-send.md) — Use `clawdis agent` without sending WhatsApp messages
-- [Group Chats](./groups.md) — Mention patterns and filtering
-- [Media Handling](./media.md) — Images, voice, documents
-- [Session Management](./session.md) — How conversations are keyed and reset
-- [Security](./security.md) — Keeping your lobster safe
-- [Troubleshooting](./troubleshooting.md) — When the CLAWDIS misbehaves
+```bash
+clawdis send --to +15555550123 --message "Hello from CLAWDIS"
+```
 
-## Why "Clawdis"?
+## Configuration (optional)
 
-The original name was **Clawdis** (WhatsApp + Gateway). It worked. It was fine. 
+Config lives at `~/.clawdis/clawdis.json`.
 
-But then Clawd happened, and suddenly we needed something with more... *personality*. 
+- If you **do nothing**, CLAWDIS uses the bundled Pi binary in RPC mode with per-sender sessions.
+- If you want to lock it down, start with `inbound.allowFrom` and (for groups) mention rules.
 
-CLAWDIS was born. The lobster approved. 🦞
+Example:
+
+```json5
+{
+  inbound: {
+    allowFrom: ["+15555550123"],
+    groupChat: { requireMention: true, mentionPatterns: ["@clawd"] }
+  }
+}
+```
+
+## Docs
+
+- [Configuration](./configuration.md)
+- [Gateway runbook](./gateway.md)
+- [WebChat](./webchat.md)
+- [Agent integration](./agents.md)
+- [Telegram](./telegram.md)
+- [Group messages](./group-messages.md)
+- [Media: images](./images.md)
+- [Media: audio](./audio.md)
+- [Sessions](./session.md)
+- [Cron + wakeups](./cron.md)
+- [Security](./security.md)
+- [Troubleshooting](./troubleshooting.md)
+
+## The name
+
+**CLAWDIS = CLAW + TARDIS** — because every space lobster needs a time-and-space machine.
+
+---
+
+*"We're all just playing with our own prompts."* — an AI, probably high on tokens
+<!-- {% endraw %} -->
 
 ## Credits
 
 - **Peter Steinberger** ([@steipete](https://twitter.com/steipete)) — Creator, lobster whisperer
-- **Mario Zechner** ([@badlogicc](https://twitter.com/badlogicgames)) — Tau/Pi creator, security pen-tester
+- **Mario Zechner** ([@badlogicc](https://twitter.com/badlogicgames)) — Pi creator, security pen-tester
 - **Clawd** — The space lobster who demanded a better name
 
 ## License

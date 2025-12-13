@@ -5,10 +5,10 @@ read_when:
 ---
 # Heartbeat polling plan (2025-11-26)
 
-Goal: add a simple heartbeat poll for command-based auto-replies (Pi/Tau) that only notifies users when something matters, using the `HEARTBEAT_OK` sentinel. The heartbeat body we send is `HEARTBEAT /think:high` so the model can easily spot it.
+Goal: add a simple heartbeat poll for command-based auto-replies (Pi) that only notifies users when something matters, using the `HEARTBEAT_OK` sentinel. The heartbeat body we send is `HEARTBEAT /think:high` so the model can easily spot it.
 
 ## Prompt contract
-- Extend the Pi/Tau system/identity text to explain: “If this is a heartbeat poll and nothing needs attention, reply exactly `HEARTBEAT_OK` and nothing else. For any alert, do **not** include `HEARTBEAT_OK`; just return the alert text.” Heartbeat prompt body is `HEARTBEAT /think:high`.
+- Extend the Pi system/identity text to explain: “If this is a heartbeat poll and nothing needs attention, reply exactly `HEARTBEAT_OK` and nothing else. For any alert, do **not** include `HEARTBEAT_OK`; just return the alert text.” Heartbeat prompt body is `HEARTBEAT /think:high`.
 - Keep existing WhatsApp length guidance; forbid burying the sentinel inside alerts.
 
 ## Config & defaults

@@ -116,8 +116,8 @@ Include security guidelines in your agent's system prompt:
 
 If your AI does something bad:
 
-1. **Stop it:** `clawdis stop` or kill the process
-2. **Check logs:** `/tmp/clawdis/clawdis.log`
+1. **Stop it:** stop the macOS app (if it’s supervising the Gateway) or terminate your `clawdis gateway` process
+2. **Check logs:** `/tmp/clawdis/clawdis-YYYY-MM-DD.log` (or your configured `logging.file`)
 3. **Review session:** Check `~/.clawdis/sessions/` for what happened
 4. **Rotate secrets:** If credentials were exposed
 5. **Update rules:** Add to your security prompt

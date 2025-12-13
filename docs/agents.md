@@ -1,213 +1,92 @@
 ---
-summary: "Current agent integration: Pi/Tau as the sole coding agent with config examples"
+summary: "Current agent integration: Pi as the sole coding agent with config examples"
 read_when:
   - Changing agent invocation or defaults
 ---
+<!-- {% raw %} -->
 # Agent Integration 🤖
 
-CLAWDIS now ships with a single coding agent: Pi (the Tau CLI). Legacy Claude/Codex/Gemini/Opencode paths have been removed.
-Pi is bundled as a dependency of `clawdis`, so a fresh `pnpm install` gives you the `pi`/`tau` binaries automatically.
+CLAWDIS ships with a single coding-agent path: **Pi** (RPC mode). Legacy Claude/Codex/Gemini/Opencode integrations have been removed.
 
-## Pi / Tau
+## Default behavior
 
-The recommended (and only) agent for CLAWDIS. Built by Mario Zechner, forked with love.
+If you don’t configure `inbound.reply`, CLAWDIS uses the bundled Pi binary in RPC mode:
+- command: `pi --mode rpc {{BodyStripped}}`
+- per-sender sessions (stored under `~/.clawdis/sessions/*.jsonl`)
+- `/new` starts a fresh session
 
-```json
+This is usually enough for a personal assistant setup; add `inbound.allowFrom` to restrict who can trigger it.
+
+## Custom agent command (still Pi)
+
+To override the agent command, configure `inbound.reply.mode: "command"`:
+
+```json5
 {
-  "reply": {
-    "mode": "command",
-  "agent": {
-    "kind": "pi",
-    "format": "json",
-    "model": "claude-opus-4-5" // default if omitted
-  },
-    "command": [
-      "node",
-      "/path/to/pi-mono/packages/coding-agent/dist/cli.js",
-      "-p",
-      "--mode", "json",
-      "{{BodyStripped}}"
-    ]
-  }
-}
-```
-
-#### RPC Mode (Recommended)
-
-For streaming tool output and better integration:
-
-```json
-{
-  "command": [
-    "tau",
-    "--mode", "rpc",
-    "--session", "/path/to/sessions/{{SessionId}}.jsonl"
-  ]
-}
-```
-
-RPC mode is enforced by CLAWDIS (we rewrite `--mode` to `rpc` for Pi invocations). It gives you:
-- 💻 Real-time tool execution display
-- 📊 Token usage tracking
-- 🔄 Streaming responses
-
-If the agent does not report a model, CLAWDIS assumes `claude-opus-4-5` with ~200k context tokens (pi-ai defaults) for usage summaries.
-
-## Session Management
-
-### Per-Sender Sessions
-
-Each phone number gets its own conversation history:
-
-```json
-{
-  "session": {
-    "scope": "per-sender",
-    "sessionArgNew": ["--session", "{{SessionId}}.jsonl"],
-    "sessionArgResume": ["--session", "{{SessionId}}.jsonl", "--continue"]
-  }
-}
-```
-By default CLAWDIS stores sessions under `~/.clawdis/sessions` and will create the folder automatically.
-
-### Global Session
-
-Everyone shares the same context (useful for team bots):
-
-```json
-{
-  "session": {
-    "scope": "global"
-  }
-}
-```
-
-### Session Reset
-
-Users can start fresh with trigger words:
-
-```json
-{
-  "session": {
-    "resetTriggers": ["/new", "/reset", "/clear"]
-  }
-}
-```
-
-## System Prompts
-
-Give your agent personality:
-
-```json
-{
-  "session": {
-    "sessionIntro": "You are Clawd, a space lobster AI assistant. Be helpful, be funny, use 🦞 liberally. Read /path/to/AGENTS.md for your instructions.",
-    "sendSystemOnce": true
-  }
-}
-```
-
-## Heartbeats
-
-Keep your agent alive and doing background tasks:
-
-```json
-{
-  "reply": {
-    "heartbeatMinutes": 10,
-    "heartbeatBody": "HEARTBEAT"
-  }
-}
-```
-
-The agent receives "HEARTBEAT" and can:
-- Check for pending tasks
-- Update memory files
-- Monitor systems
-- Reply with `HEARTBEAT_OK` to skip
-
-## Tool Streaming
-
-When using RPC mode, CLAWDIS shows tool usage in real-time:
-
-```
-💻 ls -la ~/Projects
-📄 Reading README.md
-✍️ Writing config.json
-📝 Editing main.ts
-📎 Attaching image.jpg
-🛠️ Running custom tool
-```
-
-Configure the display:
-
-```json
-{
-  "agent": {
-    "kind": "pi",
-    "format": "json",
-    "toolEmoji": {
-      "bash": "💻",
-      "read": "📄",
-      "write": "✍️",
-      "edit": "📝",
-      "attach": "📎"
+  inbound: {
+    reply: {
+      mode: "command",
+      command: ["pi", "--mode", "rpc", "{{BodyStripped}}"],
+      timeoutSeconds: 1800,
+      agent: { kind: "pi", format: "json" }
     }
   }
 }
 ```
 
-## Timeouts
+Notes:
+- CLAWDIS forces `--mode rpc` for Pi invocations (even if you pass `--mode json/text`).
+- If your `command` array omits `{{Body}}`/`{{BodyStripped}}`, CLAWDIS still synthesizes the prompt body for RPC mode.
 
-Long-running tasks need appropriate timeouts:
+## Sessions
 
-```json
+Session behavior lives under `inbound.reply.session`:
+
+```json5
 {
-  "reply": {
-    "timeoutSeconds": 1800
-  }
-}
-```
-
-For background tasks, the agent can yield and continue later using the `process` tool.
-
-## Error Handling
-
-When the agent fails:
-
-1. CLAWDIS logs the error
-2. Sends a user-friendly message
-3. Preserves the session for retry
-
-```json
-{
-  "reply": {
-    "errorMessage": "🦞 Oops! Something went wrong. Try again?"
-  }
-}
-```
-
-## Multi-Agent Setup
-
-Run different agents for different numbers:
-
-```json
-{
-  "inbound": {
-    "routes": [
-      {
-        "from": "+1234567890",
-        "command": ["work-agent", "{{Body}}"]
-      },
-      {
-        "from": "+0987654321", 
-        "command": ["fun-agent", "{{Body}}"]
+  inbound: {
+    reply: {
+      session: {
+        scope: "per-sender",
+        resetTriggers: ["/new", "/reset"],
+        idleMinutes: 10080,
+        sendSystemOnce: true,
+        sessionIntro: "You are Clawd. Be a good lobster."
       }
-    ]
+    }
   }
 }
 ```
+
+Defaults when `session` is enabled:
+- Session files are written to `~/.clawdis/sessions/{{SessionId}}.jsonl`.
+- Resume adds `--continue` automatically (Pi needs it to load prior messages).
+
+## Heartbeats
+
+If you enable `inbound.reply.heartbeatMinutes`, CLAWDIS periodically runs a heartbeat prompt (default: `HEARTBEAT /think:high`).
+
+- If the agent replies with `HEARTBEAT_OK` (exact token), CLAWDIS suppresses outbound delivery for that heartbeat.
+- If you want a different command for heartbeats, set `inbound.reply.heartbeatCommand`.
+
+```json5
+{
+  inbound: {
+    reply: {
+      heartbeatMinutes: 30,
+      heartbeatCommand: ["pi", "--mode", "rpc", "HEARTBEAT /think:high"]
+    }
+  }
+}
+```
+
+## Tool streaming (RPC)
+
+RPC mode emits structured tool lifecycle events (start/result) and assistant output. These are:
+- logged to `/tmp/clawdis/…`
+- streamed over the Gateway WS to clients like WebChat and the macOS app
 
 ---
 
-*Next: [Group Chats](./groups.md)* 🦞
+*Next: [Group Chats](./group-messages.md)* 🦞
+<!-- {% endraw %} -->

@@ -7,9 +7,16 @@ read_when:
 
 Clawdis treats **one session as primary**. By default the canonical key is `main` for every direct chat; no configuration is required. You can rename it via `inbound.reply.session.mainKey` if you really want, but there is still only a single primary session. Older/local sessions can stay on disk, but only the primary key is used for desktop/web chat and direct agent calls.
 
+## Gateway is the source of truth
+All session state is **owned by the gateway** (the “master” Clawdis). UI clients (macOS app, WebChat, etc.) must query the gateway for session lists and token counts instead of reading local files.
+
+- In **remote mode**, the session store you care about lives on the remote gateway host, not your Mac.
+- Token counts shown in UIs come from the gateway’s store fields (`inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`). Clients do not parse JSONL transcripts to “fix up” totals.
+
 ## Where state lives
-- Store file: `~/.clawdis/sessions/sessions.json` (legacy: `~/.clawdis/sessions.json`).
-- Transcripts: `~/.clawdis/sessions/<SessionId>.jsonl` (one file per session id).
+- On the **gateway host**:
+  - Store file: `~/.clawdis/sessions/sessions.json` (legacy: `~/.clawdis/sessions.json`).
+  - Transcripts: `~/.clawdis/sessions/<SessionId>.jsonl` (one file per session id).
 - The store is a map `sessionKey -> { sessionId, updatedAt, ... }`. Deleting entries is safe; they are recreated on demand.
 
 ## Mapping transports → session keys
@@ -43,6 +50,7 @@ Clawdis treats **one session as primary**. By default the canonical key is `main
 ## Inspecting
 - `pnpm clawdis status` — shows store path and recent sessions.
 - `pnpm clawdis sessions --json` — dumps every entry (filter with `--active <minutes>`).
+- `pnpm clawdis gateway call sessions.list --params '{}'` — fetch sessions from the running gateway (use `--url`/`--token` for remote gateway access).
 - Send `/status` in chat to see whether the agent is reachable, how much of the session context is used, current thinking/verbose toggles, and when your WhatsApp web creds were last refreshed (helps spot relink needs).
 - JSONL transcripts can be opened directly to review full turns.
 

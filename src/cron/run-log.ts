@@ -19,14 +19,7 @@ export function resolveCronRunLogPath(params: {
 }) {
   const storePath = path.resolve(params.storePath);
   const dir = path.dirname(storePath);
-  const base = path.basename(storePath);
-  if (base === "jobs.json") {
-    return path.join(dir, "runs", `${params.jobId}.jsonl`);
-  }
-
-  const ext = path.extname(base);
-  const baseNoExt = ext ? base.slice(0, -ext.length) : base;
-  return path.join(dir, `${baseNoExt}.runs.jsonl`);
+  return path.join(dir, "runs", `${params.jobId}.jsonl`);
 }
 
 const writesByPath = new Map<string, Promise<void>>();

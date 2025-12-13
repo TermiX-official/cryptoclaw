@@ -16,7 +16,7 @@ const noopLogger = {
 async function makeStorePath() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdis-cron-"));
   return {
-    storePath: path.join(dir, "cron.json"),
+    storePath: path.join(dir, "cron", "jobs.json"),
     cleanup: async () => {
       await fs.rm(dir, { recursive: true, force: true });
     },
@@ -201,6 +201,7 @@ describe("CronService", () => {
     const requestReplyHeartbeatNow = vi.fn();
 
     const atMs = Date.parse("2025-12-13T00:00:01.000Z");
+    await fs.mkdir(path.dirname(store.storePath), { recursive: true });
     await fs.writeFile(
       store.storePath,
       JSON.stringify({

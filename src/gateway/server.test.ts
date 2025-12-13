@@ -417,7 +417,8 @@ describe("gateway server", () => {
 
   test("supports cron.add and cron.list", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdis-gw-cron-"));
-    testCronStorePath = path.join(dir, "cron.json");
+    testCronStorePath = path.join(dir, "cron", "jobs.json");
+    await fs.mkdir(path.dirname(testCronStorePath), { recursive: true });
     await fs.writeFile(
       testCronStorePath,
       JSON.stringify({ version: 1, jobs: [] }),
@@ -478,11 +479,12 @@ describe("gateway server", () => {
     testCronStorePath = undefined;
   });
 
-  test("writes cron run history for flat store paths", async () => {
+  test("writes cron run history to runs/<jobId>.jsonl", async () => {
     const dir = await fs.mkdtemp(
       path.join(os.tmpdir(), "clawdis-gw-cron-log-"),
     );
-    testCronStorePath = path.join(dir, "cron.json");
+    testCronStorePath = path.join(dir, "cron", "jobs.json");
+    await fs.mkdir(path.dirname(testCronStorePath), { recursive: true });
     await fs.writeFile(
       testCronStorePath,
       JSON.stringify({ version: 1, jobs: [] }),
@@ -531,7 +533,7 @@ describe("gateway server", () => {
     );
     expect(runRes.ok).toBe(true);
 
-    const logPath = path.join(dir, "cron.runs.jsonl");
+    const logPath = path.join(dir, "cron", "runs", `${jobId}.jsonl`);
     const waitForLog = async () => {
       for (let i = 0; i < 200; i++) {
         const raw = await fs.readFile(logPath, "utf-8").catch(() => "");
@@ -542,12 +544,12 @@ describe("gateway server", () => {
     };
 
     const raw = await waitForLog();
-    const lines = raw
+    const line = raw
       .split("\n")
       .map((l) => l.trim())
-      .filter(Boolean);
-    expect(lines.length).toBeGreaterThan(0);
-    const last = JSON.parse(lines.at(-1) ?? "{}") as {
+      .filter(Boolean)
+      .at(-1);
+    const last = JSON.parse(line ?? "{}") as {
       jobId?: unknown;
       action?: unknown;
       status?: unknown;
@@ -696,10 +698,11 @@ describe("gateway server", () => {
     const dir = await fs.mkdtemp(
       path.join(os.tmpdir(), "clawdis-gw-cron-default-on-"),
     );
-    testCronStorePath = path.join(dir, "cron.json");
+    testCronStorePath = path.join(dir, "cron", "jobs.json");
     testCronEnabled = undefined; // omitted config => enabled by default
 
     try {
+      await fs.mkdir(path.dirname(testCronStorePath), { recursive: true });
       await fs.writeFile(
         testCronStorePath,
         JSON.stringify({ version: 1, jobs: [] }),
@@ -727,7 +730,7 @@ describe("gateway server", () => {
         | { enabled?: unknown; storePath?: unknown }
         | undefined;
       expect(statusPayload?.enabled).toBe(true);
-      expect(String(statusPayload?.storePath ?? "")).toContain("cron.json");
+      expect(String(statusPayload?.storePath ?? "")).toContain("jobs.json");
 
       const atMs = Date.now() + 80;
       ws.send(

@@ -11,13 +11,7 @@ import {
 } from "./run-log.js";
 
 describe("cron run log", () => {
-  it("resolves a flat store path to cron.runs.jsonl", () => {
-    const storePath = path.join(os.tmpdir(), "cron.json");
-    const p = resolveCronRunLogPath({ storePath, jobId: "job-1" });
-    expect(p.endsWith(path.join(os.tmpdir(), "cron.runs.jsonl"))).toBe(true);
-  });
-
-  it("resolves jobs.json to per-job runs/<jobId>.jsonl", () => {
+  it("resolves store path to per-job runs/<jobId>.jsonl", () => {
     const storePath = path.join(os.tmpdir(), "cron", "jobs.json");
     const p = resolveCronRunLogPath({ storePath, jobId: "job-1" });
     expect(
@@ -27,7 +21,7 @@ describe("cron run log", () => {
 
   it("appends JSONL and prunes by line count", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdis-cron-log-"));
-    const logPath = path.join(dir, "cron.runs.jsonl");
+    const logPath = path.join(dir, "runs", "job-1.jsonl");
 
     for (let i = 0; i < 10; i++) {
       await appendCronRunLog(
@@ -59,15 +53,16 @@ describe("cron run log", () => {
     const dir = await fs.mkdtemp(
       path.join(os.tmpdir(), "clawdis-cron-log-read-"),
     );
-    const logPath = path.join(dir, "cron.runs.jsonl");
+    const logPathA = path.join(dir, "runs", "a.jsonl");
+    const logPathB = path.join(dir, "runs", "b.jsonl");
 
-    await appendCronRunLog(logPath, {
+    await appendCronRunLog(logPathA, {
       ts: 1,
       jobId: "a",
       action: "finished",
       status: "ok",
     });
-    await appendCronRunLog(logPath, {
+    await appendCronRunLog(logPathB, {
       ts: 2,
       jobId: "b",
       action: "finished",
@@ -75,30 +70,36 @@ describe("cron run log", () => {
       error: "nope",
       summary: "oops",
     });
-    await appendCronRunLog(logPath, {
+    await appendCronRunLog(logPathA, {
       ts: 3,
       jobId: "a",
       action: "finished",
       status: "skipped",
     });
 
-    const all = await readCronRunLogEntries(logPath, { limit: 10 });
-    expect(all.map((e) => e.jobId)).toEqual(["a", "b", "a"]);
+    const allA = await readCronRunLogEntries(logPathA, { limit: 10 });
+    expect(allA.map((e) => e.jobId)).toEqual(["a", "a"]);
 
-    const onlyA = await readCronRunLogEntries(logPath, {
+    const onlyA = await readCronRunLogEntries(logPathA, {
       limit: 10,
       jobId: "a",
     });
     expect(onlyA.map((e) => e.ts)).toEqual([1, 3]);
 
-    const lastOne = await readCronRunLogEntries(logPath, { limit: 1 });
+    const lastOne = await readCronRunLogEntries(logPathA, { limit: 1 });
     expect(lastOne.map((e) => e.ts)).toEqual([3]);
 
-    const onlyB = await readCronRunLogEntries(logPath, {
+    const onlyB = await readCronRunLogEntries(logPathB, {
       limit: 10,
       jobId: "b",
     });
     expect(onlyB[0]?.summary).toBe("oops");
+
+    const wrongFilter = await readCronRunLogEntries(logPathA, {
+      limit: 10,
+      jobId: "b",
+    });
+    expect(wrongFilter).toEqual([]);
 
     await fs.rm(dir, { recursive: true, force: true });
   });

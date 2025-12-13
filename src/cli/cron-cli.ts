@@ -362,15 +362,14 @@ export function registerCronCli(program: Command) {
     cron
       .command("runs")
       .description("Show cron run history (JSONL-backed)")
-      .option("--id <id>", "Job id (required when store is jobs.json)")
+      .requiredOption("--id <id>", "Job id")
       .option("--limit <n>", "Max entries (default 50)", "50")
       .action(async (opts) => {
         try {
           const limitRaw = Number.parseInt(String(opts.limit ?? "50"), 10);
           const limit =
             Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 50;
-          const id =
-            typeof opts.id === "string" && opts.id.trim() ? opts.id : undefined;
+          const id = String(opts.id);
           const res = await callGatewayFromCli("cron.runs", opts, {
             id,
             limit,

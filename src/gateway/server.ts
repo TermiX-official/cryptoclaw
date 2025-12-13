@@ -1487,21 +1487,10 @@ export async function startGatewayServer(
               );
               break;
             }
-            const p = params as { id?: string; limit?: number };
-            if (!p.id && cronStorePath.endsWith(`${path.sep}jobs.json`)) {
-              respond(
-                false,
-                undefined,
-                errorShape(
-                  ErrorCodes.INVALID_REQUEST,
-                  "cron.runs requires id when using jobs.json store layout",
-                ),
-              );
-              break;
-            }
+            const p = params as { id: string; limit?: number };
             const logPath = resolveCronRunLogPath({
               storePath: cronStorePath,
-              jobId: p.id ?? "all",
+              jobId: p.id,
             });
             const entries = await readCronRunLogEntries(logPath, {
               limit: p.limit,

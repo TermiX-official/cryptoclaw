@@ -391,7 +391,7 @@ export const CronRunParamsSchema = Type.Object(
 
 export const CronRunsParamsSchema = Type.Object(
   {
-    id: Type.Optional(NonEmptyString),
+    id: NonEmptyString,
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 5000 })),
   },
   { additionalProperties: false },

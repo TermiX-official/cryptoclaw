@@ -632,11 +632,11 @@ public struct CronRunParams: Codable {
 }
 
 public struct CronRunsParams: Codable {
-    public let id: String?
+    public let id: String
     public let limit: Int?
 
     public init(
-        id: String?,
+        id: String,
         limit: Int?
     ) {
         self.id = id

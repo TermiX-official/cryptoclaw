@@ -375,12 +375,12 @@ struct OnboardingView: View {
 
     private func whatsappPage() -> some View {
         self.onboardingPage {
-            Text("Link WhatsApp")
+            Text("Link WhatsApp or Telegram")
                 .font(.largeTitle.weight(.semibold))
             Text(
                 """
-                Run `clawdis login` where the gateway runs (local if local mode, remote if remote).
-                Scan the QR to pair your account.
+                WhatsApp uses a QR login for your personal account. Telegram uses a bot token.
+                Either (or both) is fine; configure them where the gateway runs.
                 """)
                 .font(.body)
                 .foregroundStyle(.secondary)
@@ -393,6 +393,9 @@ struct OnboardingView: View {
                     title: "Open a terminal",
                     subtitle: "Use the same host selected above. If remote, SSH in first.",
                     systemImage: "terminal")
+
+                Text("WhatsApp")
+                    .font(.headline)
                 self.featureRow(
                     title: "Run `clawdis login --verbose`",
                     subtitle: """
@@ -407,6 +410,22 @@ struct OnboardingView: View {
                     Settings → General shows remote/local mode so you know where to run it.
                     """,
                     systemImage: "clock.arrow.circlepath")
+
+                Divider()
+                    .padding(.vertical, 6)
+
+                Text("Telegram")
+                    .font(.headline)
+                self.featureRow(
+                    title: "Set `TELEGRAM_BOT_TOKEN`",
+                    subtitle: """
+                    Create a bot with @BotFather and set the token as an env var (or `telegram.botToken` in `~/.clawdis/clawdis.json`).
+                    """,
+                    systemImage: "key")
+                self.featureRow(
+                    title: "Verify with `clawdis status --deep`",
+                    subtitle: "This probes both WhatsApp and the Telegram API and prints what’s configured.",
+                    systemImage: "checkmark.shield")
             }
         }
     }

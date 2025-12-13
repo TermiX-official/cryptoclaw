@@ -154,13 +154,14 @@ struct OnboardingView: View {
                 if self.state.connectionMode == .remote {
                     VStack(alignment: .leading, spacing: 8) {
                         LabeledContent("SSH target") {
-                            HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 TextField("user@host[:22]", text: self.$state.remoteTarget)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 300)
-                                MasterDiscoveryMenu(discovery: self.masterDiscovery) { master in
+                                MasterDiscoveryInlineList(discovery: self.masterDiscovery) { master in
                                     self.applyDiscoveredMaster(master)
                                 }
+                                .frame(width: 360)
                             }
                         }
 
@@ -487,6 +488,7 @@ struct OnboardingView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding(.horizontal, 20)
+        .padding(.bottom, 12)
         .frame(height: 60)
     }
 

@@ -125,9 +125,6 @@ struct GeneralSettings: View {
                 TextField("user@host[:22]", text: self.$state.remoteTarget)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: .infinity)
-                MasterDiscoveryMenu(discovery: self.masterDiscovery) { master in
-                    self.applyDiscoveredMaster(master)
-                }
                 Button {
                     Task { await self.testRemote() }
                 } label: {
@@ -141,6 +138,11 @@ struct GeneralSettings: View {
                 .disabled(self.remoteStatus == .checking || self.state.remoteTarget
                     .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+
+            MasterDiscoveryInlineList(discovery: self.masterDiscovery) { master in
+                self.applyDiscoveredMaster(master)
+            }
+            .padding(.leading, 58)
 
             self.remoteStatusView
                 .padding(.leading, 58)

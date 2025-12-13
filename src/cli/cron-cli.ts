@@ -163,7 +163,11 @@ export function registerCronCli(program: Command) {
         "Do not fail the job if delivery fails",
         false,
       )
-      .option("--post-to-main", "Post a 1-line summary to main session", false)
+      .option(
+        "--post-to-main",
+        "Deprecated: isolated jobs always post a summary to main; use --post-prefix to customize",
+        false,
+      )
       .option(
         "--post-prefix <prefix>",
         "Prefix for summary system event",
@@ -343,7 +347,11 @@ export function registerCronCli(program: Command) {
         "Do not fail job if delivery fails",
         false,
       )
-      .option("--post-to-main", "Post a 1-line summary to main session", false)
+      .option(
+        "--post-to-main",
+        "Deprecated: isolated jobs always post a summary to main; use --post-prefix to customize",
+        false,
+      )
       .option("--post-prefix <prefix>", "Prefix for summary system event")
       .action(async (id, opts) => {
         try {

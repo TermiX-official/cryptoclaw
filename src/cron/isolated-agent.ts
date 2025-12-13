@@ -43,8 +43,18 @@ function assertCommandReplyConfig(cfg: ClawdisConfig) {
 function pickSummaryFromOutput(text: string | undefined) {
   const clean = (text ?? "").trim();
   if (!clean) return undefined;
-  const oneLine = clean.replace(/\s+/g, " ");
-  return oneLine.length > 200 ? `${oneLine.slice(0, 200)}…` : oneLine;
+  const limit = 2000;
+  return clean.length > limit ? `${clean.slice(0, limit)}…` : clean;
+}
+
+function pickSummaryFromPayloads(
+  payloads: Array<{ text?: string | undefined }>,
+) {
+  for (let i = payloads.length - 1; i >= 0; i--) {
+    const summary = pickSummaryFromOutput(payloads[i]?.text);
+    if (summary) return summary;
+  }
+  return undefined;
 }
 
 function resolveDeliveryTarget(
@@ -247,7 +257,8 @@ export async function runCronIsolatedAgentTurn(params: {
 
   const payloads = runResult.payloads ?? [];
   const firstText = payloads[0]?.text ?? "";
-  const summary = pickSummaryFromOutput(firstText);
+  const summary =
+    pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
 
   if (delivery) {
     if (resolvedDelivery.channel === "whatsapp") {

@@ -104,7 +104,6 @@ describe("CronService", () => {
       sessionTarget: "isolated",
       wakeMode: "now",
       payload: { kind: "agentTurn", message: "do it", deliver: false },
-      isolation: { postToMain: true, postToMainPrefix: "Cron" },
     });
 
     vi.setSystemTime(new Date("2025-12-13T00:00:01.000Z"));

@@ -402,8 +402,8 @@ export class CronService {
         nextRunAtMs: job.state.nextRunAtMs,
       });
 
-      if (summary && job.isolation?.postToMain) {
-        const prefix = job.isolation.postToMainPrefix?.trim() || "Cron";
+      if (summary && job.sessionTarget === "isolated") {
+        const prefix = job.isolation?.postToMainPrefix?.trim() || "Cron";
         this.deps.enqueueSystemEvent(`${prefix}: ${summary}`);
         if (job.wakeMode === "now") {
           this.deps.requestReplyHeartbeatNow({ reason: `cron:${job.id}:post` });

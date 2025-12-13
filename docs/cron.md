@@ -76,7 +76,7 @@ Each job is a JSON object with stable keys (unknown keys ignored for forward com
   - `{"kind":"systemEvent","text":string}` (enqueue as `System:`)
   - `{"kind":"agentTurn","message":string,"deliver"?:boolean,"channel"?: "last"|"whatsapp"|"telegram","to"?:string,"timeoutSeconds"?:number}`
 - `isolation` (optional; only meaningful for isolated jobs)
-  - `{"postToMain": boolean, "postToMainPrefix"?: string}`
+  - `{"postToMain"?: boolean, "postToMainPrefix"?: string}`
 - `runtime` (optional)
   - `{"maxAttempts"?:number,"retryBackoffMs"?:number}` (best-effort retries; defaults off)
 - `state` (runtime-maintained)
@@ -174,8 +174,8 @@ When due:
   - `sessionKey = cron:<jobId>`
   - `sessionId = store[sessionKey].sessionId` (create if missing)
 - Optionally deliver output (`payload.deliver === true`) to the configured channel/to.
-- If `isolation.postToMain` is true, enqueue a summary system event to main, e.g.:
-  - `System: Cron "<name>" completed: <1-line summary>`
+- Isolated jobs always enqueue a summary system event to the main session when they finish (derived from the last agent text output).
+  - Prefix defaults to `Cron`, and can be customized via `isolation.postToMainPrefix`.
 
 ### “Run in parallel to main”
 

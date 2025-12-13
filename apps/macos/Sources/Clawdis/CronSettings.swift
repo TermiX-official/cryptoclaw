@@ -15,6 +15,7 @@ struct CronSettings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             self.header
+            self.schedulerBanner
             self.content
             Spacer(minLength: 0)
         }
@@ -54,6 +55,38 @@ struct CronSettings: View {
         .onChange(of: self.store.selectedJobId) { _, newValue in
             guard let newValue else { return }
             Task { await self.store.refreshRuns(jobId: newValue) }
+        }
+    }
+
+    private var schedulerBanner: some View {
+        Group {
+            if self.store.schedulerEnabled == false {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Cron scheduler is disabled")
+                            .font(.headline)
+                        Spacer()
+                    }
+                    Text("Jobs are saved, but they will not run automatically until `cron.enabled` is set to `true` and the Gateway restarts.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let storePath = self.store.schedulerStorePath, !storePath.isEmpty {
+                        Text(storePath)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
+                .background(Color.orange.opacity(0.10))
+                .cornerRadius(8)
+            }
         }
     }
 

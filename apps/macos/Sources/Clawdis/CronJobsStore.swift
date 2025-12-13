@@ -10,6 +10,10 @@ final class CronJobsStore: ObservableObject {
     @Published var selectedJobId: String?
     @Published var runEntries: [CronRunLogEntry] = []
 
+    @Published var schedulerEnabled: Bool?
+    @Published var schedulerStorePath: String?
+    @Published var schedulerNextWakeAtMs: Int?
+
     @Published var isLoadingJobs = false
     @Published var isLoadingRuns = false
     @Published var lastError: String?
@@ -61,6 +65,11 @@ final class CronJobsStore: ObservableObject {
         defer { self.isLoadingJobs = false }
 
         do {
+            if let status = try? await self.fetchCronStatus() {
+                self.schedulerEnabled = status.enabled
+                self.schedulerStorePath = status.storePath
+                self.schedulerNextWakeAtMs = status.nextWakeAtMs
+            }
             let data = try await self.request(
                 method: "cron.list",
                 params: ["includeDisabled": true])
@@ -205,5 +214,16 @@ final class CronJobsStore: ObservableObject {
         let rawParams = params?.reduce(into: [String: AnyCodable]()) { $0[$1.key] = AnyCodable($1.value) }
         return try await GatewayConnection.shared.request(method: method, params: rawParams, timeoutMs: timeoutMs)
     }
+
+    private func fetchCronStatus() async throws -> CronStatusResponse {
+        let data = try await self.request(method: "cron.status", params: nil)
+        return try JSONDecoder().decode(CronStatusResponse.self, from: data)
+    }
 }
 
+private struct CronStatusResponse: Decodable {
+    let enabled: Bool
+    let storePath: String
+    let jobs: Int
+    let nextWakeAtMs: Int?
+}

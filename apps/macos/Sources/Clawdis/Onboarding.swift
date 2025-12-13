@@ -44,16 +44,19 @@ struct OnboardingView: View {
     @State private var cliStatus: String?
     @State private var copied = false
     @State private var monitoringPermissions = false
+    @State private var monitoringDiscovery = false
     @State private var cliInstalled = false
     @State private var cliInstallLocation: String?
     @State private var gatewayStatus: GatewayEnvironmentStatus = .checking
     @State private var gatewayInstalling = false
     @State private var gatewayInstallMessage: String?
+    @StateObject private var masterDiscovery = MasterDiscoveryModel()
     @ObservedObject private var state = AppStateStore.shared
     @ObservedObject private var permissionMonitor = PermissionMonitor.shared
 
     private let pageWidth: CGFloat = 680
     private let contentHeight: CGFloat = 520
+    private let connectionPageIndex = 1
     private let permissionsPageIndex = 3
     private var pageCount: Int { 7 }
     private var buttonTitle: String { self.currentPage == self.pageCount - 1 ? "Finish" : "Next" }
@@ -91,12 +94,18 @@ struct OnboardingView: View {
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             self.currentPage = 0
-            self.updatePermissionMonitoring(for: 0)
+            self.updateMonitoring(for: 0)
         }
         .onChange(of: self.currentPage) { _, newValue in
-            self.updatePermissionMonitoring(for: newValue)
+            self.updateMonitoring(for: newValue)
         }
-        .onDisappear { self.stopPermissionMonitoring() }
+        .onChange(of: self.state.connectionMode) { _, _ in
+            self.updateDiscoveryMonitoring(for: self.currentPage)
+        }
+        .onDisappear {
+            self.stopPermissionMonitoring()
+            self.stopDiscovery()
+        }
         .task {
             await self.refreshPerms()
             self.refreshCLIStatus()
@@ -145,9 +154,14 @@ struct OnboardingView: View {
                 if self.state.connectionMode == .remote {
                     VStack(alignment: .leading, spacing: 8) {
                         LabeledContent("SSH target") {
-                            TextField("user@host[:22]", text: self.$state.remoteTarget)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 300)
+                            HStack(spacing: 8) {
+                                TextField("user@host[:22]", text: self.$state.remoteTarget)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 300)
+                                MasterDiscoveryMenu(discovery: self.masterDiscovery) { master in
+                                    self.applyDiscoveredMaster(master)
+                                }
+                            }
                         }
 
                         DisclosureGroup("Advanced") {
@@ -254,6 +268,17 @@ struct OnboardingView: View {
                 }
             }
         }
+    }
+
+    private func applyDiscoveredMaster(_ master: MasterDiscoveryModel.DiscoveredMaster) {
+        let host = master.tailnetDns ?? master.lanHost
+        guard let host else { return }
+        let user = NSUserName()
+        var target = "\(user)@\(host)"
+        if master.sshPort != 22 {
+            target += ":\(master.sshPort)"
+        }
+        self.state.remoteTarget = target
     }
 
     private func permissionsPage() -> some View {
@@ -549,10 +574,33 @@ struct OnboardingView: View {
         }
     }
 
+    private func updateDiscoveryMonitoring(for pageIndex: Int) {
+        let isConnectionPage = pageIndex == self.connectionPageIndex
+        let shouldMonitor = isConnectionPage && self.state.connectionMode == .remote
+        if shouldMonitor, !self.monitoringDiscovery {
+            self.monitoringDiscovery = true
+            self.masterDiscovery.start()
+        } else if !shouldMonitor, self.monitoringDiscovery {
+            self.monitoringDiscovery = false
+            self.masterDiscovery.stop()
+        }
+    }
+
+    private func updateMonitoring(for pageIndex: Int) {
+        self.updatePermissionMonitoring(for: pageIndex)
+        self.updateDiscoveryMonitoring(for: pageIndex)
+    }
+
     private func stopPermissionMonitoring() {
         guard self.monitoringPermissions else { return }
         self.monitoringPermissions = false
         PermissionMonitor.shared.unregister()
+    }
+
+    private func stopDiscovery() {
+        guard self.monitoringDiscovery else { return }
+        self.monitoringDiscovery = false
+        self.masterDiscovery.stop()
     }
 
     private func installCLI() async {

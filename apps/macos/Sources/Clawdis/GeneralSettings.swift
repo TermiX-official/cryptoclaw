@@ -125,18 +125,9 @@ struct GeneralSettings: View {
                 TextField("user@host[:22]", text: self.$state.remoteTarget)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: .infinity)
-                Menu {
-                    if self.masterDiscovery.masters.isEmpty {
-                        Button(self.masterDiscovery.statusText) {}.disabled(true)
-                    } else {
-                        ForEach(self.masterDiscovery.masters) { master in
-                            Button(master.displayName) { self.applyDiscoveredMaster(master) }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "dot.radiowaves.left.and.right")
+                MasterDiscoveryMenu(discovery: self.masterDiscovery) { master in
+                    self.applyDiscoveredMaster(master)
                 }
-                .help("Discover Clawdis masters on your LAN")
                 Button {
                     Task { await self.testRemote() }
                 } label: {

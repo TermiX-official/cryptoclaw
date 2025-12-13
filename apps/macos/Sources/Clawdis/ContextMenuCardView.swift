@@ -43,7 +43,7 @@ struct ContextMenuCardView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     if self.rows.isEmpty, self.isLoading {
                         ForEach(0..<2, id: \.self) { _ in
                             self.placeholderRow
@@ -93,6 +93,7 @@ struct ContextMenuCardView: View {
                     .layoutPriority(2)
             }
         }
+        .padding(.vertical, 2)
     }
 
     private var placeholderRow: some View {

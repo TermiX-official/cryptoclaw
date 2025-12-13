@@ -23,6 +23,7 @@ struct AboutSettings: View {
             }
             .buttonStyle(.plain)
             .focusable(false)
+            .pointingHandCursor()
             .onHover { hover in
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.72)) { self.iconHover = hover }
             }
@@ -159,6 +160,7 @@ private struct AboutLinkRow: View {
         }
         .buttonStyle(.plain)
         .onHover { self.hovering = $0 }
+        .pointingHandCursor()
     }
 }
 

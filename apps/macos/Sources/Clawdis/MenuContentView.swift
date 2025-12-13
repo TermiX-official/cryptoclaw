@@ -18,12 +18,12 @@ struct MenuContent: View {
     @State private var sessionMenu: [SessionRow] = []
     @State private var contextSessions: [SessionRow] = []
     @State private var contextActiveCount: Int = 0
-    @State private var contextCardWidth: CGFloat = 280
+    @State private var contextCardWidth: CGFloat = 320
 
     private let activeSessionWindowSeconds: TimeInterval = 24 * 60 * 60
     private let contextCardPadding: CGFloat = 10
-    private let contextBarHeight: CGFloat = 6
-    private let contextFallbackWidth: CGFloat = 280
+    private let contextBarHeight: CGFloat = 4
+    private let contextFallbackWidth: CGFloat = 320
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -259,48 +259,57 @@ struct MenuContent: View {
 
     @ViewBuilder
     private var contextCardRow: some View {
-        Button(action: {}, label: {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Context")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                if self.contextSessions.isEmpty {
-                    Text("No active sessions")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(self.contextSessions) { row in
-                            self.contextSessionRow(row)
-                        }
-                    }
-                }
-            }
-            .padding(self.contextCardPadding)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
-                    }
-            }
-            .onWidthChange { width in
-                // Keep a stable width; menu measurement can be noisy across opens.
-                let next = max(self.contextFallbackWidth, width)
-                if abs(next - self.contextCardWidth) > 1 {
-                    self.contextCardWidth = next
-                }
-            }
-        })
-        .buttonStyle(.plain)
-        .disabled(true)
+        MenuHostedItem(
+            width: self.contextCardWidth,
+            rootView: AnyView(self.contextCardView))
     }
 
     private var contextPillWidth: CGFloat {
         let base = self.contextCardWidth > 0 ? self.contextCardWidth : self.contextFallbackWidth
         return max(1, base - (self.contextCardPadding * 2))
+    }
+
+    @ViewBuilder
+    private var contextCardView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Context")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 10)
+                Text(self.contextSubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if self.contextSessions.isEmpty {
+                Text("No active sessions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(self.contextSessions) { row in
+                        self.contextSessionRow(row)
+                    }
+                }
+            }
+        }
+        .padding(self.contextCardPadding)
+        .frame(width: self.contextCardWidth, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                }
+        }
+    }
+
+    private var contextSubtitle: String {
+        let count = self.contextActiveCount
+        if count == 1 { return "1 session · 24h" }
+        return "\(count) sessions · 24h"
     }
 
     @ViewBuilder
@@ -497,8 +506,13 @@ struct MenuContent: View {
         }
 
         let activeCount = active.count
+        let main = rows.first(where: { $0.key == "main" })
+        var merged = active
+        if let main, !merged.contains(where: { $0.key == "main" }) {
+            merged.insert(main, at: 0)
+        }
         // Keep stable ordering: main first, then most recent.
-        let sorted = active.sorted { lhs, rhs in
+        let sorted = merged.sorted { lhs, rhs in
             if lhs.key == "main" { return true }
             if rhs.key == "main" { return false }
             return (lhs.updatedAt ?? .distantPast) > (rhs.updatedAt ?? .distantPast)

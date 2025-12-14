@@ -1321,7 +1321,7 @@ export async function monitorWebProvider(
 
         await deliverWebReply({
           replyResult: cleanedReply,
-          msg: lastInboundMsg,
+          msg: heartbeatInboundMsg,
           maxMediaBytes,
           replyLogger,
           runtime,

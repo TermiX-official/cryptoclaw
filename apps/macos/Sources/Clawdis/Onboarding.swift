@@ -132,46 +132,49 @@ struct OnboardingView: View {
 
     private func welcomePage() -> some View {
         self.onboardingPage {
-            Text("Welcome to Clawdis")
-                .font(.largeTitle.weight(.semibold))
-            Text(
-                "Your macOS menu bar companion for notifications, screenshots, and agent automation — " +
-                    "setup takes just a few minutes.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .frame(maxWidth: 560)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 22) {
+                Text("Welcome to Clawdis")
+                    .font(.largeTitle.weight(.semibold))
+                Text(
+                    "Your macOS menu bar companion for notifications, screenshots, and agent automation — " +
+                        "setup takes just a few minutes.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(maxWidth: 560)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            self.onboardingCard(spacing: 10, padding: 14) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(Color(nsColor: .systemOrange))
-                        .frame(width: 22)
-                        .padding(.top, 1)
+                self.onboardingCard(spacing: 10, padding: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Color(nsColor: .systemOrange))
+                            .frame(width: 22)
+                            .padding(.top, 1)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Security notice")
-                            .font(.headline)
-                        Text(
-                            """
-                            The connected AI agent (e.g. Claude) can trigger powerful actions on your Mac,
-                            including running
-                            commands, reading/writing files, and capturing screenshots — depending on the
-                            permissions you grant.
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Security notice")
+                                .font(.headline)
+                            Text(
+                                """
+                                The connected AI agent (e.g. Claude) can trigger powerful actions on your Mac,
+                                including running
+                                commands, reading/writing files, and capturing screenshots — depending on the
+                                permissions you grant.
 
-                            Only enable Clawdis if you understand the risks and trust the prompts
-                            and integrations you use.
-                            """)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                                Only enable Clawdis if you understand the risks and trust the prompts
+                                and integrations you use.
+                                """)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
+                .frame(maxWidth: 520)
             }
-            .frame(maxWidth: 520)
+            .padding(.top, 16)
         }
     }
 

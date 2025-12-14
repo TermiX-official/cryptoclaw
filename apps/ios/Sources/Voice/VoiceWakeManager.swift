@@ -91,34 +91,36 @@ final class VoiceWakeManager: NSObject, ObservableObject {
 
     private var lastDispatched: String?
     private var onCommand: (@Sendable (String) async -> Void)?
+    private nonisolated(unsafe) var userDefaultsObserver: NSObjectProtocol?
 
     override init() {
         super.init()
         self.triggerWords = VoiceWakePreferences.loadTriggerWords()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(self.handleUserDefaultsDidChange),
-            name: UserDefaults.didChangeNotification,
-            object: UserDefaults.standard)
+        self.userDefaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: UserDefaults.standard,
+            queue: .main,
+            using: { [weak self] _ in
+                Task { @MainActor in
+                    self?.handleUserDefaultsDidChange()
+                }
+            })
     }
 
     deinit {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: UserDefaults.didChangeNotification,
-            object: UserDefaults.standard)
+        if let userDefaultsObserver = self.userDefaultsObserver {
+            NotificationCenter.default.removeObserver(userDefaultsObserver)
+        }
     }
 
     var activeTriggerWords: [String] {
         VoiceWakePreferences.sanitizeTriggerWords(self.triggerWords)
     }
 
-    @objc private func handleUserDefaultsDidChange() {
+    private func handleUserDefaultsDidChange() {
         let updated = VoiceWakePreferences.loadTriggerWords()
-        Task { @MainActor in
-            if updated != self.triggerWords {
-                self.triggerWords = updated
-            }
+        if updated != self.triggerWords {
+            self.triggerWords = updated
         }
     }
 

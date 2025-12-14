@@ -15,6 +15,10 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+        excludes:
+          - Assets.xcassets
+    resources:
+      - path: Sources/Assets.xcassets
     dependencies:
       - package: ClawdisKit
       - package: ClawdisKit

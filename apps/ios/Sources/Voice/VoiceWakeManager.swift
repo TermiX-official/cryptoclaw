@@ -334,7 +334,7 @@ final class VoiceWakeManager: NSObject, ObservableObject {
         Self.extractCommand(from: transcript, triggers: self.activeTriggerWords)
     }
 
-    private static func extractCommand(from transcript: String, triggers: [String]) -> String? {
+    nonisolated static func extractCommand(from transcript: String, triggers: [String]) -> String? {
         var bestRange: Range<String.Index>?
         for trigger in triggers {
             let token = trigger.trimmingCharacters(in: .whitespacesAndNewlines)

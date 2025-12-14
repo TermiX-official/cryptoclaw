@@ -187,12 +187,12 @@ actor CameraController {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     }
 
-    private nonisolated static func clampQuality(_ quality: Double?) -> Double {
+    nonisolated static func clampQuality(_ quality: Double?) -> Double {
         let q = quality ?? 0.9
         return min(1.0, max(0.05, q))
     }
 
-    private nonisolated static func clampDurationMs(_ ms: Int?) -> Int {
+    nonisolated static func clampDurationMs(_ ms: Int?) -> Int {
         let v = ms ?? 3000
         // Keep clips short by default; avoid huge base64 payloads on the bridge.
         return min(15000, max(250, v))

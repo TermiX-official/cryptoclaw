@@ -67,7 +67,10 @@ final class HealthStore: ObservableObject {
     private let refreshInterval: TimeInterval = 60
 
     private init() {
-        self.start()
+        // Avoid background health polling in SwiftUI previews and tests.
+        if !ProcessInfo.processInfo.isPreview, !ProcessInfo.processInfo.isRunningTests {
+            self.start()
+        }
     }
 
     func start() {

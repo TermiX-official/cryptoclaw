@@ -5,6 +5,15 @@ extension ProcessInfo {
     var isPreview: Bool {
         self.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
+
+    var isRunningTests: Bool {
+        // SwiftPM test bundles are typically loaded from a `.xctest` bundle.
+        // We also check common XCTest env vars because some runners still set them.
+        if Bundle.main.bundleURL.pathExtension == "xctest" { return true }
+        return self.environment["XCTestConfigurationFilePath"] != nil
+            || self.environment["XCTestBundlePath"] != nil
+            || self.environment["XCTestSessionIdentifier"] != nil
+    }
 }
 
 enum LaunchdManager {

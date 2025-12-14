@@ -72,35 +72,8 @@ struct MacGatewayChatTransport: ClawdisChatTransport, Sendable {
                 let stream = await GatewayConnection.shared.subscribe()
                 for await push in stream {
                     if Task.isCancelled { return }
-                    switch push {
-                    case let .snapshot(hello):
-                        let ok = (try? JSONDecoder().decode(
-                            ClawdisGatewayHealthOK.self,
-                            from: JSONEncoder().encode(hello.snapshot.health)))?.ok ?? true
-                        continuation.yield(.health(ok: ok))
-                    case let .event(evt):
-                        switch evt.event {
-                        case "health":
-                            guard let payload = evt.payload else { break }
-                            let ok = (try? JSONDecoder().decode(
-                                ClawdisGatewayHealthOK.self,
-                                from: JSONEncoder().encode(payload)))?.ok ?? true
-                            continuation.yield(.health(ok: ok))
-                        case "tick":
-                            continuation.yield(.tick)
-                        case "chat":
-                            guard let payload = evt.payload else { break }
-                            if let chat = try? JSONDecoder().decode(
-                                ClawdisChatEventPayload.self,
-                                from: JSONEncoder().encode(payload))
-                            {
-                                continuation.yield(.chat(chat))
-                            }
-                        default:
-                            break
-                        }
-                    case .seqGap:
-                        continuation.yield(.seqGap)
+                    if let evt = Self.mapPushToTransportEvent(push) {
+                        continuation.yield(evt)
                     }
                 }
             }
@@ -108,6 +81,42 @@ struct MacGatewayChatTransport: ClawdisChatTransport, Sendable {
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
             }
+        }
+    }
+
+    static func mapPushToTransportEvent(_ push: GatewayPush) -> ClawdisChatTransportEvent? {
+        switch push {
+        case let .snapshot(hello):
+            let ok = (try? JSONDecoder().decode(
+                ClawdisGatewayHealthOK.self,
+                from: JSONEncoder().encode(hello.snapshot.health)))?.ok ?? true
+            return .health(ok: ok)
+
+        case let .event(evt):
+            switch evt.event {
+            case "health":
+                guard let payload = evt.payload else { return nil }
+                let ok = (try? JSONDecoder().decode(
+                    ClawdisGatewayHealthOK.self,
+                    from: JSONEncoder().encode(payload)))?.ok ?? true
+                return .health(ok: ok)
+            case "tick":
+                return .tick
+            case "chat":
+                guard let payload = evt.payload else { return nil }
+                guard let chat = try? JSONDecoder().decode(
+                    ClawdisChatEventPayload.self,
+                    from: JSONEncoder().encode(payload))
+                else {
+                    return nil
+                }
+                return .chat(chat)
+            default:
+                return nil
+            }
+
+        case .seqGap:
+            return .seqGap
         }
     }
 }
@@ -124,11 +133,19 @@ final class WebChatSwiftUIWindowController {
     var onClosed: (() -> Void)?
     var onVisibilityChanged: ((Bool) -> Void)?
 
-    init(sessionKey: String, presentation: WebChatPresentation) {
+    convenience init(sessionKey: String, presentation: WebChatPresentation) {
+        self.init(sessionKey: sessionKey, presentation: presentation, transport: MacGatewayChatTransport())
+    }
+
+    init(sessionKey: String, presentation: WebChatPresentation, transport: any ClawdisChatTransport) {
         self.sessionKey = sessionKey
         self.presentation = presentation
-        let vm = ClawdisChatViewModel(sessionKey: sessionKey, transport: MacGatewayChatTransport())
+        let vm = ClawdisChatViewModel(sessionKey: sessionKey, transport: transport)
         self.hosting = NSHostingController(rootView: ClawdisChatView(viewModel: vm))
+        self.hosting.view.wantsLayer = true
+        self.hosting.view.layer?.cornerCurve = .continuous
+        self.hosting.view.layer?.cornerRadius = 16
+        self.hosting.view.layer?.masksToBounds = true
         self.window = Self.makeWindow(for: presentation, contentViewController: self.hosting)
     }
 

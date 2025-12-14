@@ -43,7 +43,10 @@ protocol WebSocketSessioning: AnyObject {
 
 extension URLSession: WebSocketSessioning {
     func makeWebSocketTask(url: URL) -> WebSocketTaskBox {
-        WebSocketTaskBox(task: self.webSocketTask(with: url))
+        let task = self.webSocketTask(with: url)
+        // Avoid "Message too long" receive errors for large snapshots / history payloads.
+        task.maximumMessageSize = 16 * 1024 * 1024 // 16 MB
+        return WebSocketTaskBox(task: task)
     }
 }
 

@@ -1,0 +1,308 @@
+import Foundation
+import SwiftUI
+
+#if !os(macOS)
+import PhotosUI
+import UniformTypeIdentifiers
+#endif
+
+@MainActor
+struct ClawdisChatComposer: View {
+    @ObservedObject var viewModel: ClawdisChatViewModel
+
+    #if !os(macOS)
+    @State private var pickerItems: [PhotosPickerItem] = []
+    @FocusState private var isFocused: Bool
+    #endif
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                self.thinkingPicker
+                Spacer()
+                self.attachmentPicker
+            }
+
+            if !self.viewModel.attachments.isEmpty {
+                self.attachmentsStrip
+            }
+
+            self.editor
+
+            HStack {
+                if let error = self.viewModel.errorText {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+                Spacer()
+                Button {
+                    self.viewModel.send()
+                } label: {
+                    Label(self.viewModel.isSending ? "Sending…" : "Send", systemImage: "arrow.up.circle.fill")
+                        .font(.headline)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!self.viewModel.canSend)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(ClawdisChatTheme.card)
+                .shadow(color: .black.opacity(0.06), radius: 12, y: 6))
+        #if os(macOS)
+            .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                self.handleDrop(providers)
+            }
+        #endif
+    }
+
+    private var thinkingPicker: some View {
+        Picker("Thinking", selection: self.$viewModel.thinkingLevel) {
+            Text("Off").tag("off")
+            Text("Low").tag("low")
+            Text("Medium").tag("medium")
+            Text("High").tag("high")
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .frame(maxWidth: 200)
+    }
+
+    @ViewBuilder
+    private var attachmentPicker: some View {
+        #if os(macOS)
+        Button {
+            self.pickFilesMac()
+        } label: {
+            Label("Add Image", systemImage: "paperclip")
+        }
+        .buttonStyle(.bordered)
+        #else
+        PhotosPicker(selection: self.$pickerItems, maxSelectionCount: 8, matching: .images) {
+            Label("Add Image", systemImage: "paperclip")
+        }
+        .buttonStyle(.bordered)
+        .onChange(of: self.pickerItems) { _, newItems in
+            Task { await self.loadPhotosPickerItems(newItems) }
+        }
+        #endif
+    }
+
+    private var attachmentsStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(
+                    self.viewModel.attachments,
+                    id: \ClawdisPendingAttachment.id)
+                { (att: ClawdisPendingAttachment) in
+                    HStack(spacing: 6) {
+                        if let img = att.preview {
+                            ClawdisPlatformImageFactory.image(img)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 22, height: 22)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        } else {
+                            Image(systemName: "photo")
+                        }
+
+                        Text(att.fileName)
+                            .lineLimit(1)
+
+                        Button {
+                            self.viewModel.removeAttachment(att.id)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(Color.accentColor.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+            }
+        }
+    }
+
+    private var editor: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(ClawdisChatTheme.divider)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(ClawdisChatTheme.card))
+            .overlay(self.editorOverlay)
+            .frame(maxHeight: 180)
+    }
+
+    private var editorOverlay: some View {
+        ZStack(alignment: .topLeading) {
+            if self.viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("Message Clawd…")
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+            }
+
+            #if os(macOS)
+            ChatComposerTextView(text: self.$viewModel.input) {
+                self.viewModel.send()
+            }
+            .frame(minHeight: 54, maxHeight: 160)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            #else
+            TextEditor(text: self.$viewModel.input)
+                .font(.system(size: 15))
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+                .focused(self.$isFocused)
+            #endif
+        }
+    }
+
+    #if os(macOS)
+    private func pickFilesMac() {
+        let panel = NSOpenPanel()
+        panel.title = "Select image attachments"
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.image]
+        panel.begin { resp in
+            guard resp == .OK else { return }
+            self.viewModel.addAttachments(urls: panel.urls)
+        }
+    }
+
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        let fileProviders = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
+        guard !fileProviders.isEmpty else { return false }
+        for item in fileProviders {
+            item.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                guard let data = item as? Data,
+                      let url = URL(dataRepresentation: data, relativeTo: nil)
+                else { return }
+                Task { @MainActor in
+                    self.viewModel.addAttachments(urls: [url])
+                }
+            }
+        }
+        return true
+    }
+    #else
+    private func loadPhotosPickerItems(_ items: [PhotosPickerItem]) async {
+        for item in items {
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
+                let type = item.supportedContentTypes.first ?? .image
+                let ext = type.preferredFilenameExtension ?? "jpg"
+                let mime = type.preferredMIMEType ?? "image/jpeg"
+                let name = "photo-\(UUID().uuidString.prefix(8)).\(ext)"
+                self.viewModel.addImageAttachment(data: data, fileName: name, mimeType: mime)
+            } catch {
+                self.viewModel.errorText = error.localizedDescription
+            }
+        }
+        self.pickerItems = []
+    }
+    #endif
+}
+
+#if os(macOS)
+import AppKit
+import UniformTypeIdentifiers
+
+private struct ChatComposerTextView: NSViewRepresentable {
+    @Binding var text: String
+    var onSend: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = ChatComposerNSTextView()
+        textView.delegate = context.coordinator
+        textView.drawsBackground = false
+        textView.isRichText = false
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.font = .systemFont(ofSize: 14, weight: .regular)
+        textView.textContainer?.lineBreakMode = .byWordWrapping
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainerInset = NSSize(width: 2, height: 8)
+        textView.focusRingType = .none
+
+        textView.minSize = .zero
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isHorizontallyResizable = false
+        textView.isVerticallyResizable = true
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+
+        textView.string = self.text
+        textView.onSend = { [weak textView] in
+            textView?.window?.makeFirstResponder(nil)
+            self.onSend()
+        }
+
+        let scroll = NSScrollView()
+        scroll.drawsBackground = false
+        scroll.borderType = .noBorder
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.scrollerStyle = .overlay
+        scroll.hasHorizontalScroller = false
+        scroll.documentView = textView
+        return scroll
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? ChatComposerNSTextView else { return }
+        let isEditing = scrollView.window?.firstResponder == textView
+        if isEditing { return }
+
+        if textView.string != self.text {
+            context.coordinator.isProgrammaticUpdate = true
+            defer { context.coordinator.isProgrammaticUpdate = false }
+            textView.string = self.text
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: ChatComposerTextView
+        var isProgrammaticUpdate = false
+
+        init(_ parent: ChatComposerTextView) { self.parent = parent }
+
+        func textDidChange(_ notification: Notification) {
+            guard !self.isProgrammaticUpdate else { return }
+            guard let view = notification.object as? NSTextView else { return }
+            guard view.window?.firstResponder === view else { return }
+            self.parent.text = view.string
+        }
+    }
+}
+
+private final class ChatComposerNSTextView: NSTextView {
+    var onSend: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        let isReturn = event.keyCode == 36
+        if isReturn {
+            if event.modifierFlags.contains(.shift) {
+                super.insertNewline(nil)
+                return
+            }
+            self.onSend?()
+            return
+        }
+        super.keyDown(with: event)
+    }
+}
+#endif

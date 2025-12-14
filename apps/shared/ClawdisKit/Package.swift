@@ -10,11 +10,18 @@ let package = Package(
     ],
     products: [
         .library(name: "ClawdisKit", targets: ["ClawdisKit"]),
+        .library(name: "ClawdisChatUI", targets: ["ClawdisChatUI"]),
     ],
     targets: [
         .target(
             name: "ClawdisKit",
             dependencies: [],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]),
+        .target(
+            name: "ClawdisChatUI",
+            dependencies: ["ClawdisKit"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),

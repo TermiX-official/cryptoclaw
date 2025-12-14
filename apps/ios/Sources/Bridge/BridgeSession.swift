@@ -16,6 +16,8 @@ actor BridgeSession {
     private var connection: NWConnection?
     private var queue: DispatchQueue?
     private var buffer = Data()
+    private var pendingRPC: [String: CheckedContinuation<BridgeRPCResponse, Error>] = [:]
+    private var serverEventSubscribers: [UUID: AsyncStream<BridgeEventFrame>.Continuation] = [:]
 
     private(set) var state: State = .idle
 
@@ -106,6 +108,16 @@ actor BridgeSession {
             guard let nextBase = try? self.decoder.decode(BridgeBaseFrame.self, from: nextData) else { continue }
 
             switch nextBase.type {
+            case "res":
+                let res = try self.decoder.decode(BridgeRPCResponse.self, from: nextData)
+                if let cont = self.pendingRPC.removeValue(forKey: res.id) {
+                    cont.resume(returning: res)
+                }
+
+            case "event":
+                let evt = try self.decoder.decode(BridgeEventFrame.self, from: nextData)
+                self.broadcastServerEvent(evt)
+
             case "ping":
                 let ping = try self.decoder.decode(BridgePing.self, from: nextData)
                 try await self.send(BridgePong(type: "pong", id: ping.id))
@@ -127,12 +139,112 @@ actor BridgeSession {
         try await self.send(BridgeEventFrame(type: "event", event: event, payloadJSON: payloadJSON))
     }
 
+    func request(method: String, paramsJSON: String?, timeoutSeconds: Int = 15) async throws -> Data {
+        guard self.connection != nil else {
+            throw NSError(domain: "Bridge", code: 11, userInfo: [
+                NSLocalizedDescriptionKey: "not connected",
+            ])
+        }
+
+        let id = UUID().uuidString
+        let req = BridgeRPCRequest(type: "req", id: id, method: method, paramsJSON: paramsJSON)
+
+        let timeoutTask = Task {
+            try await Task.sleep(nanoseconds: UInt64(timeoutSeconds) * 1_000_000_000)
+            await self.timeoutRPC(id: id)
+        }
+        defer { timeoutTask.cancel() }
+
+        let res: BridgeRPCResponse = try await withCheckedThrowingContinuation { cont in
+            Task { [weak self] in
+                guard let self else { return }
+                await self.beginRPC(id: id, request: req, continuation: cont)
+            }
+        }
+
+        if res.ok {
+            let payload = res.payloadJSON ?? ""
+            guard let data = payload.data(using: .utf8) else {
+                throw NSError(domain: "Bridge", code: 12, userInfo: [
+                    NSLocalizedDescriptionKey: "Bridge response not UTF-8",
+                ])
+            }
+            return data
+        }
+
+        let code = res.error?.code ?? "UNAVAILABLE"
+        let message = res.error?.message ?? "request failed"
+        throw NSError(domain: "Bridge", code: 13, userInfo: [
+            NSLocalizedDescriptionKey: "\(code): \(message)",
+        ])
+    }
+
+    func subscribeServerEvents(bufferingNewest: Int = 200) -> AsyncStream<BridgeEventFrame> {
+        let id = UUID()
+        let session = self
+        return AsyncStream(bufferingPolicy: .bufferingNewest(bufferingNewest)) { continuation in
+            self.serverEventSubscribers[id] = continuation
+            continuation.onTermination = { @Sendable _ in
+                Task { await session.removeServerEventSubscriber(id) }
+            }
+        }
+    }
+
     func disconnect() async {
         self.connection?.cancel()
         self.connection = nil
         self.queue = nil
         self.buffer = Data()
+
+        let pending = self.pendingRPC.values
+        self.pendingRPC.removeAll()
+        for cont in pending {
+            cont.resume(throwing: NSError(domain: "Bridge", code: 14, userInfo: [
+                NSLocalizedDescriptionKey: "UNAVAILABLE: connection closed",
+            ]))
+        }
+
+        for (_, cont) in self.serverEventSubscribers {
+            cont.finish()
+        }
+        self.serverEventSubscribers.removeAll()
+
         self.state = .idle
+    }
+
+    private func beginRPC(
+        id: String,
+        request: BridgeRPCRequest,
+        continuation: CheckedContinuation<BridgeRPCResponse, Error>) async
+    {
+        self.pendingRPC[id] = continuation
+        do {
+            try await self.send(request)
+        } catch {
+            await self.failRPC(id: id, error: error)
+        }
+    }
+
+    private func timeoutRPC(id: String) async {
+        guard let cont = self.pendingRPC.removeValue(forKey: id) else { return }
+        cont.resume(throwing: NSError(domain: "Bridge", code: 15, userInfo: [
+            NSLocalizedDescriptionKey: "UNAVAILABLE: request timeout",
+        ]))
+    }
+
+    private func failRPC(id: String, error: Error) async {
+        guard let cont = self.pendingRPC.removeValue(forKey: id) else { return }
+        cont.resume(throwing: error)
+    }
+
+    private func broadcastServerEvent(_ evt: BridgeEventFrame) {
+        for (_, cont) in self.serverEventSubscribers {
+            cont.yield(evt)
+        }
+    }
+
+    private func removeServerEventSubscriber(_ id: UUID) {
+        self.serverEventSubscribers[id] = nil
     }
 
     private func send(_ obj: some Encodable) async throws {

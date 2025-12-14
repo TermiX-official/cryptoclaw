@@ -17,6 +17,8 @@ targets:
       - path: Sources
     dependencies:
       - package: ClawdisKit
+      - package: ClawdisKit
+        product: ClawdisChatUI
     preBuildScripts:
       - name: SwiftFormat (lint)
         script: |

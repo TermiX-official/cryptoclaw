@@ -157,3 +157,51 @@ public struct BridgeErrorFrame: Codable, Sendable {
         self.message = message
     }
 }
+
+// MARK: - Optional RPC (node -> bridge)
+
+public struct BridgeRPCRequest: Codable, Sendable {
+    public let type: String
+    public let id: String
+    public let method: String
+    public let paramsJSON: String?
+
+    public init(type: String = "req", id: String, method: String, paramsJSON: String? = nil) {
+        self.type = type
+        self.id = id
+        self.method = method
+        self.paramsJSON = paramsJSON
+    }
+}
+
+public struct BridgeRPCError: Codable, Sendable, Equatable {
+    public let code: String
+    public let message: String
+
+    public init(code: String, message: String) {
+        self.code = code
+        self.message = message
+    }
+}
+
+public struct BridgeRPCResponse: Codable, Sendable {
+    public let type: String
+    public let id: String
+    public let ok: Bool
+    public let payloadJSON: String?
+    public let error: BridgeRPCError?
+
+    public init(
+        type: String = "res",
+        id: String,
+        ok: Bool,
+        payloadJSON: String? = nil,
+        error: BridgeRPCError? = nil)
+    {
+        self.type = type
+        self.id = id
+        self.ok = ok
+        self.payloadJSON = payloadJSON
+        self.error = error
+    }
+}

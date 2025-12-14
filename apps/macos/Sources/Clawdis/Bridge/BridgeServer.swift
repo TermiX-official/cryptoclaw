@@ -1,4 +1,5 @@
 import AppKit
+import ClawdisProtocol
 import ClawdisKit
 import Foundation
 import Network
@@ -13,6 +14,8 @@ actor BridgeServer {
     private var store: PairedNodesStore?
     private var connections: [String: BridgeConnectionHandler] = [:]
     private var presenceTasks: [String: Task<Void, Never>] = [:]
+    private var chatSubscriptions: [String: Set<String>] = [:]
+    private var gatewayPushTask: Task<Void, Never>?
 
     func start() async {
         if self.isRunning { return }
@@ -86,6 +89,13 @@ actor BridgeServer {
             },
             onEvent: { [weak self] nodeId, evt in
                 await self?.handleEvent(nodeId: nodeId, evt: evt)
+            },
+            onRequest: { [weak self] nodeId, req in
+                await self?.handleRequest(nodeId: nodeId, req: req)
+                    ?? BridgeRPCResponse(
+                        id: req.id,
+                        ok: false,
+                        error: BridgeRPCError(code: "UNAVAILABLE", message: "bridge unavailable"))
             })
     }
 
@@ -106,12 +116,15 @@ actor BridgeServer {
         self.connections[nodeId] = handler
         await self.beaconPresence(nodeId: nodeId, reason: "connect")
         self.startPresenceTask(nodeId: nodeId)
+        self.ensureGatewayPushTask()
     }
 
     private func unregisterConnection(nodeId: String) async {
         await self.beaconPresence(nodeId: nodeId, reason: "disconnect")
         self.stopPresenceTask(nodeId: nodeId)
         self.connections.removeValue(forKey: nodeId)
+        self.chatSubscriptions[nodeId] = nil
+        self.stopGatewayPushTaskIfIdle()
     }
 
     private struct VoiceTranscriptPayload: Codable, Sendable {
@@ -121,6 +134,26 @@ actor BridgeServer {
 
     private func handleEvent(nodeId: String, evt: BridgeEventFrame) async {
         switch evt.event {
+        case "chat.subscribe":
+            guard let json = evt.payloadJSON, let data = json.data(using: .utf8) else { return }
+            struct Subscribe: Codable { var sessionKey: String }
+            guard let payload = try? JSONDecoder().decode(Subscribe.self, from: data) else { return }
+            let key = payload.sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !key.isEmpty else { return }
+            var set = self.chatSubscriptions[nodeId] ?? Set<String>()
+            set.insert(key)
+            self.chatSubscriptions[nodeId] = set
+
+        case "chat.unsubscribe":
+            guard let json = evt.payloadJSON, let data = json.data(using: .utf8) else { return }
+            struct Unsubscribe: Codable { var sessionKey: String }
+            guard let payload = try? JSONDecoder().decode(Unsubscribe.self, from: data) else { return }
+            let key = payload.sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !key.isEmpty else { return }
+            var set = self.chatSubscriptions[nodeId] ?? Set<String>()
+            set.remove(key)
+            self.chatSubscriptions[nodeId] = set.isEmpty ? nil : set
+
         case "voice.transcript":
             guard let json = evt.payloadJSON, let data = json.data(using: .utf8) else {
                 return
@@ -168,6 +201,126 @@ actor BridgeServer {
                 channel: channel ?? "last")
         default:
             break
+        }
+    }
+
+    private func handleRequest(nodeId: String, req: BridgeRPCRequest) async -> BridgeRPCResponse {
+        let allowed: Set<String> = ["chat.history", "chat.send", "health"]
+        guard allowed.contains(req.method) else {
+            return BridgeRPCResponse(
+                id: req.id,
+                ok: false,
+                error: BridgeRPCError(code: "FORBIDDEN", message: "Method not allowed"))
+        }
+
+        let params: [String: AnyCodable]?
+        if let json = req.paramsJSON?.trimmingCharacters(in: .whitespacesAndNewlines), !json.isEmpty {
+            guard let data = json.data(using: .utf8) else {
+                return BridgeRPCResponse(
+                    id: req.id,
+                    ok: false,
+                    error: BridgeRPCError(code: "INVALID_REQUEST", message: "paramsJSON not UTF-8"))
+            }
+            do {
+                params = try JSONDecoder().decode([String: AnyCodable].self, from: data)
+            } catch {
+                return BridgeRPCResponse(
+                    id: req.id,
+                    ok: false,
+                    error: BridgeRPCError(code: "INVALID_REQUEST", message: error.localizedDescription))
+            }
+        } else {
+            params = nil
+        }
+
+        do {
+            let data = try await GatewayConnection.shared.request(method: req.method, params: params, timeoutMs: 30_000)
+            guard let json = String(data: data, encoding: .utf8) else {
+                return BridgeRPCResponse(
+                    id: req.id,
+                    ok: false,
+                    error: BridgeRPCError(code: "UNAVAILABLE", message: "Response not UTF-8"))
+            }
+            return BridgeRPCResponse(id: req.id, ok: true, payloadJSON: json)
+        } catch {
+            return BridgeRPCResponse(
+                id: req.id,
+                ok: false,
+                error: BridgeRPCError(code: "UNAVAILABLE", message: error.localizedDescription))
+        }
+    }
+
+    private func ensureGatewayPushTask() {
+        if self.gatewayPushTask != nil { return }
+        self.gatewayPushTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await GatewayConnection.shared.refresh()
+            } catch {
+                // We'll still forward events once the gateway comes up.
+            }
+            let stream = await GatewayConnection.shared.subscribe()
+            for await push in stream {
+                if Task.isCancelled { return }
+                await self.forwardGatewayPush(push)
+            }
+        }
+    }
+
+    private func stopGatewayPushTaskIfIdle() {
+        guard self.connections.isEmpty else { return }
+        self.gatewayPushTask?.cancel()
+        self.gatewayPushTask = nil
+    }
+
+    private func forwardGatewayPush(_ push: GatewayPush) async {
+        let subscribedNodes = self.chatSubscriptions.keys.filter { self.connections[$0] != nil }
+        guard !subscribedNodes.isEmpty else { return }
+
+        switch push {
+        case let .snapshot(hello):
+            let payloadJSON = (try? JSONEncoder().encode(hello.snapshot.health))
+                .flatMap { String(data: $0, encoding: .utf8) }
+            for nodeId in subscribedNodes {
+                await self.connections[nodeId]?.sendServerEvent(event: "health", payloadJSON: payloadJSON)
+            }
+        case let .event(evt):
+            switch evt.event {
+            case "health":
+                guard let payload = evt.payload else { return }
+                let payloadJSON = (try? JSONEncoder().encode(payload))
+                    .flatMap { String(data: $0, encoding: .utf8) }
+                for nodeId in subscribedNodes {
+                    await self.connections[nodeId]?.sendServerEvent(event: "health", payloadJSON: payloadJSON)
+                }
+            case "tick":
+                for nodeId in subscribedNodes {
+                    await self.connections[nodeId]?.sendServerEvent(event: "tick", payloadJSON: nil)
+                }
+            case "chat":
+                guard let payload = evt.payload else { return }
+                let payloadData = try? JSONEncoder().encode(payload)
+                let payloadJSON = payloadData.flatMap { String(data: $0, encoding: .utf8) }
+
+                struct MinimalChat: Codable { var sessionKey: String }
+                let sessionKey = payloadData.flatMap { try? JSONDecoder().decode(MinimalChat.self, from: $0) }?.sessionKey
+                if let sessionKey {
+                    for nodeId in subscribedNodes {
+                        guard self.chatSubscriptions[nodeId]?.contains(sessionKey) == true else { continue }
+                        await self.connections[nodeId]?.sendServerEvent(event: "chat", payloadJSON: payloadJSON)
+                    }
+                } else {
+                    for nodeId in subscribedNodes {
+                        await self.connections[nodeId]?.sendServerEvent(event: "chat", payloadJSON: payloadJSON)
+                    }
+                }
+            default:
+                break
+            }
+        case .seqGap:
+            for nodeId in subscribedNodes {
+                await self.connections[nodeId]?.sendServerEvent(event: "seqGap", payloadJSON: nil)
+            }
         }
     }
 

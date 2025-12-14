@@ -39,7 +39,8 @@ actor BridgeConnectionHandler {
         handlePair: @escaping @Sendable (BridgePairRequest) async -> PairResult,
         onAuthenticated: (@Sendable (String) async -> Void)? = nil,
         onDisconnected: (@Sendable (String) async -> Void)? = nil,
-        onEvent: (@Sendable (String, BridgeEventFrame) async -> Void)? = nil) async
+        onEvent: (@Sendable (String, BridgeEventFrame) async -> Void)? = nil,
+        onRequest: (@Sendable (String, BridgeRPCRequest) async -> BridgeRPCResponse)? = nil) async
     {
         self.connection.stateUpdateHandler = { [logger] state in
             switch state {
@@ -94,6 +95,27 @@ actor BridgeConnectionHandler {
                     }
                     let evt = try self.decoder.decode(BridgeEventFrame.self, from: data)
                     await onEvent?(nodeId, evt)
+                case "req":
+                    let req = try self.decoder.decode(BridgeRPCRequest.self, from: data)
+                    guard self.isAuthenticated, let nodeId = self.nodeId else {
+                        try await self.send(
+                            BridgeRPCResponse(
+                                id: req.id,
+                                ok: false,
+                                error: BridgeRPCError(code: "UNAUTHORIZED", message: "not authenticated")))
+                        continue
+                    }
+
+                    if let onRequest {
+                        let res = await onRequest(nodeId, req)
+                        try await self.send(res)
+                    } else {
+                        try await self.send(
+                            BridgeRPCResponse(
+                                id: req.id,
+                                ok: false,
+                                error: BridgeRPCError(code: "UNAVAILABLE", message: "RPC not supported")))
+                    }
                 case "ping":
                     if !self.isAuthenticated {
                         await self.sendError(code: "UNAUTHORIZED", message: "not authenticated")
@@ -239,6 +261,15 @@ actor BridgeConnectionHandler {
                     cont.resume(returning: ())
                 }
             })
+        }
+    }
+
+    func sendServerEvent(event: String, payloadJSON: String?) async {
+        guard self.isAuthenticated else { return }
+        do {
+            try await self.send(BridgeEventFrame(type: "event", event: event, payloadJSON: payloadJSON))
+        } catch {
+            self.logger.error("bridge send event failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

@@ -15,6 +15,8 @@ final class NodeAppModel: ObservableObject {
     private var bridgeTask: Task<Void, Never>?
     let voiceWake = VoiceWakeManager()
 
+    var bridgeSession: BridgeSession { self.bridge }
+
     init() {
         self.voiceWake.configure { [weak self] cmd in
             guard let self else { return }

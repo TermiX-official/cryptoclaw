@@ -41,6 +41,7 @@ let package = Package(
                 "ClawdisIPC",
                 "ClawdisProtocol",
                 .product(name: "ClawdisKit", package: "ClawdisKit"),
+                .product(name: "ClawdisChatUI", package: "ClawdisKit"),
                 .product(name: "MenuBarExtraAccess", package: "MenuBarExtraAccess"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "Sparkle", package: "Sparkle"),

@@ -1,4 +1,5 @@
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-ai";
+import type { TSchema } from "@sinclair/typebox";
 import { codingTools, readTool } from "@mariozechner/pi-coding-agent";
 
 import { detectMime } from "../media/mime.js";
@@ -80,7 +81,10 @@ function normalizeReadImageResult(
       typeof (block as { text?: unknown }).text === "string"
     ) {
       const b = block as TextContentBlock & { text: string };
-      return { ...b, text: rewriteReadImageHeader(b.text, sniffed) } satisfies TextContentBlock;
+      return {
+        ...b,
+        text: rewriteReadImageHeader(b.text, sniffed),
+      } satisfies TextContentBlock;
     }
     return block;
   });
@@ -88,13 +92,17 @@ function normalizeReadImageResult(
   return { ...result, content: nextContent };
 }
 
-type AnyAgentTool = AgentTool<any, any>;
+type AnyAgentTool = AgentTool<TSchema, unknown>;
 
 function createClawdisReadTool(base: AnyAgentTool): AnyAgentTool {
   return {
     ...base,
     execute: async (toolCallId, params, signal) => {
-      const result = (await base.execute(toolCallId, params as any, signal)) as AgentToolResult<unknown>;
+      const result = (await base.execute(
+        toolCallId,
+        params,
+        signal,
+      )) as AgentToolResult<unknown>;
       const record =
         params && typeof params === "object"
           ? (params as Record<string, unknown>)
@@ -108,6 +116,8 @@ function createClawdisReadTool(base: AnyAgentTool): AnyAgentTool {
 
 export function createClawdisCodingTools(): AnyAgentTool[] {
   return (codingTools as unknown as AnyAgentTool[]).map((tool) =>
-    tool.name === readTool.name ? createClawdisReadTool(tool) : (tool as AnyAgentTool),
+    tool.name === readTool.name
+      ? createClawdisReadTool(tool)
+      : (tool as AnyAgentTool),
   );
 }

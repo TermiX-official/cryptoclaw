@@ -438,6 +438,8 @@ struct ClawdisCLI {
                 struct Node: Decodable {
                     var nodeId: String
                     var displayName: String?
+                    var deviceFamily: String?
+                    var modelIdentifier: String?
                     var remoteAddress: String?
                     var connected: Bool
                     var capabilities: [String]?
@@ -459,11 +461,19 @@ struct ClawdisCLI {
 
                     let ipTrimmed = n.remoteAddress?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                     let ip = ipTrimmed.isEmpty ? nil : ipTrimmed
+
+                    let familyTrimmed = n.deviceFamily?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let family = familyTrimmed.isEmpty ? nil : familyTrimmed
+                    let modelTrimmed = n.modelIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let model = modelTrimmed.isEmpty ? nil : modelTrimmed
+
                     let caps = n.capabilities?.sorted().joined(separator: ",")
                     let capsText = caps.map { "[\($0)]" } ?? "?"
 
                     var parts: [String] = ["- \(name)", n.nodeId]
                     if let ip { parts.append(ip) }
+                    if let family { parts.append("device: \(family)") }
+                    if let model { parts.append("hw: \(model)") }
                     parts.append(n.connected ? "connected" : "disconnected")
                     parts.append("caps: \(capsText)")
                     print(parts.joined(separator: " · "))

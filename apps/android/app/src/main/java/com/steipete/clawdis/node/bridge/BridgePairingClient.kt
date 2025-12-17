@@ -19,16 +19,16 @@ import java.net.Socket
 class BridgePairingClient {
   private val json = Json { ignoreUnknownKeys = true }
 
-	  data class Hello(
-	    val nodeId: String,
-	    val displayName: String?,
-	    val token: String?,
-	    val platform: String?,
-	    val version: String?,
-	    val deviceFamily: String?,
-	    val modelIdentifier: String?,
-	    val caps: List<String>?,
-	  )
+  data class Hello(
+    val nodeId: String,
+    val displayName: String?,
+    val token: String?,
+    val platform: String?,
+    val version: String?,
+    val deviceFamily: String?,
+    val modelIdentifier: String?,
+    val caps: List<String>?,
+  )
 
   data class PairResult(val ok: Boolean, val token: String?, val error: String? = null)
 

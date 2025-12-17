@@ -34,16 +34,16 @@ class BridgeSession(
   private val onEvent: (event: String, payloadJson: String?) -> Unit,
   private val onInvoke: suspend (InvokeRequest) -> InvokeResult,
 ) {
-	  data class Hello(
-	    val nodeId: String,
-	    val displayName: String?,
-	    val token: String?,
-	    val platform: String?,
-	    val version: String?,
-	    val deviceFamily: String?,
-	    val modelIdentifier: String?,
-	    val caps: List<String>?,
-	  )
+  data class Hello(
+    val nodeId: String,
+    val displayName: String?,
+    val token: String?,
+    val platform: String?,
+    val version: String?,
+    val deviceFamily: String?,
+    val modelIdentifier: String?,
+    val caps: List<String>?,
+  )
 
   data class InvokeRequest(val id: String, val command: String, val paramsJson: String?)
 

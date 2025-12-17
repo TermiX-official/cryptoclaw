@@ -1845,17 +1845,7 @@ describe("gateway server", () => {
     await server.close();
   });
 
-  test("chat.history strips injected System blocks and caps payload bytes", async () => {
-    const firstContentText = (msg: unknown): string | undefined => {
-      if (!msg || typeof msg !== "object") return undefined;
-      const content = (msg as { content?: unknown }).content;
-      if (!Array.isArray(content) || content.length === 0) return undefined;
-      const first = content[0];
-      if (!first || typeof first !== "object") return undefined;
-      const text = (first as { text?: unknown }).text;
-      return typeof text === "string" ? text : undefined;
-    };
-
+  test("chat.history caps payload bytes", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdis-gw-"));
     testSessionStorePath = path.join(dir, "sessions.json");
     await fs.writeFile(
@@ -1873,34 +1863,8 @@ describe("gateway server", () => {
       "utf-8",
     );
 
-    const injected =
-      "System: Node: Peter’s Mac · app 2.0.0 · last input 0s ago · mode local · reason periodic\n" +
-      "System: WhatsApp gateway connected.\n\n" +
-      "Hello from user";
-    await fs.writeFile(
-      path.join(dir, "sess-main.jsonl"),
-      JSON.stringify({
-        message: {
-          role: "user",
-          content: [{ type: "text", text: injected }],
-          timestamp: Date.now(),
-        },
-      }),
-      "utf-8",
-    );
-
     const { server, ws } = await startServerWithClient();
     await connectOk(ws);
-
-    const scrubbedRes = await rpcReq<{ messages?: unknown[] }>(
-      ws,
-      "chat.history",
-      { sessionKey: "main", limit: 5 },
-    );
-    expect(scrubbedRes.ok).toBe(true);
-    const scrubbedMsgs = scrubbedRes.payload?.messages ?? [];
-    expect(scrubbedMsgs.length).toBe(1);
-    expect(firstContentText(scrubbedMsgs[0])).toBe("Hello from user");
 
     const bigText = "x".repeat(300_000);
     const largeLines: string[] = [];

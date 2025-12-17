@@ -676,24 +676,39 @@ export async function getReplyFromConfig(
     }
   }
 
-  // For new main sessions, prepend a provider snapshot.
-  // Note: We intentionally do NOT prepend queued system events to the user prompt,
-  // since that bloats session logs (token cost) and clutters chat history.
+  // Prepend queued system events (transitions only) and (for new main sessions) a provider snapshot.
+  // Token efficiency: we filter out periodic/heartbeat noise and keep the lines compact.
   const isGroupSession =
     typeof ctx.From === "string" &&
     (ctx.From.includes("@g.us") || ctx.From.startsWith("group:"));
   const isMainSession =
     !isGroupSession && sessionKey === (sessionCfg?.mainKey ?? "main");
   if (isMainSession) {
-    // Drain (discard) queued system events so they remain ephemeral.
-    // They are still available via presence/health in the gateway UI.
-    drainSystemEvents();
+    const compactSystemEvent = (line: string): string | null => {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+      const lower = trimmed.toLowerCase();
+      if (lower.includes("reason periodic")) return null;
+      if (lower.includes("heartbeat")) return null;
+      if (trimmed.startsWith("Node:")) {
+        // Drop the chatty "last input … ago" segment; keep connect/disconnect/launch reasons.
+        return trimmed.replace(/ · last input [^·]+/i, "").trim();
+      }
+      return trimmed;
+    };
+
+    const systemLines: string[] = [];
+    const queued = drainSystemEvents();
+    systemLines.push(
+      ...queued.map(compactSystemEvent).filter((v): v is string => Boolean(v)),
+    );
     if (isNewSession) {
       const summary = await buildProviderSummary(cfg);
-      if (summary.length > 0) {
-        const block = summary.map((l) => `System: ${l}`).join("\n");
-        prefixedBodyBase = `${block}\n\n${prefixedBodyBase}`;
-      }
+      if (summary.length > 0) systemLines.unshift(...summary);
+    }
+    if (systemLines.length > 0) {
+      const block = systemLines.map((l) => `System: ${l}`).join("\n");
+      prefixedBodyBase = `${block}\n\n${prefixedBodyBase}`;
     }
   }
   if (

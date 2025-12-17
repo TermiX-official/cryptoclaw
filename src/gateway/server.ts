@@ -351,42 +351,6 @@ function readSessionMessages(
   return messages;
 }
 
-function stripInjectedSystemBlock(text: string): string {
-  if (!text.startsWith("System: ")) return text;
-  const sep = text.indexOf("\n\n");
-  if (sep <= 0) return text;
-  const head = text.slice(0, sep);
-  const lines = head.split("\n");
-  if (lines.length === 0) return text;
-  if (!lines.every((l) => l.startsWith("System: "))) return text;
-  return text.slice(sep + 2);
-}
-
-function scrubInjectedSystemBlocks(messages: unknown[]): unknown[] {
-  let changed = false;
-  const out = messages.map((msg) => {
-    if (!msg || typeof msg !== "object") return msg;
-    const obj = msg as Record<string, unknown>;
-    if (obj.role !== "user") return msg;
-    const content = obj.content;
-    if (!Array.isArray(content) || content.length === 0) return msg;
-    const first = content[0];
-    if (!first || typeof first !== "object") return msg;
-    const firstObj = first as Record<string, unknown>;
-    if (firstObj.type !== "text") return msg;
-    const text = firstObj.text;
-    if (typeof text !== "string") return msg;
-    const stripped = stripInjectedSystemBlock(text);
-    if (stripped === text) return msg;
-    changed = true;
-    const nextFirst = { ...firstObj, text: stripped };
-    const nextContent = [...content];
-    nextContent[0] = nextFirst;
-    return { ...obj, content: nextContent };
-  });
-  return changed ? out : messages;
-}
-
 function jsonUtf8Bytes(value: unknown): number {
   try {
     return Buffer.byteLength(JSON.stringify(value), "utf8");
@@ -916,9 +880,8 @@ export async function startGatewayServer(
           const max = typeof limit === "number" ? limit : 200;
           const sliced =
             rawMessages.length > max ? rawMessages.slice(-max) : rawMessages;
-          const scrubbed = scrubInjectedSystemBlocks(sliced);
           const capped = capArrayByJsonBytes(
-            scrubbed,
+            sliced,
             MAX_CHAT_HISTORY_MESSAGES_BYTES,
           ).items;
           const thinkingLevel =
@@ -1895,9 +1858,8 @@ export async function startGatewayServer(
             const max = Math.min(hardMax, requested);
             const sliced =
               rawMessages.length > max ? rawMessages.slice(-max) : rawMessages;
-            const scrubbed = scrubInjectedSystemBlocks(sliced);
             const capped = capArrayByJsonBytes(
-              scrubbed,
+              sliced,
               MAX_CHAT_HISTORY_MESSAGES_BYTES,
             ).items;
             const thinkingLevel =
@@ -2412,13 +2374,17 @@ export async function startGatewayServer(
               reason,
               tags,
             });
+            const isNodePresenceLine = text.startsWith("Node:");
             const normalizedReason = (reason ?? "").toLowerCase();
             const looksPeriodic =
               normalizedReason.startsWith("periodic") ||
               normalizedReason === "heartbeat";
-            const isNodePresenceLine = text.startsWith("Node:");
             if (!(isNodePresenceLine && looksPeriodic)) {
-              enqueueSystemEvent(text);
+              const compactNodeText =
+                isNodePresenceLine && (host || ip || version || mode || reason)
+                  ? `Node: ${host?.trim() || "Unknown"}${ip ? ` (${ip})` : ""} · app ${version?.trim() || "unknown"} · mode ${mode?.trim() || "unknown"} · reason ${reason?.trim() || "event"}`
+                  : text;
+              enqueueSystemEvent(compactNodeText);
             }
             presenceVersion += 1;
             broadcast(

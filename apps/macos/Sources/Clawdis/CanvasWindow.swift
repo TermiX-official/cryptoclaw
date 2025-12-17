@@ -592,7 +592,7 @@ private final class HoverChromeContainerView: NSView {
             v.blendingMode = .withinWindow
             v.state = .active
             v.wantsLayer = true
-            v.layer?.cornerRadius = 12
+            v.layer?.cornerRadius = 11
             v.layer?.masksToBounds = true
             v.layer?.borderWidth = 1
             v.layer?.borderColor = NSColor.white.withAlphaComponent(0.12).cgColor
@@ -647,13 +647,13 @@ private final class HoverChromeContainerView: NSView {
 
                 self.closeBackground.centerXAnchor.constraint(equalTo: self.closeButton.centerXAnchor),
                 self.closeBackground.centerYAnchor.constraint(equalTo: self.closeButton.centerYAnchor),
-                self.closeBackground.widthAnchor.constraint(equalToConstant: 24),
-                self.closeBackground.heightAnchor.constraint(equalToConstant: 24),
+                self.closeBackground.widthAnchor.constraint(equalToConstant: 22),
+                self.closeBackground.heightAnchor.constraint(equalToConstant: 22),
 
                 self.closeButton.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -8),
                 self.closeButton.topAnchor.constraint(equalTo: self.topAnchor, constant: 8),
-                self.closeButton.widthAnchor.constraint(equalToConstant: 18),
-                self.closeButton.heightAnchor.constraint(equalToConstant: 18),
+                self.closeButton.widthAnchor.constraint(equalToConstant: 16),
+                self.closeButton.heightAnchor.constraint(equalToConstant: 16),
 
                 self.resizeHandle.trailingAnchor.constraint(equalTo: self.trailingAnchor),
                 self.resizeHandle.bottomAnchor.constraint(equalTo: self.bottomAnchor),

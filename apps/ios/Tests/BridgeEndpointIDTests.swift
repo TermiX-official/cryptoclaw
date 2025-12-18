@@ -6,12 +6,12 @@ import Testing
 @Suite struct BridgeEndpointIDTests {
     @Test func stableIDForServiceDecodesAndNormalizesName() {
         let endpoint = NWEndpoint.service(
-            name: "Clawdis\\032Bridge   \\032  Iris\n",
+            name: "Clawdis\\032Bridge   \\032  Node\n",
             type: "_clawdis-bridge._tcp",
             domain: "local.",
             interface: nil)
 
-        #expect(BridgeEndpointID.stableID(endpoint) == "_clawdis-bridge._tcp|local.|Clawdis Bridge Iris")
+        #expect(BridgeEndpointID.stableID(endpoint) == "_clawdis-bridge._tcp|local.|Clawdis Bridge Node")
     }
 
     @Test func stableIDForNonServiceUsesEndpointDescription() {

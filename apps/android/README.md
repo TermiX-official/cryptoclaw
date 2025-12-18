@@ -1,6 +1,6 @@
 ## Clawdis Node (Android) (internal)
 
-Modern Android “node” app (Iris parity): connects to the **Gateway-owned bridge** (`_clawdis-bridge._tcp`) over TCP and exposes **Canvas + Chat + Camera**.
+Modern Android node app: connects to the **Gateway-owned bridge** (`_clawdis-bridge._tcp`) over TCP and exposes **Canvas + Chat + Camera**.
 
 Notes:
 - The node keeps the connection alive via a **foreground service** (persistent notification with a Disconnect action).

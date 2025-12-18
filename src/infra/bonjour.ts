@@ -137,7 +137,7 @@ export async function startGatewayBonjourAdvertiser(
     svc: master as unknown as BonjourService,
   });
 
-  // Optional bridge beacon (same type used by Iris/iOS today).
+  // Optional bridge beacon (same type used by iOS/Android nodes today).
   if (typeof opts.bridgePort === "number" && opts.bridgePort > 0) {
     const bridge = responder.createService({
       name: safeServiceName(instanceName),

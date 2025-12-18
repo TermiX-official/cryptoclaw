@@ -50,7 +50,7 @@ Who receives it:
 - Uses the global list to gate `VoiceWakeRuntime` triggers.
 - Editing “Trigger words” in Voice Wake settings calls `voicewake.set` and then relies on the broadcast to keep other clients in sync.
 
-### iOS node (Iris)
+### iOS node
 
 - Uses the global list for `VoiceWakeManager` trigger detection.
 - Editing Wake Words in Settings calls `voicewake.set` (over the bridge) and also keeps local wake-word detection responsive.
@@ -59,4 +59,3 @@ Who receives it:
 
 - Exposes a Wake Words editor in Settings.
 - Calls `voicewake.set` over the bridge so edits sync everywhere.
-

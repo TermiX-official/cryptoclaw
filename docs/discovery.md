@@ -10,7 +10,7 @@ read_when:
 Clawdis has two distinct problems that look similar on the surface:
 
 1) **Operator remote control**: the macOS menu bar app controlling a “master” gateway running elsewhere.
-2) **Node pairing**: Iris/iOS (and future nodes) finding a gateway and pairing securely.
+2) **Node pairing**: iOS/Android (and future nodes) finding a gateway and pairing securely.
 
 The design goal is to keep all network discovery/advertising in the **Node Gateway** (`clawd` / `clawdis gateway`) and keep clients (mac app, iOS) as consumers.
 
@@ -55,7 +55,7 @@ Troubleshooting and beacon details: `docs/bonjour.md`.
   - `sshPort=22` (or whatever is advertised)
   - `gatewayPort=18789` (loopback WS port; informational)
   - `bridgePort=18790` (when bridge is enabled)
-  - `canvasPort=18793` (when the optional canvas host is enabled)
+  - `canvasPort=18793` (when the canvas host is running; enabled by default)
   - `tailnetDns=<magicdns>` (optional hint)
 
 Disable/override:

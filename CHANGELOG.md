@@ -7,7 +7,7 @@
 
 ## 2.0.0-beta1 — 2025-12-14
 
-First Clawdis release post rebrand. This is a semver-major because we dropped legacy providers/agents and moved defaults to new paths while adding a full macOS companion app, a WebSocket Gateway, and an iOS node (Iris).
+First Clawdis release post rebrand. This is a semver-major because we dropped legacy providers/agents and moved defaults to new paths while adding a full macOS companion app, a WebSocket Gateway, and an iOS node.
 
 ### Breaking
 - Renamed to **Clawdis**: defaults now live under `~/.clawdis` (sessions in `~/.clawdis/sessions/`, IPC at `~/.clawdis/clawdis.sock`, logs in `/tmp/clawdis`). Launchd labels and config filenames follow the new name; legacy stores are copied forward on first run.
@@ -19,7 +19,7 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 ### Gateway, nodes, and automation
 - New typed Gateway WS protocol (JSON schema validated) with `clawdis gateway {health,status,send,agent,call}` helpers and structured presence/instance updates for all clients.
 - Optional LAN-facing bridge (`tcp://0.0.0.0:18790`) keeps the Gateway loopback-only while enabling direct Bonjour-discovered connections for paired nodes.
-- Node pairing + management via `clawdis nodes {pending,approve,reject,invoke}` (used by the iOS node “Iris” and future remote nodes).
+- Node pairing + management via `clawdis nodes {pending,approve,reject,invoke}` (used by the iOS node and future remote nodes).
 - Cron jobs are Gateway-owned (`clawdis cron …`) with run history stored as JSONL and support for “isolated summary” posting into the main session.
 
 ### macOS companion app
@@ -29,10 +29,10 @@ First Clawdis release post rebrand. This is a semver-major because we dropped le
 - **Browser control**: manage clawd’s dedicated Chrome/Chromium with tab listing/open/focus/close, screenshots, DOM query/dump, and “AI snapshots” (aria/domSnapshot/ai) via `clawdis browser …` and UI controls.
 - **Remote gateway control**: Bonjour discovery for local masters plus SSH-tunnel fallback for remote control when multicast is unavailable.
 
-### iOS node (Iris)
+### iOS node
 - New iOS companion app that pairs to the Gateway bridge, reports presence as a node, and exposes a WKWebView “Canvas” for agent-driven UI.
-- `clawdis nodes invoke` supports `canvas.eval` and `canvas.snapshot` to drive and verify the iOS Canvas (fails fast when Iris is backgrounded).
-- Voice wake words are configurable in-app; Iris reconnects to the last bridge when credentials are still present in Keychain.
+- `clawdis nodes invoke` supports `canvas.eval` and `canvas.snapshot` to drive and verify the iOS Canvas (fails fast when the iOS node is backgrounded).
+- Voice wake words are configurable in-app; the iOS node reconnects to the last bridge when credentials are still present in Keychain.
 
 ### WhatsApp & agent experience
 - Group chats fully supported: mention-gated triggers (including media-only captions), sender attribution, session primer with subject/member roster, allowlist bypass when you’re @‑mentioned, and safer handling of view-once/ephemeral media.

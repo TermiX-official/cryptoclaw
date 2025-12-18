@@ -30,7 +30,7 @@ WhatsApp / Telegram
               ├─ CLI (clawdis …)
               ├─ WebChat (loopback UI)
               ├─ macOS app (Clawdis.app)
-              └─ iOS node (Iris) via Bridge + pairing
+              └─ iOS node via Bridge + pairing
 ```
 
 ## Why "CLAWDIS"?
@@ -53,7 +53,7 @@ Because every space lobster needs a time-and-space machine. The Doctor has a TAR
 - 🎤 **Voice & transcription hooks** — Voice Wake (macOS/iOS) + optional transcription pipeline
 - 🔧 **Tool Streaming** — Real-time display (💻📄✍️📝)
 - 🖥️ **macOS Companion (Clawdis.app)** — Menu bar controls, Voice Wake, WebChat, onboarding, remote gateway control
-- 📱 **iOS Node (Iris)** — Pairs as a node, exposes a Canvas surface, forwards voice wake transcripts
+- 📱 **iOS node** — Pairs as a node, exposes a Canvas surface, forwards voice wake transcripts
 
 Only the Pi CLI is supported now; legacy Claude/Codex/Gemini paths have been removed.
 
@@ -69,7 +69,7 @@ Only the Pi CLI is supported now; legacy Claude/Codex/Gemini paths have been rem
 
 - **TypeScript (ESM)**: CLI + Gateway live in `src/` and run on Node ≥ 22.
 - **macOS app (Swift)**: menu bar companion lives in `apps/macos/`.
-- **iOS app (Swift)**: Iris node prototype lives in `apps/ios/`.
+- **iOS app (Swift)**: iOS node prototype lives in `apps/ios/`.
 
 ## Quick Start
 
@@ -118,9 +118,9 @@ If delivery fails (e.g. WhatsApp disconnected / Telegram token missing), Clawdis
 
 Build/run the mac app with `./scripts/restart-mac.sh` (packages, installs, and launches), or `swift build --package-path apps/macos && open dist/Clawdis.app`.
 
-### iOS Node (Iris) (internal)
+### iOS node (internal)
 
-Iris is an internal/prototype iOS app that connects as a **remote node**:
+The iOS node app is an internal/prototype app that connects as a **remote node**:
 
 - **Voice trigger:** forwards transcripts into the Gateway (agent runs + wakeups).
 - **Canvas screen:** a WKWebView + `<canvas>` surface the agent can control (via `canvas.eval` / `canvas.snapshot` over `node.invoke`).
@@ -164,7 +164,7 @@ Optional: enable/configure clawd’s dedicated browser control (defaults are alr
 - [Troubleshooting](./docs/troubleshooting.md)
 - [The Lore](./docs/lore.md) 🦞
 - [Telegram (Bot API)](./docs/telegram.md)
-- [iOS node runbook (Iris)](./docs/ios/connect.md)
+- [iOS node runbook](./docs/ios/connect.md)
 - [macOS app spec](./docs/clawdis-mac.md)
 
 ## Clawd

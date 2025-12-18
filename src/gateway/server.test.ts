@@ -405,7 +405,7 @@ describe("gateway server", () => {
         type: "req",
         id: "pair-req-1",
         method: "node.pair.request",
-        params: { nodeId: "n1", displayName: "Iris" },
+        params: { nodeId: "n1", displayName: "Node" },
       }),
     );
     const res1 = await onceMessage<{
@@ -432,7 +432,7 @@ describe("gateway server", () => {
         type: "req",
         id: "pair-req-2",
         method: "node.pair.request",
-        params: { nodeId: "n1", displayName: "Iris" },
+        params: { nodeId: "n1", displayName: "Node" },
       }),
     );
     const res2 = await onceMessage<{
@@ -827,7 +827,7 @@ describe("gateway server", () => {
                 (p) =>
                   typeof p === "object" &&
                   p !== null &&
-                  (p as { instanceId?: unknown }).instanceId === "iris-1" &&
+                  (p as { instanceId?: unknown }).instanceId === "node-1" &&
                   (p as { reason?: unknown }).reason === reason,
               );
             },
@@ -835,20 +835,20 @@ describe("gateway server", () => {
           );
         };
 
-        const presenceConnectedP = waitPresenceReason("iris-connected");
+        const presenceConnectedP = waitPresenceReason("node-connected");
         await bridgeCall?.onAuthenticated?.({
-          nodeId: "iris-1",
-          displayName: "Iris",
+          nodeId: "node-1",
+          displayName: "Node",
           platform: "ios",
           version: "1.0",
           remoteIp: "10.0.0.10",
         });
         await presenceConnectedP;
 
-        const presenceDisconnectedP = waitPresenceReason("iris-disconnected");
+        const presenceDisconnectedP = waitPresenceReason("node-disconnected");
         await bridgeCall?.onDisconnected?.({
-          nodeId: "iris-1",
-          displayName: "Iris",
+          nodeId: "node-1",
+          displayName: "Node",
           platform: "ios",
           version: "1.0",
           remoteIp: "10.0.0.10",

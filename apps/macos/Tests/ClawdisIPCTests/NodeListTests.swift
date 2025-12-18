@@ -8,7 +8,7 @@ import Testing
             nodes: [
                 ControlRequestHandler.GatewayNodeListPayload.Node(
                     nodeId: "n1",
-                    displayName: "Iris",
+                    displayName: "Node",
                     platform: "iOS",
                     version: "1.0",
                     deviceFamily: "iPad",
@@ -36,10 +36,10 @@ import Testing
         #expect(res.pairedNodeIds.sorted() == ["n1", "n2"])
         #expect(res.connectedNodeIds == ["n1"])
 
-        let iris = res.nodes.first { $0.nodeId == "n1" }
-        #expect(iris?.remoteAddress == "192.168.0.88")
-        #expect(iris?.deviceFamily == "iPad")
-        #expect(iris?.modelIdentifier == "iPad14,5")
-        #expect(iris?.capabilities?.sorted() == ["camera", "canvas"])
+        let node = res.nodes.first { $0.nodeId == "n1" }
+        #expect(node?.remoteAddress == "192.168.0.88")
+        #expect(node?.deviceFamily == "iPad")
+        #expect(node?.modelIdentifier == "iPad14,5")
+        #expect(node?.capabilities?.sorted() == ["camera", "canvas"])
     }
 }

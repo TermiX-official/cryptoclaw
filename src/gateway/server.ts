@@ -1263,7 +1263,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
                 thinking: p.thinking,
                 deliver: p.deliver,
                 timeout: Math.ceil(timeoutMs / 1000).toString(),
-                surface: `Iris(${nodeId})`,
+                surface: `Node(${nodeId})`,
                 abortSignal: abortController.signal,
               },
               defaultRuntime,
@@ -1367,7 +1367,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
             sessionId,
             thinking: "low",
             deliver: false,
-            surface: "Iris",
+            surface: "Node",
           },
           defaultRuntime,
           deps,
@@ -1442,7 +1442,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
               typeof link?.timeoutSeconds === "number"
                 ? link.timeoutSeconds.toString()
                 : undefined,
-            surface: "Iris",
+            surface: "Node",
           },
           defaultRuntime,
           deps,
@@ -1508,7 +1508,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
           const platform = node.platform?.trim() || undefined;
           const deviceFamily = node.deviceFamily?.trim() || undefined;
           const modelIdentifier = node.modelIdentifier?.trim() || undefined;
-          const text = `Node: ${host}${ip ? ` (${ip})` : ""} · app ${version} · last input 0s ago · mode remote · reason iris-connected`;
+          const text = `Node: ${host}${ip ? ` (${ip})` : ""} · app ${version} · last input 0s ago · mode remote · reason node-connected`;
           upsertPresence(node.nodeId, {
             host,
             ip,
@@ -1517,7 +1517,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
             deviceFamily,
             modelIdentifier,
             mode: "remote",
-            reason: "iris-connected",
+            reason: "node-connected",
             lastInputSeconds: 0,
             instanceId: node.nodeId,
             text,
@@ -1554,7 +1554,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
           const platform = node.platform?.trim() || undefined;
           const deviceFamily = node.deviceFamily?.trim() || undefined;
           const modelIdentifier = node.modelIdentifier?.trim() || undefined;
-          const text = `Node: ${host}${ip ? ` (${ip})` : ""} · app ${version} · last input 0s ago · mode remote · reason iris-disconnected`;
+          const text = `Node: ${host}${ip ? ` (${ip})` : ""} · app ${version} · last input 0s ago · mode remote · reason node-disconnected`;
           upsertPresence(node.nodeId, {
             host,
             ip,
@@ -1563,7 +1563,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
             deviceFamily,
             modelIdentifier,
             mode: "remote",
-            reason: "iris-disconnected",
+            reason: "node-disconnected",
             lastInputSeconds: 0,
             instanceId: node.nodeId,
             text,
@@ -1589,7 +1589,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
       if (started.port > 0) {
         bridge = started;
         defaultRuntime.log(
-          `bridge listening on tcp://${bridgeHost}:${bridge.port} (Iris)`,
+          `bridge listening on tcp://${bridgeHost}:${bridge.port} (node)`,
         );
       }
     } catch (err) {

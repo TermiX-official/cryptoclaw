@@ -178,9 +178,9 @@ When enabled, the server:
 }
 ```
 
-### `bridge` (Iris/node bridge server)
+### `bridge` (node bridge server)
 
-The Gateway can expose a simple TCP bridge for nodes (iOS/Android “Iris”), typically on port `18790`.
+The Gateway can expose a simple TCP bridge for nodes (iOS/Android), typically on port `18790`.
 
 Defaults:
 - enabled: `true`

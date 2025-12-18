@@ -10,7 +10,7 @@ Clawdis uses Bonjour (mDNS / DNS-SD) as a **LAN-only convenience** to discover a
 
 ## Wide-Area Bonjour (Unicast DNS-SD) over Tailscale
 
-If you want Iris/iPad auto-discovery while the Gateway is on another network (e.g. Vienna ⇄ London), you can keep the `NWBrowser` UX but switch discovery from multicast mDNS (`local.`) to **unicast DNS-SD** (“Wide-Area Bonjour”) over Tailscale.
+If you want iOS node auto-discovery while the Gateway is on another network (e.g. Vienna ⇄ London), you can keep the `NWBrowser` UX but switch discovery from multicast mDNS (`local.`) to **unicast DNS-SD** (“Wide-Area Bonjour”) over Tailscale.
 
 High level:
 
@@ -59,7 +59,7 @@ In the Tailscale admin console:
 - Add a nameserver pointing at the gateway’s tailnet IP (UDP/TCP 53).
 - Add split DNS so the domain `clawdis.internal` uses that nameserver.
 
-Once clients accept tailnet DNS, Iris can browse `_clawdis-bridge._tcp` in `clawdis.internal.` without multicast.
+Once clients accept tailnet DNS, iOS nodes can browse `_clawdis-bridge._tcp` in `clawdis.internal.` without multicast.
 
 ### Bridge listener security (recommended)
 
@@ -82,7 +82,7 @@ Only the **Node Gateway** (`clawd` / `clawdis gateway`) advertises Bonjour beaco
 ## Service types
 
 - `_clawdis-master._tcp` — “master gateway” discovery beacon (primarily for macOS remote-control UX).
-- `_clawdis-bridge._tcp` — bridge transport beacon (used by Iris/iOS nodes).
+- `_clawdis-bridge._tcp` — bridge transport beacon (used by iOS/Android nodes).
 
 ## TXT keys (non-secret hints)
 
@@ -93,7 +93,7 @@ The Gateway advertises small non-secret hints to make UI flows convenient:
 - `sshPort=<port>` (defaults to 22 when not overridden)
 - `gatewayPort=<port>` (informational; the Gateway WS is typically loopback-only)
 - `bridgePort=<port>` (only when bridge is enabled)
-- `canvasPort=<port>` (only when the optional canvas host is enabled; default `18793`)
+- `canvasPort=<port>` (only when the canvas host is running; enabled by default; default `18793`)
 - `tailnetDns=<magicdns>` (optional hint; may be absent)
 
 ## Debugging on macOS
@@ -119,9 +119,9 @@ Look for `bonjour:` lines, especially:
 - `bonjour: ... name conflict resolved` / `hostname conflict resolved`
 - `bonjour: watchdog detected non-announced service; attempting re-advertise ...` (self-heal attempt after sleep/interface churn)
 
-## Debugging on iOS (Iris)
+## Debugging on iOS node
 
-Iris discovers bridges via `NWBrowser` browsing `_clawdis-bridge._tcp`.
+The iOS node app discovers bridges via `NWBrowser` browsing `_clawdis-bridge._tcp`.
 
 To capture what the browser is doing:
 

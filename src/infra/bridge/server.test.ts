@@ -263,7 +263,7 @@ describe("node bridge server", () => {
     sendLine(socket, {
       type: "pair-request",
       nodeId: "n4",
-      displayName: "Iris",
+      displayName: "Node",
       platform: "ios",
       version: "1.0",
       deviceFamily: "iPad",
@@ -315,7 +315,7 @@ describe("node bridge server", () => {
 
     expect(lastAuthed?.nodeId).toBe("n4");
     // Prefer paired metadata over hello payload (token verifies the stored node record).
-    expect(lastAuthed?.displayName).toBe("Iris");
+    expect(lastAuthed?.displayName).toBe("Node");
     expect(lastAuthed?.platform).toBe("ios");
     expect(lastAuthed?.version).toBe("1.0");
     expect(lastAuthed?.deviceFamily).toBe("iPad");
@@ -425,7 +425,7 @@ describe("node bridge server", () => {
     sendLine(socket, {
       type: "pair-request",
       nodeId: "n-caps",
-      displayName: "Iris",
+      displayName: "Node",
       platform: "ios",
       version: "1.0",
       deviceFamily: "iPad",

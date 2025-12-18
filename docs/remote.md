@@ -8,7 +8,7 @@ read_when:
 This repo supports “remote over SSH” by keeping a single Gateway (the master) running on a host (e.g., your Mac Studio) and connecting clients to it.
 
 - For **operators (you / the macOS app)**: SSH tunneling is the universal fallback.
-- For **nodes (Iris/iOS and future devices)**: prefer the Gateway **Bridge** when on the same LAN/tailnet (see `docs/discovery.md`).
+- For **nodes (iOS/Android and future devices)**: prefer the Gateway **Bridge** when on the same LAN/tailnet (see `docs/discovery.md`).
 
 ## The core idea
 

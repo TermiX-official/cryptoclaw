@@ -76,7 +76,7 @@ export type BridgeConfig = {
   enabled?: boolean;
   port?: number;
   /**
-   * Bind address policy for the Iris bridge server.
+   * Bind address policy for the node bridge server.
    * - auto: prefer tailnet IP when present, else LAN (0.0.0.0)
    * - lan:  0.0.0.0 (reachable on local network + any forwarded interfaces)
    * - tailnet: bind only to the Tailscale interface IP (100.64.0.0/10)

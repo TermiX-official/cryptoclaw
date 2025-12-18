@@ -34,15 +34,15 @@ WhatsApp / Telegram
         ▼
   ┌──────────────────────────┐
   │          Gateway          │  ws://127.0.0.1:18789 (loopback-only)
-  │     (single source)       │  tcp://0.0.0.0:18790 (optional Bridge)
-  │                          │  http://0.0.0.0:18793 (optional Canvas host)
+  │     (single source)       │  tcp://0.0.0.0:18790 (Bridge)
+  │                          │  http://0.0.0.0:18793 (Canvas host)
   └───────────┬───────────────┘
               │
               ├─ Pi agent (RPC)
               ├─ CLI (clawdis …)
               ├─ Chat UI (SwiftUI)
               ├─ macOS app (Clawdis.app)
-              └─ iOS node (Iris) via Bridge + pairing
+              └─ iOS node via Bridge + pairing
 ```
 
 Most operations flow through the **Gateway** (`clawdis gateway`), a single long-running process that owns provider connections and the WebSocket control plane.
@@ -52,7 +52,7 @@ Most operations flow through the **Gateway** (`clawdis gateway`), a single long-
 - **One Gateway per host**: it is the only process allowed to own the WhatsApp Web session.
 - **Loopback-first**: Gateway WS is `ws://127.0.0.1:18789` (not exposed on the LAN).
 - **Bridge for nodes**: optional LAN/tailnet-facing bridge on `tcp://0.0.0.0:18790` for paired nodes (Bonjour-discoverable).
-- **Canvas host (optional)**: LAN/tailnet HTTP file server (default `18793`) for node WebViews; see `docs/configuration.md` (`canvasHost`).
+- **Canvas host**: LAN/tailnet HTTP file server (default `18793`) for node WebViews; see `docs/configuration.md` (`canvasHost`).
 - **Remote use**: SSH tunnel or tailnet/VPN; see `docs/remote.md` and `docs/discovery.md`.
 
 ## Features (high level)
@@ -65,7 +65,7 @@ Most operations flow through the **Gateway** (`clawdis gateway`), a single long-
 - 📎 **Media Support** — Send and receive images, audio, documents
 - 🎤 **Voice notes** — Optional transcription hook
 - 🖥️ **WebChat + macOS app** — Local UI + menu bar companion for ops and voice wake
-- 📱 **iOS node (Iris)** — Pairs as a node and exposes a Canvas surface
+- 📱 **iOS node** — Pairs as a node and exposes a Canvas surface
 
 Note: legacy Claude/Codex/Gemini/Opencode paths have been removed; Pi is the only coding-agent path.
 

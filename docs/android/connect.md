@@ -102,7 +102,8 @@ The Android node’s Chat sheet uses the gateway’s **primary session key** (`m
 ## 7) Canvas + camera
 
 Canvas commands (foreground only):
-- `canvas.eval`, `canvas.snapshot`, `canvas.navigate`, `canvas.setMode`
+- `canvas.eval`, `canvas.snapshot`, `canvas.navigate` (switches to web mode), `canvas.setMode` (use `"canvas"` to return)
+- A2UI: `canvas.a2ui.push`, `canvas.a2ui.reset` (`canvas.a2ui.pushJSONL` legacy alias)
 
 Camera commands (foreground only; permission-gated):
 - `camera.snap` (jpg)

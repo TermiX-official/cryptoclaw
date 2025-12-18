@@ -5,6 +5,7 @@ import android.os.Build
 import android.graphics.Canvas
 import android.os.Looper
 import android.webkit.WebView
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -31,6 +32,10 @@ class CanvasController {
 
   fun navigate(url: String) {
     this.url = url
+    if (url.trim().isNotBlank()) {
+      // `canvas.navigate` is expected to show web content; default to WEB mode to match iOS.
+      this.mode = Mode.WEB
+    }
     reload()
   }
 
@@ -100,47 +105,41 @@ class CanvasController {
 
   companion object {
     fun parseMode(paramsJson: String?): Mode {
-      val raw = paramsJson ?: return Mode.CANVAS
-      return if (raw.contains("\"web\"")) Mode.WEB else Mode.CANVAS
+      val obj = parseParamsObject(paramsJson) ?: return Mode.CANVAS
+      return if (obj.optString("mode", "").equals("web", ignoreCase = true)) {
+        Mode.WEB
+      } else {
+        Mode.CANVAS
+      }
     }
 
     fun parseNavigateUrl(paramsJson: String?): String? {
-      val raw = paramsJson ?: return null
-      val key = "\"url\""
-      val idx = raw.indexOf(key)
-      if (idx < 0) return null
-      val start = raw.indexOf('"', idx + key.length)
-      if (start < 0) return null
-      val end = raw.indexOf('"', start + 1)
-      if (end < 0) return null
-      return raw.substring(start + 1, end)
+      val obj = parseParamsObject(paramsJson) ?: return null
+      val url = obj.optString("url", "").trim()
+      return url.takeIf { it.isNotBlank() }
     }
 
     fun parseEvalJs(paramsJson: String?): String? {
-      val raw = paramsJson ?: return null
-      val key = "\"javaScript\""
-      val idx = raw.indexOf(key)
-      if (idx < 0) return null
-      val start = raw.indexOf('"', idx + key.length)
-      if (start < 0) return null
-      val end = raw.lastIndexOf('"')
-      if (end <= start) return null
-      return raw.substring(start + 1, end)
-        .replace("\\n", "\n")
-        .replace("\\\"", "\"")
-        .replace("\\\\", "\\")
+      val obj = parseParamsObject(paramsJson) ?: return null
+      val js = obj.optString("javaScript", "")
+      return js.takeIf { it.isNotBlank() }
     }
 
     fun parseSnapshotMaxWidth(paramsJson: String?): Int? {
-      val raw = paramsJson ?: return null
-      val key = "\"maxWidth\""
-      val idx = raw.indexOf(key)
-      if (idx < 0) return null
-      val colon = raw.indexOf(':', idx + key.length)
-      if (colon < 0) return null
-      val tail = raw.substring(colon + 1).trimStart()
-      val num = tail.takeWhile { it.isDigit() }
-      return num.toIntOrNull()
+      val obj = parseParamsObject(paramsJson) ?: return null
+      if (!obj.has("maxWidth")) return null
+      val width = obj.optInt("maxWidth", 0)
+      return width.takeIf { it > 0 }
+    }
+
+    private fun parseParamsObject(paramsJson: String?): JSONObject? {
+      val raw = paramsJson?.trim() ?: return null
+      if (raw.isBlank()) return null
+      return try {
+        JSONObject(raw)
+      } catch (_: Throwable) {
+        null
+      }
     }
   }
 }

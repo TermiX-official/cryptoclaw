@@ -18,6 +18,7 @@ import com.steipete.clawdis.node.node.CameraCaptureManager
 import com.steipete.clawdis.node.node.CanvasController
 import com.steipete.clawdis.node.protocol.ClawdisCapability
 import com.steipete.clawdis.node.protocol.ClawdisCameraCommand
+import com.steipete.clawdis.node.protocol.ClawdisCanvasA2UICommand
 import com.steipete.clawdis.node.protocol.ClawdisCanvasCommand
 import com.steipete.clawdis.node.voice.VoiceWakeManager
 import kotlinx.coroutines.CoroutineScope
@@ -268,15 +269,17 @@ class NodeRuntime(context: Context) {
 
       val invokeCommands =
         buildList {
-          add("canvas.show")
-          add("canvas.hide")
-          add("canvas.setMode")
-          add("canvas.navigate")
-          add("canvas.eval")
-          add("canvas.snapshot")
+          add(ClawdisCanvasCommand.Show.rawValue)
+          add(ClawdisCanvasCommand.Hide.rawValue)
+          add(ClawdisCanvasCommand.SetMode.rawValue)
+          add(ClawdisCanvasCommand.Navigate.rawValue)
+          add(ClawdisCanvasCommand.Eval.rawValue)
+          add(ClawdisCanvasCommand.Snapshot.rawValue)
+          add(ClawdisCanvasA2UICommand.Push.rawValue)
+          add(ClawdisCanvasA2UICommand.Reset.rawValue)
           if (cameraEnabled.value) {
-            add("camera.snap")
-            add("camera.clip")
+            add(ClawdisCameraCommand.Snap.rawValue)
+            add(ClawdisCameraCommand.Clip.rawValue)
           }
         }
       val resolved =
@@ -447,6 +450,7 @@ class NodeRuntime(context: Context) {
   private suspend fun handleInvoke(command: String, paramsJson: String?): BridgeSession.InvokeResult {
     if (
       command.startsWith(ClawdisCanvasCommand.NamespacePrefix) ||
+        command.startsWith(ClawdisCanvasA2UICommand.NamespacePrefix) ||
         command.startsWith(ClawdisCameraCommand.NamespacePrefix)
       ) {
       if (!isForeground.value) {
@@ -507,6 +511,29 @@ class NodeRuntime(context: Context) {
           }
         BridgeSession.InvokeResult.ok("""{"format":"png","base64":"$base64"}""")
       }
+      ClawdisCanvasA2UICommand.Reset.rawValue -> {
+        val ready = ensureA2uiReady()
+        if (!ready) {
+          return BridgeSession.InvokeResult.error(code = "A2UI_NOT_READY", message = "A2UI not ready")
+        }
+        val res = canvas.eval(a2uiResetJS)
+        BridgeSession.InvokeResult.ok(res)
+      }
+      ClawdisCanvasA2UICommand.Push.rawValue, ClawdisCanvasA2UICommand.PushJSONL.rawValue -> {
+        val messages =
+          try {
+            decodeA2uiMessages(command, paramsJson)
+          } catch (err: Throwable) {
+            return BridgeSession.InvokeResult.error(code = "INVALID_REQUEST", message = err.message ?: "invalid A2UI payload")
+          }
+        val ready = ensureA2uiReady()
+        if (!ready) {
+          return BridgeSession.InvokeResult.error(code = "A2UI_NOT_READY", message = "A2UI not ready")
+        }
+        val js = a2uiApplyMessagesJS(messages)
+        val res = canvas.eval(js)
+        BridgeSession.InvokeResult.ok(res)
+      }
       ClawdisCameraCommand.Snap.rawValue -> {
         val res = camera.snap(paramsJson)
         BridgeSession.InvokeResult.ok(res.payloadJson)
@@ -528,9 +555,127 @@ class NodeRuntime(context: Context) {
         )
     }
   }
+
+  private suspend fun ensureA2uiReady(): Boolean {
+    try {
+      val already = canvas.eval(a2uiReadyCheckJS)
+      if (already == "true") return true
+    } catch (_: Throwable) {
+      // ignore
+    }
+
+    canvas.navigate(a2uiIndexUrl)
+    repeat(50) {
+      try {
+        val ready = canvas.eval(a2uiReadyCheckJS)
+        if (ready == "true") return true
+      } catch (_: Throwable) {
+        // ignore
+      }
+      delay(120)
+    }
+    return false
+  }
+
+  private fun decodeA2uiMessages(command: String, paramsJson: String?): String {
+    val raw = paramsJson?.trim().orEmpty()
+    if (raw.isBlank()) throw IllegalArgumentException("INVALID_REQUEST: paramsJSON required")
+
+    if (command == ClawdisCanvasA2UICommand.PushJSONL.rawValue) {
+      val obj =
+        json.parseToJsonElement(raw) as? JsonObject
+          ?: throw IllegalArgumentException("INVALID_REQUEST: expected object params")
+      val jsonl = (obj["jsonl"] as? JsonPrimitive)?.content?.trim().orEmpty()
+      if (jsonl.isBlank()) throw IllegalArgumentException("INVALID_REQUEST: jsonl required")
+      val messages =
+        jsonl
+          .lineSequence()
+          .map { it.trim() }
+          .filter { it.isNotBlank() }
+          .mapIndexed { idx, line ->
+            val el = json.parseToJsonElement(line)
+            val msg =
+              el as? JsonObject
+                ?: throw IllegalArgumentException("A2UI JSONL line ${idx + 1}: expected a JSON object")
+            validateA2uiV0_8(msg, idx + 1)
+            msg
+          }
+          .toList()
+      return JsonArray(messages).toString()
+    }
+
+    val obj =
+      json.parseToJsonElement(raw) as? JsonObject
+        ?: throw IllegalArgumentException("INVALID_REQUEST: expected object params")
+    val arr = obj["messages"] as? JsonArray ?: throw IllegalArgumentException("INVALID_REQUEST: messages[] required")
+    val out =
+      arr.mapIndexed { idx, el ->
+        val msg =
+          el as? JsonObject
+            ?: throw IllegalArgumentException("A2UI messages[${idx}]: expected a JSON object")
+        validateA2uiV0_8(msg, idx + 1)
+        msg
+      }
+    return JsonArray(out).toString()
+  }
+
+  private fun validateA2uiV0_8(msg: JsonObject, lineNumber: Int) {
+    if (msg.containsKey("createSurface")) {
+      throw IllegalArgumentException(
+        "A2UI JSONL line $lineNumber: looks like A2UI v0.9 (`createSurface`). Canvas supports v0.8 messages only.",
+      )
+    }
+    val allowed = setOf("beginRendering", "surfaceUpdate", "dataModelUpdate", "deleteSurface")
+    val matched = msg.keys.filter { allowed.contains(it) }
+    if (matched.size != 1) {
+      val found = msg.keys.sorted().joinToString(", ")
+      throw IllegalArgumentException(
+        "A2UI JSONL line $lineNumber: expected exactly one of ${allowed.sorted().joinToString(", ")}; found: $found",
+      )
+    }
+  }
 }
 
 private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+private const val a2uiIndexUrl: String = "file:///android_asset/canvas_a2ui/index.html"
+
+private const val a2uiReadyCheckJS: String =
+  """
+  (() => {
+    try {
+      return !!globalThis.clawdisA2UI && typeof globalThis.clawdisA2UI.applyMessages === 'function';
+    } catch (_) {
+      return false;
+    }
+  })()
+  """
+
+private const val a2uiResetJS: String =
+  """
+  (() => {
+    try {
+      if (!globalThis.clawdisA2UI) return { ok: false, error: "missing clawdisA2UI" };
+      return globalThis.clawdisA2UI.reset();
+    } catch (e) {
+      return { ok: false, error: String(e?.message ?? e) };
+    }
+  })()
+  """
+
+private fun a2uiApplyMessagesJS(messagesJson: String): String {
+  return """
+    (() => {
+      try {
+        if (!globalThis.clawdisA2UI) return { ok: false, error: "missing clawdisA2UI" };
+        const messages = $messagesJson;
+        return globalThis.clawdisA2UI.applyMessages(messages);
+      } catch (e) {
+        return { ok: false, error: String(e?.message ?? e) };
+      }
+    })()
+  """.trimIndent()
+}
 
 private fun String.toJsonString(): String {
   val escaped =

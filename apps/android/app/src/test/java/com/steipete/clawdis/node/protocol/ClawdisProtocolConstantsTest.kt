@@ -15,6 +15,13 @@ class ClawdisProtocolConstantsTest {
   }
 
   @Test
+  fun a2uiCommandsUseStableStrings() {
+    assertEquals("canvas.a2ui.push", ClawdisCanvasA2UICommand.Push.rawValue)
+    assertEquals("canvas.a2ui.pushJSONL", ClawdisCanvasA2UICommand.PushJSONL.rawValue)
+    assertEquals("canvas.a2ui.reset", ClawdisCanvasA2UICommand.Reset.rawValue)
+  }
+
+  @Test
   fun capabilitiesUseStableStrings() {
     assertEquals("canvas", ClawdisCapability.Canvas.rawValue)
     assertEquals("camera", ClawdisCapability.Camera.rawValue)

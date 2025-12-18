@@ -19,6 +19,7 @@ type BridgeHelloFrame = {
   version?: string;
   deviceFamily?: string;
   modelIdentifier?: string;
+  caps?: string[];
 };
 
 type BridgePairRequestFrame = {
@@ -29,6 +30,7 @@ type BridgePairRequestFrame = {
   version?: string;
   deviceFamily?: string;
   modelIdentifier?: string;
+  caps?: string[];
   remoteAddress?: string;
 };
 
@@ -115,6 +117,7 @@ export type NodeBridgeClientInfo = {
   deviceFamily?: string;
   modelIdentifier?: string;
   remoteIp?: string;
+  caps?: string[];
 };
 
 export type NodeBridgeServerOpts = {
@@ -271,6 +274,9 @@ export async function startNodeBridgeServer(
         version: verified.node.version ?? hello.version,
         deviceFamily: verified.node.deviceFamily ?? hello.deviceFamily,
         modelIdentifier: verified.node.modelIdentifier ?? hello.modelIdentifier,
+        caps: Array.isArray(hello.caps)
+          ? hello.caps.map((c) => String(c)).filter(Boolean)
+          : undefined,
         remoteIp: remoteAddress,
       };
       connections.set(nodeId, { socket, nodeInfo, invokeWaiters });
@@ -359,6 +365,9 @@ export async function startNodeBridgeServer(
         version: req.version,
         deviceFamily: req.deviceFamily,
         modelIdentifier: req.modelIdentifier,
+        caps: Array.isArray(req.caps)
+          ? req.caps.map((c) => String(c)).filter(Boolean)
+          : undefined,
         remoteIp: remoteAddress,
       };
       connections.set(nodeId, { socket, nodeInfo, invokeWaiters });

@@ -2965,17 +2965,20 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
                   connected.map((n) => [n.nodeId, n]),
                 );
 
-                const nodes = list.paired.map((n) => {
-                  const live = connectedById.get(n.nodeId);
-                  return {
-                    nodeId: n.nodeId,
-                    displayName: live?.displayName ?? n.displayName,
-                    platform: live?.platform ?? n.platform,
-                    version: live?.version ?? n.version,
-                    remoteIp: live?.remoteIp ?? n.remoteIp,
-                    connected: Boolean(live),
-                  };
-                });
+	                const nodes = list.paired.map((n) => {
+	                  const live = connectedById.get(n.nodeId);
+	                  return {
+	                    nodeId: n.nodeId,
+	                    displayName: live?.displayName ?? n.displayName,
+	                    platform: live?.platform ?? n.platform,
+	                    version: live?.version ?? n.version,
+	                    deviceFamily: live?.deviceFamily ?? n.deviceFamily,
+	                    modelIdentifier: live?.modelIdentifier ?? n.modelIdentifier,
+	                    remoteIp: live?.remoteIp ?? n.remoteIp,
+	                    caps: live?.caps,
+	                    connected: Boolean(live),
+	                  };
+	                });
 
                 respond(true, { ts: Date.now(), nodes }, undefined);
               } catch (err) {

@@ -412,4 +412,54 @@ describe("node bridge server", () => {
 
     await server.close();
   });
+
+  it("tracks connected node caps and hardware identifiers", async () => {
+    const server = await startNodeBridgeServer({
+      host: "127.0.0.1",
+      port: 0,
+      pairingBaseDir: baseDir,
+    });
+
+    const socket = net.connect({ host: "127.0.0.1", port: server.port });
+    const readLine = createLineReader(socket);
+    sendLine(socket, {
+      type: "pair-request",
+      nodeId: "n-caps",
+      displayName: "Iris",
+      platform: "ios",
+      version: "1.0",
+      deviceFamily: "iPad",
+      modelIdentifier: "iPad14,5",
+      caps: ["canvas", "camera"],
+    });
+
+    // Approve the pending request from the gateway side.
+    let reqId: string | undefined;
+    for (let i = 0; i < 40; i += 1) {
+      const list = await listNodePairing(baseDir);
+      const req = list.pending.find((p) => p.nodeId === "n-caps");
+      if (req) {
+        reqId = req.requestId;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    expect(reqId).toBeTruthy();
+    if (!reqId) throw new Error("expected a pending requestId");
+    await approveNodePairing(reqId, baseDir);
+
+    const pairOk = JSON.parse(await readLine()) as { type: string };
+    expect(pairOk.type).toBe("pair-ok");
+    const helloOk = JSON.parse(await readLine()) as { type: string };
+    expect(helloOk.type).toBe("hello-ok");
+
+    const connected = server.listConnected();
+    const node = connected.find((n) => n.nodeId === "n-caps");
+    expect(node?.deviceFamily).toBe("iPad");
+    expect(node?.modelIdentifier).toBe("iPad14,5");
+    expect(node?.caps).toEqual(["canvas", "camera"]);
+
+    socket.destroy();
+    await server.close();
+  });
 });

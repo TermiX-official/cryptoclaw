@@ -58,8 +58,8 @@ export function registerGatewayCli(program: Command) {
     .option("--verbose", "Verbose logging to stdout/stderr", false)
     .option(
       "--ws-log <style>",
-      'Verbose WebSocket log style ("full"|"compact")',
-      "full",
+      'WebSocket log style ("auto"|"full"|"compact")',
+      "auto",
     )
     .option("--compact", 'Alias for "--ws-log compact"', false)
     .action(async (opts) => {
@@ -68,13 +68,18 @@ export function registerGatewayCli(program: Command) {
         | string
         | undefined;
       const wsLogStyle: GatewayWsLogStyle =
-        wsLogRaw === "compact" ? "compact" : "full";
+        wsLogRaw === "compact"
+          ? "compact"
+          : wsLogRaw === "full"
+            ? "full"
+            : "auto";
       if (
         wsLogRaw !== undefined &&
+        wsLogRaw !== "auto" &&
         wsLogRaw !== "compact" &&
         wsLogRaw !== "full"
       ) {
-        defaultRuntime.error('Invalid --ws-log (use "full" or "compact")');
+        defaultRuntime.error('Invalid --ws-log (use "auto", "full", "compact")');
         defaultRuntime.exit(1);
       }
       setGatewayWsLogStyle(wsLogStyle);

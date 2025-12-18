@@ -90,7 +90,10 @@ import { setHeartbeatsEnabled } from "../web/auto-reply.js";
 import { sendMessageWhatsApp } from "../web/outbound.js";
 import { requestReplyHeartbeatNow } from "../web/reply-heartbeat-wake.js";
 import { buildMessageWithAttachments } from "./chat-attachments.js";
-import { getGatewayWsLogStyle } from "./ws-logging.js";
+import {
+  DEFAULT_WS_SLOW_MS,
+  getGatewayWsLogStyle,
+} from "./ws-logging.js";
 import {
   type ConnectParams,
   ErrorCodes,
@@ -475,8 +478,13 @@ function logWs(
   kind: string,
   meta?: Record<string, unknown>,
 ) {
-  if (!isVerbose()) return;
-  if (getGatewayWsLogStyle() === "compact") {
+  const style = getGatewayWsLogStyle();
+  if (!isVerbose()) {
+    logWsOptimized(direction, kind, meta);
+    return;
+  }
+
+  if (style === "compact" || style === "auto") {
     logWsCompact(direction, kind, meta);
     return;
   }
@@ -560,6 +568,85 @@ type WsInflightEntry = {
 
 const wsInflightCompact = new Map<string, WsInflightEntry>();
 let wsLastCompactConnId: string | undefined;
+const wsInflightOptimized = new Map<string, number>();
+
+function logWsOptimized(
+  direction: "in" | "out",
+  kind: string,
+  meta?: Record<string, unknown>,
+) {
+  // Keep "normal" mode quiet: only surface errors, slow calls, and parser issues.
+  const connId = typeof meta?.connId === "string" ? meta.connId : undefined;
+  const id = typeof meta?.id === "string" ? meta.id : undefined;
+  const ok = typeof meta?.ok === "boolean" ? meta.ok : undefined;
+  const method = typeof meta?.method === "string" ? meta.method : undefined;
+
+  const inflightKey = connId && id ? `${connId}:${id}` : undefined;
+
+  if (direction === "in" && kind === "req" && inflightKey) {
+    wsInflightOptimized.set(inflightKey, Date.now());
+    if (wsInflightOptimized.size > 2000) wsInflightOptimized.clear();
+    return;
+  }
+
+  if (kind === "parse-error") {
+    const errorMsg =
+      typeof meta?.error === "string" ? formatForLog(meta.error) : undefined;
+    console.log(
+      [
+        `${chalk.gray("[gws]")} ${chalk.redBright("✗")} ${chalk.bold("parse-error")}`,
+        errorMsg ? `${chalk.dim("error")}=${errorMsg}` : undefined,
+        `${chalk.dim("conn")}=${chalk.gray(shortId(connId ?? "?"))}`,
+      ]
+        .filter((t): t is string => Boolean(t))
+        .join(" "),
+    );
+    return;
+  }
+
+  if (direction !== "out" || kind !== "res") return;
+
+  const startedAt = inflightKey ? wsInflightOptimized.get(inflightKey) : undefined;
+  if (inflightKey) wsInflightOptimized.delete(inflightKey);
+  const durationMs =
+    typeof startedAt === "number" ? Date.now() - startedAt : undefined;
+
+  const shouldLog =
+    ok === false ||
+    (typeof durationMs === "number" && durationMs >= DEFAULT_WS_SLOW_MS);
+  if (!shouldLog) return;
+
+  const statusToken =
+    ok === undefined
+      ? undefined
+      : ok
+        ? chalk.greenBright("✓")
+        : chalk.redBright("✗");
+  const durationToken =
+    typeof durationMs === "number" ? chalk.dim(`${durationMs}ms`) : undefined;
+
+  const restMeta: string[] = [];
+  if (meta) {
+    for (const [key, value] of Object.entries(meta)) {
+      if (value === undefined) continue;
+      if (key === "connId" || key === "id") continue;
+      if (key === "method" || key === "ok") continue;
+      restMeta.push(`${chalk.dim(key)}=${formatForLog(value)}`);
+    }
+  }
+
+  const tokens = [
+    `${chalk.gray("[gws]")} ${chalk.yellowBright("⇄")} ${chalk.bold("res")}`,
+    statusToken,
+    method ? chalk.bold(method) : undefined,
+    durationToken,
+    ...restMeta,
+    connId ? `${chalk.dim("conn")}=${chalk.gray(shortId(connId))}` : undefined,
+    id ? `${chalk.dim("id")}=${chalk.gray(shortId(id))}` : undefined,
+  ].filter((t): t is string => Boolean(t));
+
+  console.log(tokens.join(" "));
+}
 
 function logWsCompact(
   direction: "in" | "out",
@@ -2197,6 +2284,8 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
             id: req.id,
             ok,
             method: req.method,
+            errorCode: error?.code,
+            errorMessage: error?.message,
             ...meta,
           });
         };

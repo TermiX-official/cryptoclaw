@@ -367,7 +367,7 @@ describe("cli program", () => {
         params: expect.objectContaining({
           nodeId: "ios-node",
           command: "camera.clip",
-          timeoutMs: 45000,
+          timeoutMs: 90000,
           idempotencyKey: "idem-test",
           params: expect.objectContaining({
             facing: "front",
@@ -505,7 +505,7 @@ describe("cli program", () => {
         params: expect.objectContaining({
           nodeId: "ios-node",
           command: "camera.clip",
-          timeoutMs: 45000,
+          timeoutMs: 90000,
           idempotencyKey: "idem-test",
           params: expect.objectContaining({
             includeAudio: false,
@@ -516,6 +516,89 @@ describe("cli program", () => {
 
     const out = String(runtime.log.mock.calls[0]?.[0] ?? "");
     const mediaPath = out.replace(/^MEDIA:/, "").trim();
+
+    try {
+      await expect(fs.readFile(mediaPath, "utf8")).resolves.toBe("hi");
+    } finally {
+      await fs.unlink(mediaPath).catch(() => {});
+    }
+  });
+
+  it("runs nodes camera clip with human duration (10s)", async () => {
+    callGateway
+      .mockResolvedValueOnce({
+        ts: Date.now(),
+        nodes: [
+          {
+            nodeId: "ios-node",
+            displayName: "iOS Node",
+            remoteIp: "192.168.0.88",
+            connected: true,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        nodeId: "ios-node",
+        command: "camera.clip",
+        payload: {
+          format: "mp4",
+          base64: "aGk=",
+          durationMs: 10_000,
+          hasAudio: true,
+        },
+      });
+
+    const program = buildProgram();
+    runtime.log.mockClear();
+    await program.parseAsync(
+      ["nodes", "camera", "clip", "--node", "ios-node", "--duration", "10s"],
+      { from: "user" },
+    );
+
+    expect(callGateway).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        method: "node.invoke",
+        params: expect.objectContaining({
+          nodeId: "ios-node",
+          command: "camera.clip",
+          params: expect.objectContaining({ durationMs: 10_000 }),
+        }),
+      }),
+    );
+  });
+
+  it("runs nodes canvas snapshot and prints MEDIA path", async () => {
+    callGateway
+      .mockResolvedValueOnce({
+        ts: Date.now(),
+        nodes: [
+          {
+            nodeId: "ios-node",
+            displayName: "iOS Node",
+            remoteIp: "192.168.0.88",
+            connected: true,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        nodeId: "ios-node",
+        command: "canvas.snapshot",
+        payload: { format: "png", base64: "aGk=" },
+      });
+
+    const program = buildProgram();
+    runtime.log.mockClear();
+    await program.parseAsync(
+      ["nodes", "canvas", "snapshot", "--node", "ios-node", "--format", "png"],
+      { from: "user" },
+    );
+
+    const out = String(runtime.log.mock.calls[0]?.[0] ?? "");
+    const mediaPath = out.replace(/^MEDIA:/, "").trim();
+    expect(mediaPath).toMatch(/clawdis-canvas-snapshot-.*\.png$/);
 
     try {
       await expect(fs.readFile(mediaPath, "utf8")).resolves.toBe("hi");

@@ -8,6 +8,11 @@ import {
   parseCameraSnapPayload,
   writeBase64ToFile,
 } from "./nodes-camera.js";
+import {
+  canvasSnapshotTempPath,
+  parseCanvasSnapshotPayload,
+} from "./nodes-canvas.js";
+import { parseDurationMs } from "./parse-duration.js";
 
 type NodesRpcOpts = {
   url?: string;
@@ -473,6 +478,100 @@ export function registerNodesCli(program: Command) {
     .command("camera")
     .description("Capture camera media from a paired node");
 
+  const canvas = nodes
+    .command("canvas")
+    .description("Capture or render canvas content from a paired node");
+
+  nodesCallOpts(
+    canvas
+      .command("snapshot")
+      .description("Capture a canvas snapshot (prints MEDIA:<path>)")
+      .requiredOption("--node <idOrNameOrIp>", "Node id, name, or IP")
+      .option("--format <png|jpg|jpeg>", "Image format", "jpg")
+      .option("--max-width <px>", "Max width in px (optional)")
+      .option("--quality <0-1>", "JPEG quality (optional)")
+      .option(
+        "--invoke-timeout <ms>",
+        "Node invoke timeout in ms (default 20000)",
+        "20000",
+      )
+      .action(async (opts: NodesRpcOpts) => {
+        try {
+          const nodeId = await resolveNodeId(opts, String(opts.node ?? ""));
+          const formatOpt = String(opts.format ?? "jpg")
+            .trim()
+            .toLowerCase();
+          const formatForParams =
+            formatOpt === "jpg"
+              ? "jpeg"
+              : formatOpt === "jpeg"
+                ? "jpeg"
+                : "png";
+          if (formatForParams !== "png" && formatForParams !== "jpeg") {
+            throw new Error(
+              `invalid format: ${String(opts.format)} (expected png|jpg|jpeg)`,
+            );
+          }
+
+          const maxWidth = opts.maxWidth
+            ? Number.parseInt(String(opts.maxWidth), 10)
+            : undefined;
+          const quality = opts.quality
+            ? Number.parseFloat(String(opts.quality))
+            : undefined;
+          const timeoutMs = opts.invokeTimeout
+            ? Number.parseInt(String(opts.invokeTimeout), 10)
+            : undefined;
+
+          const invokeParams: Record<string, unknown> = {
+            nodeId,
+            command: "canvas.snapshot",
+            params: {
+              format: formatForParams,
+              maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined,
+              quality: Number.isFinite(quality) ? quality : undefined,
+            },
+            idempotencyKey: randomIdempotencyKey(),
+          };
+          if (typeof timeoutMs === "number" && Number.isFinite(timeoutMs)) {
+            invokeParams.timeoutMs = timeoutMs;
+          }
+
+          const raw = (await callGatewayCli(
+            "node.invoke",
+            opts,
+            invokeParams,
+          )) as unknown;
+
+          const res =
+            typeof raw === "object" && raw !== null
+              ? (raw as { payload?: unknown })
+              : {};
+          const payload = parseCanvasSnapshotPayload(res.payload);
+          const filePath = canvasSnapshotTempPath({
+            ext: payload.format === "jpeg" ? "jpg" : payload.format,
+          });
+          await writeBase64ToFile(filePath, payload.base64);
+
+          if (opts.json) {
+            defaultRuntime.log(
+              JSON.stringify(
+                { file: { path: filePath, format: payload.format } },
+                null,
+                2,
+              ),
+            );
+            return;
+          }
+          defaultRuntime.log(`MEDIA:${filePath}`);
+        } catch (err) {
+          defaultRuntime.error(`nodes canvas snapshot failed: ${String(err)}`);
+          defaultRuntime.exit(1);
+        }
+      }),
+    { timeoutMs: 60_000 },
+  );
+
   nodesCallOpts(
     camera
       .command("snap")
@@ -582,21 +681,22 @@ export function registerNodesCli(program: Command) {
       )
       .requiredOption("--node <idOrNameOrIp>", "Node id, name, or IP")
       .option("--facing <front|back>", "Camera facing", "front")
-      .option("--duration <ms>", "Duration in ms (default 3000)", "3000")
+      .option(
+        "--duration <ms|10s|1m>",
+        "Duration (default 3000ms; supports ms/s/m, e.g. 10s)",
+        "3000",
+      )
       .option("--no-audio", "Disable audio capture")
       .option(
         "--invoke-timeout <ms>",
-        "Node invoke timeout in ms (default 45000)",
-        "45000",
+        "Node invoke timeout in ms (default 90000)",
+        "90000",
       )
       .action(async (opts: NodesRpcOpts & { audio?: boolean }) => {
         try {
           const nodeId = await resolveNodeId(opts, String(opts.node ?? ""));
           const facing = parseFacing(String(opts.facing ?? "front"));
-          const durationMs = Number.parseInt(
-            String(opts.duration ?? "3000"),
-            10,
-          );
+          const durationMs = parseDurationMs(String(opts.duration ?? "3000"));
           const includeAudio = opts.audio !== false;
           const timeoutMs = opts.invokeTimeout
             ? Number.parseInt(String(opts.invokeTimeout), 10)

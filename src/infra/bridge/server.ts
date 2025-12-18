@@ -21,6 +21,7 @@ type BridgeHelloFrame = {
   deviceFamily?: string;
   modelIdentifier?: string;
   caps?: string[];
+  commands?: string[];
 };
 
 type BridgePairRequestFrame = {
@@ -32,6 +33,7 @@ type BridgePairRequestFrame = {
   deviceFamily?: string;
   modelIdentifier?: string;
   caps?: string[];
+  commands?: string[];
   remoteAddress?: string;
 };
 
@@ -119,6 +121,7 @@ export type NodeBridgeClientInfo = {
   modelIdentifier?: string;
   remoteIp?: string;
   caps?: string[];
+  commands?: string[];
 };
 
 export type NodeBridgeServerOpts = {
@@ -263,8 +266,12 @@ export async function startNodeBridgeServer(
         platform?: string;
         deviceFamily?: string;
       }): string[] | undefined => {
-        const platform = String(frame.platform ?? "").trim().toLowerCase();
-        const family = String(frame.deviceFamily ?? "").trim().toLowerCase();
+        const platform = String(frame.platform ?? "")
+          .trim()
+          .toLowerCase();
+        const family = String(frame.deviceFamily ?? "")
+          .trim()
+          .toLowerCase();
         if (platform.includes("ios") || platform.includes("ipados")) {
           return ["canvas", "camera"];
         }
@@ -287,6 +294,11 @@ export async function startNodeBridgeServer(
         verified.node.caps ??
         inferCaps(hello);
 
+      const commands =
+        Array.isArray(hello.commands) && hello.commands.length > 0
+          ? hello.commands.map((c) => String(c)).filter(Boolean)
+          : verified.node.commands;
+
       isAuthenticated = true;
       const existing = connections.get(nodeId);
       if (existing?.socket && existing.socket !== socket) {
@@ -304,6 +316,7 @@ export async function startNodeBridgeServer(
         deviceFamily: verified.node.deviceFamily ?? hello.deviceFamily,
         modelIdentifier: verified.node.modelIdentifier ?? hello.modelIdentifier,
         caps,
+        commands,
         remoteIp: remoteAddress,
       };
       await updatePairedNodeMetadata(
@@ -316,6 +329,7 @@ export async function startNodeBridgeServer(
           modelIdentifier: nodeInfo.modelIdentifier,
           remoteIp: nodeInfo.remoteIp,
           caps: nodeInfo.caps,
+          commands: nodeInfo.commands,
         },
         opts.pairingBaseDir,
       );
@@ -378,6 +392,9 @@ export async function startNodeBridgeServer(
           caps: Array.isArray(req.caps)
             ? req.caps.map((c) => String(c)).filter(Boolean)
             : undefined,
+          commands: Array.isArray(req.commands)
+            ? req.commands.map((c) => String(c)).filter(Boolean)
+            : undefined,
           remoteIp: remoteAddress,
         },
         opts.pairingBaseDir,
@@ -410,6 +427,9 @@ export async function startNodeBridgeServer(
         modelIdentifier: req.modelIdentifier,
         caps: Array.isArray(req.caps)
           ? req.caps.map((c) => String(c)).filter(Boolean)
+          : undefined,
+        commands: Array.isArray(req.commands)
+          ? req.commands.map((c) => String(c)).filter(Boolean)
           : undefined,
         remoteIp: remoteAddress,
       };

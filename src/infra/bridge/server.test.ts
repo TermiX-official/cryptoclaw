@@ -431,6 +431,7 @@ describe("node bridge server", () => {
       deviceFamily: "iPad",
       modelIdentifier: "iPad14,5",
       caps: ["canvas", "camera"],
+      commands: ["canvas.eval", "canvas.snapshot", "camera.snap"],
     });
 
     // Approve the pending request from the gateway side.
@@ -458,10 +459,20 @@ describe("node bridge server", () => {
     expect(node?.deviceFamily).toBe("iPad");
     expect(node?.modelIdentifier).toBe("iPad14,5");
     expect(node?.caps).toEqual(["canvas", "camera"]);
+    expect(node?.commands).toEqual([
+      "canvas.eval",
+      "canvas.snapshot",
+      "camera.snap",
+    ]);
 
     const after = await listNodePairing(baseDir);
     const paired = after.paired.find((p) => p.nodeId === "n-caps");
     expect(paired?.caps).toEqual(["canvas", "camera"]);
+    expect(paired?.commands).toEqual([
+      "canvas.eval",
+      "canvas.snapshot",
+      "camera.snap",
+    ]);
 
     socket.destroy();
     await server.close();

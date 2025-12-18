@@ -12,6 +12,7 @@ export type NodePairingPendingRequest = {
   deviceFamily?: string;
   modelIdentifier?: string;
   caps?: string[];
+  commands?: string[];
   remoteIp?: string;
   isRepair?: boolean;
   ts: number;
@@ -26,6 +27,7 @@ export type NodePairingPairedNode = {
   deviceFamily?: string;
   modelIdentifier?: string;
   caps?: string[];
+  commands?: string[];
   remoteIp?: string;
   createdAtMs: number;
   approvedAtMs: number;
@@ -181,6 +183,7 @@ export async function requestNodePairing(
       deviceFamily: req.deviceFamily,
       modelIdentifier: req.modelIdentifier,
       caps: req.caps,
+      commands: req.commands,
       remoteIp: req.remoteIp,
       isRepair,
       ts: Date.now(),
@@ -211,6 +214,7 @@ export async function approveNodePairing(
       deviceFamily: pending.deviceFamily,
       modelIdentifier: pending.modelIdentifier,
       caps: pending.caps,
+      commands: pending.commands,
       remoteIp: pending.remoteIp,
       createdAtMs: existing?.createdAtMs ?? now,
       approvedAtMs: now,
@@ -251,7 +255,12 @@ export async function verifyNodeToken(
 
 export async function updatePairedNodeMetadata(
   nodeId: string,
-  patch: Partial<Omit<NodePairingPairedNode, "nodeId" | "token" | "createdAtMs" | "approvedAtMs">>,
+  patch: Partial<
+    Omit<
+      NodePairingPairedNode,
+      "nodeId" | "token" | "createdAtMs" | "approvedAtMs"
+    >
+  >,
   baseDir?: string,
 ) {
   await withLock(async () => {
@@ -269,6 +278,7 @@ export async function updatePairedNodeMetadata(
       modelIdentifier: patch.modelIdentifier ?? existing.modelIdentifier,
       remoteIp: patch.remoteIp ?? existing.remoteIp,
       caps: patch.caps ?? existing.caps,
+      commands: patch.commands ?? existing.commands,
     };
 
     state.pairedByNodeId[normalized] = next;

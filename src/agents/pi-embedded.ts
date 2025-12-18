@@ -9,6 +9,7 @@ import {
   type ThinkingLevel,
 } from "@mariozechner/pi-agent-core";
 import {
+  type AgentToolResult,
   type Api,
   type AssistantMessage,
   getApiKey,
@@ -38,7 +39,10 @@ import {
   inferToolMetaFromArgs,
 } from "./pi-embedded-utils.js";
 import { getAnthropicOAuthToken } from "./pi-oauth.js";
-import { createClawdisCodingTools } from "./pi-tools.js";
+import {
+  createClawdisCodingTools,
+  sanitizeContentBlocksImages,
+} from "./pi-tools.js";
 import { buildAgentSystemPrompt } from "./system-prompt.js";
 import { loadWorkspaceBootstrapFiles } from "./workspace.js";
 
@@ -128,6 +132,65 @@ async function getApiKeyForProvider(
     if (oauthEnv?.trim()) return oauthEnv.trim();
   }
   return getApiKey(provider) ?? undefined;
+}
+
+type ContentBlock = AgentToolResult<unknown>["content"][number];
+
+async function sanitizeSessionMessagesImages(
+  messages: AppMessage[],
+  label: string,
+): Promise<AppMessage[]> {
+  const out: AppMessage[] = [];
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object") {
+      out.push(msg);
+      continue;
+    }
+
+    const role = (msg as { role?: unknown }).role;
+    if (role === "toolResult") {
+      const toolMsg = msg as Extract<AppMessage, { role: "toolResult" }>;
+      const content = Array.isArray(toolMsg.content) ? toolMsg.content : [];
+      const nextContent = (await sanitizeContentBlocksImages(
+        content as ContentBlock[],
+        label,
+      )) as unknown as typeof toolMsg.content;
+      out.push({ ...toolMsg, content: nextContent });
+      continue;
+    }
+
+    if (role === "user") {
+      const userMsg = msg as Extract<AppMessage, { role: "user" }>;
+      const content = userMsg.content;
+      if (Array.isArray(content)) {
+        const nextContent = (await sanitizeContentBlocksImages(
+          content as unknown as ContentBlock[],
+          label,
+        )) as unknown as typeof userMsg.content;
+        out.push({ ...userMsg, content: nextContent });
+        continue;
+      }
+    }
+
+    out.push(msg);
+  }
+  return out;
+}
+
+function formatAssistantErrorText(msg: AssistantMessage): string | undefined {
+  if (msg.stopReason !== "error") return undefined;
+  const raw = (msg.errorMessage ?? "").trim();
+  if (!raw) return "LLM request failed with an unknown error.";
+
+  const invalidRequest = raw.match(
+    /"type":"invalid_request_error".*?"message":"([^"]+)"/,
+  );
+  if (invalidRequest?.[1]) {
+    return `LLM request rejected: ${invalidRequest[1]}`;
+  }
+
+  // Keep it short for WhatsApp.
+  return raw.length > 600 ? `${raw.slice(0, 600)}…` : raw;
 }
 
 export async function runEmbeddedPiAgent(params: {
@@ -221,7 +284,11 @@ export async function runEmbeddedPiAgent(params: {
       });
 
       // Resume messages from the transcript if present.
-      const prior = sessionManager.loadSession().messages;
+      const priorRaw = sessionManager.loadSession().messages;
+      const prior = await sanitizeSessionMessagesImages(
+        priorRaw,
+        "session:history",
+      );
       if (prior.length > 0) {
         agent.replaceMessages(prior);
       }
@@ -455,6 +522,11 @@ export async function runEmbeddedPiAgent(params: {
       };
 
       const replyItems: Array<{ text: string; media?: string[] }> = [];
+
+      const errorText = lastAssistant
+        ? formatAssistantErrorText(lastAssistant)
+        : undefined;
+      if (errorText) replyItems.push({ text: errorText });
 
       const inlineToolResults =
         params.verboseLevel === "on" &&

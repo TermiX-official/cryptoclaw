@@ -301,7 +301,6 @@ struct SettingsTab: View {
         var commands: [String] = [
             ClawdisCanvasCommand.show.rawValue,
             ClawdisCanvasCommand.hide.rawValue,
-            ClawdisCanvasCommand.setMode.rawValue,
             ClawdisCanvasCommand.navigate.rawValue,
             ClawdisCanvasCommand.evalJS.rawValue,
             ClawdisCanvasCommand.snapshot.rawValue,

@@ -33,12 +33,12 @@ import Testing
 
     @Test func parseAgentLinkParsesCommonFields() {
         let url =
-            URL(string: "clawdis://agent?message=Hello&deliver=1&sessionKey=node-iris&thinking=low&timeoutSeconds=30")!
+            URL(string: "clawdis://agent?message=Hello&deliver=1&sessionKey=node-test&thinking=low&timeoutSeconds=30")!
         #expect(
             DeepLinkParser.parse(url) == .agent(
                 .init(
                     message: "Hello",
-                    sessionKey: "node-iris",
+                    sessionKey: "node-test",
                     thinking: "low",
                     deliver: true,
                     to: nil,

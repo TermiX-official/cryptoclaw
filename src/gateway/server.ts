@@ -26,7 +26,15 @@ import { createDefaultDeps } from "../cli/deps.js";
 import { agentCommand } from "../commands/agent.js";
 import { getHealthSnapshot, type HealthSummary } from "../commands/health.js";
 import { getStatusSummary } from "../commands/status.js";
-import { type ClawdisConfig, loadConfig } from "../config/config.js";
+import {
+  type ClawdisConfig,
+  CONFIG_PATH_CLAWDIS,
+  loadConfig,
+  parseConfigJson5,
+  readConfigFileSnapshot,
+  validateConfigObject,
+  writeConfigFile,
+} from "../config/config.js";
 import {
   loadSessionStore,
   resolveStorePath,
@@ -90,6 +98,7 @@ import { setHeartbeatsEnabled } from "../web/auto-reply.js";
 import { sendMessageWhatsApp } from "../web/outbound.js";
 import { requestReplyHeartbeatNow } from "../web/reply-heartbeat-wake.js";
 import { buildMessageWithAttachments } from "./chat-attachments.js";
+import { handleControlUiHttpRequest } from "./control-ui.js";
 import {
   type ConnectParams,
   ErrorCodes,
@@ -105,6 +114,8 @@ import {
   validateChatAbortParams,
   validateChatHistoryParams,
   validateChatSendParams,
+  validateConfigGetParams,
+  validateConfigSetParams,
   validateConnectParams,
   validateCronAddParams,
   validateCronListParams,
@@ -183,6 +194,8 @@ type SessionsPatchResult = {
 const METHODS = [
   "health",
   "status",
+  "config.get",
+  "config.set",
   "voicewake.get",
   "voicewake.set",
   "sessions.list",
@@ -233,6 +246,27 @@ export type GatewayServer = {
   close: () => Promise<void>;
 };
 
+export type GatewayServerOptions = {
+  /**
+   * Bind address policy for the Gateway WebSocket/HTTP server.
+   * - loopback: 127.0.0.1
+   * - lan: 0.0.0.0
+   * - tailnet: bind only to the Tailscale IPv4 address (100.64.0.0/10)
+   * - auto: prefer tailnet, else LAN
+   */
+  bind?: import("../config/config.js").BridgeBindMode;
+  /**
+   * Advanced override for the bind host, bypassing bind resolution.
+   * Prefer `bind` unless you really need a specific address.
+   */
+  host?: string;
+  /**
+   * If false, do not serve the browser Control UI under /ui/.
+   * Default: config `gateway.controlUi.enabled` (or true when absent).
+   */
+  controlUiEnabled?: boolean;
+};
+
 function isLoopbackAddress(ip: string | undefined): boolean {
   if (!ip) return false;
   if (ip === "127.0.0.1") return true;
@@ -240,6 +274,21 @@ function isLoopbackAddress(ip: string | undefined): boolean {
   if (ip === "::1") return true;
   if (ip.startsWith("::ffff:127.")) return true;
   return false;
+}
+
+function resolveGatewayBindHost(
+  bind: import("../config/config.js").BridgeBindMode | undefined,
+): string | null {
+  const mode = bind ?? "loopback";
+  if (mode === "loopback") return "127.0.0.1";
+  if (mode === "lan") return "0.0.0.0";
+  if (mode === "tailnet") return pickPrimaryTailnetIPv4() ?? null;
+  if (mode === "auto") return pickPrimaryTailnetIPv4() ?? "0.0.0.0";
+  return "127.0.0.1";
+}
+
+function isLoopbackHost(host: string): boolean {
+  return isLoopbackAddress(host);
 }
 
 let presenceVersion = 1;
@@ -774,9 +823,44 @@ async function refreshHealthSnapshot(_opts?: { probe?: boolean }) {
   return healthRefresh;
 }
 
-export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
-  const host = "127.0.0.1";
-  const httpServer: HttpServer = createHttpServer();
+export async function startGatewayServer(
+  port = 18789,
+  opts: GatewayServerOptions = {},
+): Promise<GatewayServer> {
+  const cfgForServer = loadConfig();
+  const bindMode = opts.bind ?? cfgForServer.gateway?.bind ?? "loopback";
+  const bindHost = opts.host ?? resolveGatewayBindHost(bindMode);
+  if (!bindHost) {
+    throw new Error(
+      "gateway bind is tailnet, but no tailnet interface was found; refusing to start gateway",
+    );
+  }
+  const controlUiEnabled =
+    opts.controlUiEnabled ?? cfgForServer.gateway?.controlUi?.enabled ?? true;
+  if (!isLoopbackHost(bindHost) && !getGatewayToken()) {
+    throw new Error(
+      `refusing to bind gateway to ${bindHost}:${port} without CLAWDIS_GATEWAY_TOKEN`,
+    );
+  }
+
+  const httpServer: HttpServer = createHttpServer((req, res) => {
+    // Don't interfere with WebSocket upgrades; ws handles the 'upgrade' event.
+    if (String(req.headers.upgrade ?? "").toLowerCase() === "websocket") return;
+
+    if (controlUiEnabled) {
+      if (req.url === "/") {
+        res.statusCode = 302;
+        res.setHeader("Location", "/ui/");
+        res.end();
+        return;
+      }
+      if (handleControlUiHttpRequest(req, res)) return;
+    }
+
+    res.statusCode = 404;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.end("Not Found");
+  });
   let bonjourStop: (() => Promise<void>) | null = null;
   let bridge: Awaited<ReturnType<typeof startNodeBridgeServer>> | null = null;
   let canvasHost: CanvasHostServer | null = null;
@@ -794,18 +878,18 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
       };
       httpServer.once("error", onError);
       httpServer.once("listening", onListening);
-      httpServer.listen(port, host);
+      httpServer.listen(port, bindHost);
     });
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "EADDRINUSE") {
       throw new GatewayLockError(
-        `another gateway instance is already listening on ws://${host}:${port}`,
+        `another gateway instance is already listening on ws://${bindHost}:${port}`,
         err,
       );
     }
     throw new GatewayLockError(
-      `failed to bind gateway socket on ws://${host}:${port}: ${String(err)}`,
+      `failed to bind gateway socket on ws://${bindHost}:${port}: ${String(err)}`,
       err,
     );
   }
@@ -827,6 +911,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
     { sessionKey: string; clientRunId: string }
   >();
   const chatRunBuffers = new Map<string, string>();
+  const chatDeltaSentAt = new Map<string, number>();
   const chatAbortControllers = new Map<
     string,
     { controller: AbortController; sessionId: string; sessionKey: string }
@@ -1171,6 +1256,63 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
           const snap = await refreshHealthSnapshot({ probe: false });
           return { ok: true, payloadJSON: JSON.stringify(snap) };
         }
+        case "config.get": {
+          const params = parseParams();
+          if (!validateConfigGetParams(params)) {
+            return {
+              ok: false,
+              error: {
+                code: ErrorCodes.INVALID_REQUEST,
+                message: `invalid config.get params: ${formatValidationErrors(validateConfigGetParams.errors)}`,
+              },
+            };
+          }
+          const snapshot = await readConfigFileSnapshot();
+          return { ok: true, payloadJSON: JSON.stringify(snapshot) };
+        }
+        case "config.set": {
+          const params = parseParams();
+          if (!validateConfigSetParams(params)) {
+            return {
+              ok: false,
+              error: {
+                code: ErrorCodes.INVALID_REQUEST,
+                message: `invalid config.set params: ${formatValidationErrors(validateConfigSetParams.errors)}`,
+              },
+            };
+          }
+          const raw = String((params as { raw?: unknown }).raw ?? "");
+          const parsedRes = parseConfigJson5(raw);
+          if (!parsedRes.ok) {
+            return {
+              ok: false,
+              error: {
+                code: ErrorCodes.INVALID_REQUEST,
+                message: parsedRes.error,
+              },
+            };
+          }
+          const validated = validateConfigObject(parsedRes.parsed);
+          if (!validated.ok) {
+            return {
+              ok: false,
+              error: {
+                code: ErrorCodes.INVALID_REQUEST,
+                message: "invalid config",
+                details: { issues: validated.issues },
+              },
+            };
+          }
+          await writeConfigFile(validated.config);
+          return {
+            ok: true,
+            payloadJSON: JSON.stringify({
+              ok: true,
+              path: CONFIG_PATH_CLAWDIS,
+              config: validated.config,
+            }),
+          };
+        }
         case "sessions.list": {
           const params = parseParams();
           if (!validateSessionsListParams(params)) {
@@ -1366,6 +1508,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
           active.controller.abort();
           chatAbortControllers.delete(runId);
           chatRunBuffers.delete(runId);
+          chatDeltaSentAt.delete(runId);
           const current = chatRunSessions.get(active.sessionId);
           if (
             current?.clientRunId === runId &&
@@ -1970,6 +2113,23 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
       };
       if (evt.stream === "assistant" && typeof evt.data?.text === "string") {
         chatRunBuffers.set(clientRunId, evt.data.text);
+        const now = Date.now();
+        const last = chatDeltaSentAt.get(clientRunId) ?? 0;
+        // Throttle UI delta events so slow clients don't accumulate unbounded buffers.
+        if (now - last >= 150) {
+          chatDeltaSentAt.set(clientRunId, now);
+          const payload = {
+            ...base,
+            state: "delta" as const,
+            message: {
+              role: "assistant",
+              content: [{ type: "text", text: evt.data.text }],
+              timestamp: now,
+            },
+          };
+          broadcast("chat", payload, { dropIfSlow: true });
+          bridgeSendToSession(sessionKey, "chat", payload);
+        }
       } else if (
         evt.stream === "job" &&
         typeof evt.data?.state === "string" &&
@@ -1977,6 +2137,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
       ) {
         const text = chatRunBuffers.get(clientRunId)?.trim() ?? "";
         chatRunBuffers.delete(clientRunId);
+        chatDeltaSentAt.delete(clientRunId);
         if (evt.data.state === "done") {
           const payload = {
             ...base,
@@ -2457,6 +2618,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
               active.controller.abort();
               chatAbortControllers.delete(runId);
               chatRunBuffers.delete(runId);
+              chatDeltaSentAt.delete(runId);
               const current = chatRunSessions.get(active.sessionId);
               if (
                 current?.clientRunId === runId &&
@@ -2793,6 +2955,69 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
             case "status": {
               const status = await getStatusSummary();
               respond(true, status, undefined);
+              break;
+            }
+            case "config.get": {
+              const params = (req.params ?? {}) as Record<string, unknown>;
+              if (!validateConfigGetParams(params)) {
+                respond(
+                  false,
+                  undefined,
+                  errorShape(
+                    ErrorCodes.INVALID_REQUEST,
+                    `invalid config.get params: ${formatValidationErrors(validateConfigGetParams.errors)}`,
+                  ),
+                );
+                break;
+              }
+              const snapshot = await readConfigFileSnapshot();
+              respond(true, snapshot, undefined);
+              break;
+            }
+            case "config.set": {
+              const params = (req.params ?? {}) as Record<string, unknown>;
+              if (!validateConfigSetParams(params)) {
+                respond(
+                  false,
+                  undefined,
+                  errorShape(
+                    ErrorCodes.INVALID_REQUEST,
+                    `invalid config.set params: ${formatValidationErrors(validateConfigSetParams.errors)}`,
+                  ),
+                );
+                break;
+              }
+              const raw = String((params as { raw?: unknown }).raw ?? "");
+              const parsedRes = parseConfigJson5(raw);
+              if (!parsedRes.ok) {
+                respond(
+                  false,
+                  undefined,
+                  errorShape(ErrorCodes.INVALID_REQUEST, parsedRes.error),
+                );
+                break;
+              }
+              const validated = validateConfigObject(parsedRes.parsed);
+              if (!validated.ok) {
+                respond(
+                  false,
+                  undefined,
+                  errorShape(ErrorCodes.INVALID_REQUEST, "invalid config", {
+                    details: { issues: validated.issues },
+                  }),
+                );
+                break;
+              }
+              await writeConfigFile(validated.config);
+              respond(
+                true,
+                {
+                  ok: true,
+                  path: CONFIG_PATH_CLAWDIS,
+                  config: validated.config,
+                },
+                undefined,
+              );
               break;
             }
             case "sessions.list": {
@@ -3814,7 +4039,7 @@ export async function startGatewayServer(port = 18789): Promise<GatewayServer> {
   });
 
   defaultRuntime.log(
-    `gateway listening on ws://127.0.0.1:${port} (PID ${process.pid})`,
+    `gateway listening on ws://${bindHost}:${port} (PID ${process.pid})`,
   );
   defaultRuntime.log(`gateway log file: ${getResolvedLoggerSettings().file}`);
 

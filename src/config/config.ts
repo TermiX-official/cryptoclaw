@@ -101,6 +101,20 @@ export type CanvasHostConfig = {
   port?: number;
 };
 
+export type GatewayControlUiConfig = {
+  /** If false, the Gateway will not serve the Control UI under /ui/. Default: true. */
+  enabled?: boolean;
+};
+
+export type GatewayConfig = {
+  /**
+   * Bind address policy for the Gateway WebSocket + Control UI HTTP server.
+   * Default: loopback (127.0.0.1).
+   */
+  bind?: BridgeBindMode;
+  controlUi?: GatewayControlUiConfig;
+};
+
 export type ClawdisConfig = {
   identity?: {
     name?: string;
@@ -148,6 +162,7 @@ export type ClawdisConfig = {
   bridge?: BridgeConfig;
   discovery?: DiscoveryConfig;
   canvasHost?: CanvasHostConfig;
+  gateway?: GatewayConfig;
 };
 
 // New branding path (preferred)
@@ -311,7 +326,39 @@ const ClawdisSchema = z.object({
       port: z.number().int().positive().optional(),
     })
     .optional(),
+  gateway: z
+    .object({
+      bind: z
+        .union([
+          z.literal("auto"),
+          z.literal("lan"),
+          z.literal("tailnet"),
+          z.literal("loopback"),
+        ])
+        .optional(),
+      controlUi: z
+        .object({
+          enabled: z.boolean().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
+
+export type ConfigValidationIssue = {
+  path: string;
+  message: string;
+};
+
+export type ConfigFileSnapshot = {
+  path: string;
+  exists: boolean;
+  raw: string | null;
+  parsed: unknown;
+  valid: boolean;
+  config: ClawdisConfig;
+  issues: ConfigValidationIssue[];
+};
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -370,4 +417,107 @@ export function loadConfig(): ClawdisConfig {
     console.error(`Failed to read config at ${configPath}`, err);
     return {};
   }
+}
+
+export function validateConfigObject(
+  raw: unknown,
+):
+  | { ok: true; config: ClawdisConfig }
+  | { ok: false; issues: ConfigValidationIssue[] } {
+  const validated = ClawdisSchema.safeParse(raw);
+  if (!validated.success) {
+    return {
+      ok: false,
+      issues: validated.error.issues.map((iss) => ({
+        path: iss.path.join("."),
+        message: iss.message,
+      })),
+    };
+  }
+  return { ok: true, config: applyIdentityDefaults(validated.data) };
+}
+
+export function parseConfigJson5(
+  raw: string,
+): { ok: true; parsed: unknown } | { ok: false; error: string } {
+  try {
+    return { ok: true, parsed: JSON5.parse(raw) as unknown };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+export async function readConfigFileSnapshot(): Promise<ConfigFileSnapshot> {
+  const configPath = CONFIG_PATH_CLAWDIS;
+  const exists = fs.existsSync(configPath);
+  if (!exists) {
+    return {
+      path: configPath,
+      exists: false,
+      raw: null,
+      parsed: {},
+      valid: true,
+      config: {},
+      issues: [],
+    };
+  }
+
+  try {
+    const raw = fs.readFileSync(configPath, "utf-8");
+    const parsedRes = parseConfigJson5(raw);
+    if (!parsedRes.ok) {
+      return {
+        path: configPath,
+        exists: true,
+        raw,
+        parsed: {},
+        valid: false,
+        config: {},
+        issues: [
+          { path: "", message: `JSON5 parse failed: ${parsedRes.error}` },
+        ],
+      };
+    }
+
+    const validated = validateConfigObject(parsedRes.parsed);
+    if (!validated.ok) {
+      return {
+        path: configPath,
+        exists: true,
+        raw,
+        parsed: parsedRes.parsed,
+        valid: false,
+        config: {},
+        issues: validated.issues,
+      };
+    }
+
+    return {
+      path: configPath,
+      exists: true,
+      raw,
+      parsed: parsedRes.parsed,
+      valid: true,
+      config: validated.config,
+      issues: [],
+    };
+  } catch (err) {
+    return {
+      path: configPath,
+      exists: true,
+      raw: null,
+      parsed: {},
+      valid: false,
+      config: {},
+      issues: [{ path: "", message: `read failed: ${String(err)}` }],
+    };
+  }
+}
+
+export async function writeConfigFile(cfg: ClawdisConfig) {
+  await fs.promises.mkdir(path.dirname(CONFIG_PATH_CLAWDIS), {
+    recursive: true,
+  });
+  const json = JSON.stringify(cfg, null, 2).trimEnd().concat("\n");
+  await fs.promises.writeFile(CONFIG_PATH_CLAWDIS, json, "utf-8");
 }

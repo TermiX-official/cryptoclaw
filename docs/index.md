@@ -50,7 +50,8 @@ Most operations flow through the **Gateway** (`clawdis gateway`), a single long-
 ## Network model
 
 - **One Gateway per host**: it is the only process allowed to own the WhatsApp Web session.
-- **Loopback-first**: Gateway WS is `ws://127.0.0.1:18789` (not exposed on the LAN).
+- **Loopback-first**: Gateway WS defaults to `ws://127.0.0.1:18789`.
+  - For Tailnet access, run `clawdis gateway --bind tailnet --token ...` (token is required for non-loopback binds).
 - **Bridge for nodes**: optional LAN/tailnet-facing bridge on `tcp://0.0.0.0:18790` for paired nodes (Bonjour-discoverable).
 - **Canvas host**: LAN/tailnet HTTP file server (default `18793`) for node WebViews; see `docs/configuration.md` (`canvasHost`).
 - **Remote use**: SSH tunnel or tailnet/VPN; see `docs/remote.md` and `docs/discovery.md`.
@@ -117,10 +118,12 @@ Example:
   - [Clawd personal assistant setup](./clawd.md)
   - [AGENTS.md template (default)](./AGENTS.default.md)
   - [Gateway runbook](./gateway.md)
+  - [Web surfaces (Control UI)](./web.md)
   - [Discovery + transports](./discovery.md)
   - [Remote access](./remote.md)
 - Providers and UX:
   - [WebChat](./webchat.md)
+  - [Control UI (browser)](./control-ui.md)
   - [Telegram](./telegram.md)
   - [Group messages](./group-messages.md)
   - [Media: images](./images.md)

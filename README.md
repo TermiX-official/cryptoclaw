@@ -22,13 +22,14 @@ WhatsApp / Telegram
         │
         ▼
   ┌──────────────────────────┐
-  │          Gateway          │  ws://127.0.0.1:18789 (loopback-only)
+  │          Gateway          │  ws://127.0.0.1:18789 (default: loopback)
+  │     (control UI)          │  http://127.0.0.1:18789/ui/
   │     (single source)       │  tcp://0.0.0.0:18790 (optional Bridge)
   └───────────┬───────────────┘
               │
               ├─ Pi agent (RPC)
               ├─ CLI (clawdis …)
-              ├─ WebChat (loopback UI)
+              ├─ Control UI (browser)
               ├─ macOS app (Clawdis.app)
               └─ iOS node via Bridge + pairing
 ```
@@ -60,7 +61,9 @@ Only the Pi CLI is supported now; legacy Claude/Codex/Gemini paths have been rem
 ## Network model (the “new reality”)
 
 - **One Gateway per host**. The Gateway is the only process allowed to own the WhatsApp Web session.
-- **Loopback-first**: the Gateway WebSocket listens on `ws://127.0.0.1:18789` and is not exposed on the LAN.
+- **Loopback-first**: the Gateway WebSocket listens on `ws://127.0.0.1:18789` by default.
+  - To expose it on your tailnet, set `gateway.bind: "tailnet"` (or run `clawdis gateway --bind tailnet`) and set `CLAWDIS_GATEWAY_TOKEN` (required for non-loopback binds).
+  - The browser Control UI is served from the Gateway at `http://<host>:18789/ui/` when assets are built.
 - **Bridge for nodes**: when enabled, the Gateway also exposes a bridge on `tcp://0.0.0.0:18790` for paired nodes (Bonjour-discoverable). For tailnet-only setups, set `bridge.bind: "tailnet"` in `~/.clawdis/clawdis.json`.
 - **Remote control**: use a VPN/tailnet or an SSH tunnel (`ssh -N -L 18789:127.0.0.1:18789 user@host`). The macOS app can drive this flow.
 - **Wide-Area Bonjour (optional)**: for auto-discovery across networks (Vienna ⇄ London) over Tailscale, use unicast DNS-SD on `clawdis.internal.`; see `docs/bonjour.md`.
@@ -79,12 +82,16 @@ Runtime requirement: **Node ≥22.0.0** (not bundled). The macOS app and CLI bot
 # From source (recommended while the npm package is still settling)
 pnpm install
 pnpm build
+pnpm ui:build
 
 # Link your WhatsApp (stores creds under ~/.clawdis/credentials)
 pnpm clawdis login
 
 # Start the gateway (WebSocket control plane)
 pnpm clawdis gateway --port 18789 --verbose
+
+# Open the browser Control UI (after ui:build)
+# http://127.0.0.1:18789/ui/
 
 # Send a WhatsApp message (WhatsApp sends go through the Gateway)
 pnpm clawdis send --to +1234567890 --message "Hello from the CLAWDIS!"
@@ -156,6 +163,7 @@ Optional: enable/configure clawd’s dedicated browser control (defaults are alr
 
 - [Configuration Guide](./docs/configuration.md)
 - [Gateway runbook](./docs/gateway.md)
+- [Web surfaces (Control UI)](./docs/web.md)
 - [Discovery + transports](./docs/discovery.md)
 - [Bonjour / mDNS + Wide-Area Bonjour](./docs/bonjour.md)
 - [Agent Runtime](./docs/agent.md)
@@ -197,14 +205,13 @@ Bot-mode support (grammY only) shares the same `main` session as WhatsApp/WebCha
 | `clawdis send` | Send a message (WhatsApp default; `--provider telegram` for bot mode). WhatsApp sends go via the Gateway WS; Telegram sends are direct. |
 | `clawdis agent` | Talk directly to the agent (no WhatsApp send) |
 | `clawdis browser ...` | Manage clawd’s dedicated browser (status/tabs/open/screenshot). |
-| `clawdis gateway` | Start the Gateway server (WS control plane). Params: `--port`, `--token`, `--force`, `--verbose`. |
+| `clawdis gateway` | Start the Gateway server (WS control plane). Params: `--port`, `--bind`, `--token`, `--force`, `--verbose`. |
 | `clawdis gateway health|status|send|agent|call` | Gateway WS clients; assume a running gateway. |
 | `clawdis wake` | Enqueue a system event and optionally trigger a heartbeat via the Gateway. |
 | `clawdis cron ...` | Manage scheduled jobs (via Gateway). |
 | `clawdis nodes ...` | Manage nodes (pairing + status) via the Gateway. |
 | `clawdis status` | Web session health + session store summary |
 | `clawdis health` | Reports cached provider state from the running gateway. |
-| `clawdis webchat` | Start the loopback-only WebChat HTTP server |
 
 #### Gateway client params (WS only)
 - `--url` (default `ws://127.0.0.1:18789`)

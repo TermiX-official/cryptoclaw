@@ -291,6 +291,18 @@ export const SessionsPatchParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const ConfigGetParamsSchema = Type.Object(
+  {},
+  { additionalProperties: false },
+);
+
+export const ConfigSetParamsSchema = Type.Object(
+  {
+    raw: NonEmptyString,
+  },
+  { additionalProperties: false },
+);
+
 export const CronScheduleSchema = Type.Union([
   Type.Object(
     {
@@ -541,6 +553,8 @@ export const ProtocolSchemas: Record<string, TSchema> = {
   NodeInvokeParams: NodeInvokeParamsSchema,
   SessionsListParams: SessionsListParamsSchema,
   SessionsPatchParams: SessionsPatchParamsSchema,
+  ConfigGetParams: ConfigGetParamsSchema,
+  ConfigSetParams: ConfigSetParamsSchema,
   CronJob: CronJobSchema,
   CronListParams: CronListParamsSchema,
   CronStatusParams: CronStatusParamsSchema,
@@ -582,6 +596,8 @@ export type NodeDescribeParams = Static<typeof NodeDescribeParamsSchema>;
 export type NodeInvokeParams = Static<typeof NodeInvokeParamsSchema>;
 export type SessionsListParams = Static<typeof SessionsListParamsSchema>;
 export type SessionsPatchParams = Static<typeof SessionsPatchParamsSchema>;
+export type ConfigGetParams = Static<typeof ConfigGetParamsSchema>;
+export type ConfigSetParams = Static<typeof ConfigSetParamsSchema>;
 export type CronJob = Static<typeof CronJobSchema>;
 export type CronListParams = Static<typeof CronListParamsSchema>;
 export type CronStatusParams = Static<typeof CronStatusParamsSchema>;

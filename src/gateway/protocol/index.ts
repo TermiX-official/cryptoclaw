@@ -9,6 +9,10 @@ import {
   ChatEventSchema,
   ChatHistoryParamsSchema,
   ChatSendParamsSchema,
+  type ConfigGetParams,
+  ConfigGetParamsSchema,
+  type ConfigSetParams,
+  ConfigSetParamsSchema,
   type ConnectParams,
   ConnectParamsSchema,
   type CronAddParams,
@@ -125,6 +129,12 @@ export const validateSessionsListParams = ajv.compile<SessionsListParams>(
 export const validateSessionsPatchParams = ajv.compile<SessionsPatchParams>(
   SessionsPatchParamsSchema,
 );
+export const validateConfigGetParams = ajv.compile<ConfigGetParams>(
+  ConfigGetParamsSchema,
+);
+export const validateConfigSetParams = ajv.compile<ConfigSetParams>(
+  ConfigSetParamsSchema,
+);
 export const validateCronListParams =
   ajv.compile<CronListParams>(CronListParamsSchema);
 export const validateCronStatusParams = ajv.compile<CronStatusParams>(
@@ -181,6 +191,8 @@ export {
   NodeInvokeParamsSchema,
   SessionsListParamsSchema,
   SessionsPatchParamsSchema,
+  ConfigGetParamsSchema,
+  ConfigSetParamsSchema,
   CronJobSchema,
   CronListParamsSchema,
   CronStatusParamsSchema,
@@ -218,6 +230,8 @@ export type {
   NodePairRequestParams,
   NodePairListParams,
   NodePairApproveParams,
+  ConfigGetParams,
+  ConfigSetParams,
   NodePairRejectParams,
   NodePairVerifyParams,
   NodeListParams,

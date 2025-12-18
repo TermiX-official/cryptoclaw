@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { loadConfig } from "../config/config.js";
 import { callGateway, randomIdempotencyKey } from "../gateway/call.js";
 import { startGatewayServer } from "../gateway/server.js";
 import {
@@ -46,6 +47,10 @@ export function registerGatewayCli(program: Command) {
     .command("gateway")
     .description("Run the WebSocket Gateway")
     .option("--port <port>", "Port for the gateway WebSocket", "18789")
+    .option(
+      "--bind <mode>",
+      'Bind mode ("loopback"|"tailnet"|"lan"|"auto"). Defaults to config gateway.bind (or loopback).',
+    )
     .option(
       "--token <token>",
       "Shared token required in connect.params.auth.token (default: CLAWDIS_GATEWAY_TOKEN env if set)",
@@ -115,6 +120,22 @@ export function registerGatewayCli(program: Command) {
       if (opts.token) {
         process.env.CLAWDIS_GATEWAY_TOKEN = String(opts.token);
       }
+      const cfg = loadConfig();
+      const bindRaw = String(opts.bind ?? cfg.gateway?.bind ?? "loopback");
+      const bind =
+        bindRaw === "loopback" ||
+        bindRaw === "tailnet" ||
+        bindRaw === "lan" ||
+        bindRaw === "auto"
+          ? bindRaw
+          : null;
+      if (!bind) {
+        defaultRuntime.error(
+          'Invalid --bind (use "loopback", "tailnet", "lan", or "auto")',
+        );
+        defaultRuntime.exit(1);
+        return;
+      }
 
       let server: Awaited<ReturnType<typeof startGatewayServer>> | null = null;
       let shuttingDown = false;
@@ -161,7 +182,7 @@ export function registerGatewayCli(program: Command) {
       process.once("SIGINT", onSigint);
 
       try {
-        server = await startGatewayServer(port);
+        server = await startGatewayServer(port, { bind });
       } catch (err) {
         if (err instanceof GatewayLockError) {
           defaultRuntime.error(`Gateway failed to start: ${err.message}`);

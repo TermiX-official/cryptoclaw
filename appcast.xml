@@ -6,5 +6,16 @@
     <title>Clawdis Updates</title>
     <link>https://raw.githubusercontent.com/steipete/clawdis/main/appcast.xml</link>
     <description>Signed update feed for the Clawdis macOS companion app.</description>
+    <item>
+      <title>Clawdis 2.0.0-beta1</title>
+      <sparkle:releaseNotesLink>https://github.com/steipete/clawdis/releases/tag/v2.0.0-beta1</sparkle:releaseNotesLink>
+      <pubDate>Fri, 19 Dec 2025 17:19:50 +0000</pubDate>
+      <enclosure url="https://github.com/steipete/clawdis/releases/download/v2.0.0-beta1/Clawdis-2.0.0-beta1.zip"
+                 sparkle:edSignature="oEpGD46U4ZyBBSY9/piUIFDJU+KlFB751JIWOW2yS0sRNHKszyG5khDHg9o9bV9Zo8DOCNF/HOi88jmtHJAaCQ=="
+                 sparkle:version="2.0.0-beta1"
+                 sparkle:shortVersionString="2.0.0-beta1"
+                 length="72410016"
+                 type="application/octet-stream" />
+    </item>
   </channel>
 </rss>

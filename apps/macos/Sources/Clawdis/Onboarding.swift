@@ -543,14 +543,14 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Agent name")
                         .font(.headline)
-                    TextField("Samantha", text: self.$identityName)
+                    TextField("Clawd", text: self.$identityName)
                         .textFieldStyle(.roundedBorder)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Theme")
                         .font(.headline)
-                    TextField("helpful lobster", text: self.$identityTheme)
+                    TextField("helpful space lobster", text: self.$identityTheme)
                         .textFieldStyle(.roundedBorder)
                 }
 
@@ -1279,10 +1279,10 @@ struct OnboardingView: View {
         }
 
         if self.identityName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            self.identityName = "Samantha"
+            self.identityName = "Clawd"
         }
         if self.identityTheme.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            self.identityTheme = "helpful lobster"
+            self.identityTheme = "helpful space lobster"
         }
         if self.identityEmoji.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             self.identityEmoji = AgentIdentityEmoji.suggest(theme: self.identityTheme)

@@ -333,6 +333,18 @@ struct GeneralSettings: View {
                     .foregroundStyle(.secondary)
             }
 
+            if let failure = self.gatewayManager.lastFailureReason {
+                Text("Last failure: \(failure)")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            if let exitCode = self.gatewayManager.lastExitCode {
+                Text("Last exit code: \(exitCode)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
             HStack(spacing: 10) {
                 Button {
                     Task { await self.installGateway() }

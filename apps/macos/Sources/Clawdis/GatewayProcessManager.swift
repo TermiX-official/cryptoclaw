@@ -46,6 +46,9 @@ final class GatewayProcessManager {
     private(set) var restartCount: Int = 0
     private(set) var environmentStatus: GatewayEnvironmentStatus = .checking
     private(set) var existingGatewayDetails: String?
+    private(set) var lastFailureReason: String?
+    private(set) var lastExitCode: Int32?
+    private(set) var lastSubprocessError: String?
 
     private var execution: Execution?
     private var lastPid: Int32?
@@ -133,6 +136,9 @@ final class GatewayProcessManager {
         self.desiredActive = false
         self.stopping = true
         self.existingGatewayDetails = nil
+        self.lastFailureReason = nil
+        self.lastExitCode = nil
+        self.lastSubprocessError = nil
         guard let execution else {
             self.status = .stopped
             return
@@ -270,6 +276,9 @@ final class GatewayProcessManager {
     private func didStart(_ execution: Execution) {
         self.execution = execution
         self.stopping = false
+        self.lastFailureReason = nil
+        self.lastExitCode = nil
+        self.lastSubprocessError = nil
         self.status = .running(pid: execution.processIdentifier.value)
         self.lastPid = execution.processIdentifier.value
         self.logger.info("gateway started pid \(execution.processIdentifier.value)")
@@ -303,13 +312,15 @@ final class GatewayProcessManager {
             return
         }
 
+        self.lastExitCode = code
+        self.lastFailureReason = "Gateway exited (code \(code))."
         self.recentCrashes.append(Date())
         self.recentCrashes = self.recentCrashes.filter { Date().timeIntervalSince($0) < self.crashWindow }
         self.restartCount += 1
         self.appendLog("[gateway] exited (\(code)).\n")
 
         if self.shouldGiveUpAfterCrashes() {
-            self.status = .failed("Too many crashes; stopped auto-restart.")
+            self.status = .failed("Too many crashes; last exit code \(code).")
             self.logger.error("gateway crash loop detected; giving up")
             return
         }
@@ -326,7 +337,9 @@ final class GatewayProcessManager {
         var message = error.localizedDescription
         if let sp = error as? SubprocessError {
             message = "SubprocessError \(sp.code.value): \(sp)"
+            self.lastSubprocessError = message
         }
+        self.lastFailureReason = message
         self.appendLog("[gateway] failed: \(message)\n")
         self.logger.error("gateway failed: \(message, privacy: .public)")
         if self.desiredActive, !self.shouldGiveUpAfterCrashes() {

@@ -517,20 +517,22 @@ final class NodePairingApprovalPrompter {
             return SSHTarget(host: host, port: port)
         }
 
-        let model = MasterDiscoveryModel()
+        let model = GatewayDiscoveryModel()
         model.start()
         defer { model.stop() }
 
         let deadline = Date().addingTimeInterval(5.0)
-        while model.masters.isEmpty, Date() < deadline {
+        while model.gateways.isEmpty, Date() < deadline {
             try? await Task.sleep(nanoseconds: 200_000_000)
         }
 
-        guard let master = model.masters.first else { return nil }
-        let host = (master.tailnetDns?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty ??
-            master.lanHost?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty)
+        let preferred = BridgeDiscoveryPreferences.preferredStableID()
+        let gateway = model.gateways.first { $0.stableID == preferred } ?? model.gateways.first
+        guard let gateway else { return nil }
+        let host = (gateway.tailnetDns?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty ??
+            gateway.lanHost?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty)
         guard let host, !host.isEmpty else { return nil }
-        let port = master.sshPort > 0 ? master.sshPort : 22
+        let port = gateway.sshPort > 0 ? gateway.sshPort : 22
         return SSHTarget(host: host, port: port)
     }
 

@@ -75,8 +75,10 @@ struct OnboardingView: View {
     @State private var gatewayStatus: GatewayEnvironmentStatus = .checking
     @State private var gatewayInstalling = false
     @State private var gatewayInstallMessage: String?
+    @State private var showAdvancedConnection = false
+    @State private var preferredGatewayID: String?
     // swiftlint:disable:next inclusive_language
-    @State private var masterDiscovery: MasterDiscoveryModel
+    @State private var gatewayDiscovery: GatewayDiscoveryModel
     @Bindable private var state: AppState
     private var permissionMonitor: PermissionMonitor
 
@@ -107,11 +109,11 @@ struct OnboardingView: View {
     init(
         state: AppState = AppStateStore.shared,
         permissionMonitor: PermissionMonitor = .shared,
-        discoveryModel: MasterDiscoveryModel = MasterDiscoveryModel())
+        discoveryModel: GatewayDiscoveryModel = GatewayDiscoveryModel())
     {
         self.state = state
         self.permissionMonitor = permissionMonitor
-        self._masterDiscovery = State(initialValue: discoveryModel)
+        self._gatewayDiscovery = State(initialValue: discoveryModel)
     }
 
     var body: some View {
@@ -165,6 +167,7 @@ struct OnboardingView: View {
             self.loadWorkspaceDefaults()
             self.refreshAnthropicOAuthStatus()
             self.loadIdentityDefaults()
+            self.preferredGatewayID = BridgeDiscoveryPreferences.preferredStableID()
         }
     }
 
@@ -260,11 +263,11 @@ struct OnboardingView: View {
 
     private func connectionPage() -> some View {
         self.onboardingPage {
-            Text("Where Clawdis runs")
+            Text("Choose your Gateway")
                 .font(.largeTitle.weight(.semibold))
             Text(
-                "Clawdis uses a single Gateway (“master”) that stays running. Run it on this Mac, " +
-                    "or connect to one on another Mac over SSH/Tailscale.")
+                "Clawdis uses a single Gateway that stays running. Pick this Mac, " +
+                    "or connect to a discovered Gateway nearby.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -273,62 +276,182 @@ struct OnboardingView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             self.onboardingCard(spacing: 12, padding: 14) {
-                Picker("Gateway runs", selection: self.$state.connectionMode) {
-                    Text("This Mac").tag(AppState.ConnectionMode.local)
-                    Text("Remote (SSH)").tag(AppState.ConnectionMode.remote)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 360)
+                VStack(alignment: .leading, spacing: 10) {
+                    self.connectionChoiceButton(
+                        title: "This Mac",
+                        subtitle: "Run the Gateway locally.",
+                        selected: self.state.connectionMode == .local)
+                    {
+                        self.selectLocalGateway()
+                    }
 
-                if self.state.connectionMode == .remote {
-                    let labelWidth: CGFloat = 90
-                    let fieldWidth: CGFloat = 300
-                    let contentLeading: CGFloat = labelWidth + 12
+                    Divider().padding(.vertical, 4)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text("SSH target")
-                                .font(.callout.weight(.semibold))
-                                .frame(width: labelWidth, alignment: .leading)
-                            TextField("user@host[:port]", text: self.$state.remoteTarget)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: fieldWidth)
+                    HStack(spacing: 8) {
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(self.gatewayDiscovery.statusText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if self.gatewayDiscovery.gateways.isEmpty {
+                            ProgressView().controlSize(.small)
                         }
+                        Spacer(minLength: 0)
+                    }
 
-                        MasterDiscoveryInlineList(
-                            discovery: self.masterDiscovery,
-                            currentTarget: self.state.remoteTarget)
-                        { master in
-                            self.applyDiscoveredMaster(master)
-                        }
-                        .frame(width: fieldWidth, alignment: .leading)
-                        .padding(.leading, contentLeading)
-
-                        DisclosureGroup("Advanced") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                LabeledContent("Identity file") {
-                                    TextField("/Users/you/.ssh/id_ed25519", text: self.$state.remoteIdentity)
-                                        .textFieldStyle(.roundedBorder)
-                                        .frame(width: fieldWidth)
-                                }
-                                LabeledContent("Project root") {
-                                    TextField("/home/you/Projects/clawdis", text: self.$state.remoteProjectRoot)
-                                        .textFieldStyle(.roundedBorder)
-                                        .frame(width: fieldWidth)
+                    if self.gatewayDiscovery.gateways.isEmpty {
+                        Text("Searching for nearby gateways…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 4)
+                    } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(self.gatewayDiscovery.gateways.prefix(6)) { gateway in
+                                self.connectionChoiceButton(
+                                    title: gateway.displayName,
+                                    subtitle: self.gatewaySubtitle(for: gateway),
+                                    selected: self.isSelectedGateway(gateway))
+                                {
+                                    self.selectRemoteGateway(gateway)
                                 }
                             }
-                            .padding(.top, 4)
                         }
-
-                        Text("Tip: keep Tailscale enabled so your gateway stays reachable.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color(NSColor.controlBackgroundColor)))
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+
+                    Button(self.showAdvancedConnection ? "Hide Advanced" : "Advanced…") {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                            self.showAdvancedConnection.toggle()
+                        }
+                    }
+                    .buttonStyle(.link)
+
+                    if self.showAdvancedConnection {
+                        let labelWidth: CGFloat = 90
+                        let fieldWidth: CGFloat = 320
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .center, spacing: 12) {
+                                Text("SSH target")
+                                    .font(.callout.weight(.semibold))
+                                    .frame(width: labelWidth, alignment: .leading)
+                                TextField("user@host[:port]", text: self.$state.remoteTarget)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: fieldWidth)
+                            }
+
+                            LabeledContent("Identity file") {
+                                TextField("/Users/you/.ssh/id_ed25519", text: self.$state.remoteIdentity)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: fieldWidth)
+                            }
+
+                            LabeledContent("Project root") {
+                                TextField("/home/you/Projects/clawdis", text: self.$state.remoteProjectRoot)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: fieldWidth)
+                            }
+
+                            Text("Tip: keep Tailscale enabled so your gateway stays reachable.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
             }
         }
+    }
+
+    private func selectLocalGateway() {
+        self.state.connectionMode = .local
+        self.preferredGatewayID = nil
+        BridgeDiscoveryPreferences.setPreferredStableID(nil)
+    }
+
+    private func selectRemoteGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) {
+        self.preferredGatewayID = gateway.stableID
+        BridgeDiscoveryPreferences.setPreferredStableID(gateway.stableID)
+
+        if let host = gateway.tailnetDns ?? gateway.lanHost {
+            let user = NSUserName()
+            var target = "\(user)@\(host)"
+            if gateway.sshPort != 22 {
+                target += ":\(gateway.sshPort)"
+            }
+            self.state.remoteTarget = target
+        }
+
+        self.state.connectionMode = .remote
+        MacNodeModeCoordinator.shared.setPreferredBridgeStableID(gateway.stableID)
+    }
+
+    private func gatewaySubtitle(for gateway: GatewayDiscoveryModel.DiscoveredGateway) -> String? {
+        if let host = gateway.tailnetDns ?? gateway.lanHost {
+            let portSuffix = gateway.sshPort != 22 ? " · ssh \(gateway.sshPort)" : ""
+            return "\(host)\(portSuffix)"
+        }
+        return "Bridge pairing only"
+    }
+
+    private func isSelectedGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) -> Bool {
+        guard self.state.connectionMode == .remote else { return false }
+        let preferred = self.preferredGatewayID ?? BridgeDiscoveryPreferences.preferredStableID()
+        return preferred == gateway.stableID
+    }
+
+    private func connectionChoiceButton(
+        title: String,
+        subtitle: String?,
+        selected: Bool,
+        action: @escaping () -> Void) -> some View
+    {
+        Button {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                action()
+            }
+        } label: {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+                Spacer(minLength: 0)
+                if selected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                } else {
+                    Image(systemName: "arrow.right.circle")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(selected ? Color.accentColor.opacity(0.12) : Color.clear))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(
+                        selected ? Color.accentColor.opacity(0.45) : Color.clear,
+                        lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private func anthropicAuthPage() -> some View {
@@ -703,18 +826,6 @@ struct OnboardingView: View {
                 }
             }
         }
-    }
-
-    // swiftlint:disable:next inclusive_language
-    private func applyDiscoveredMaster(_ master: MasterDiscoveryModel.DiscoveredMaster) {
-        let host = master.tailnetDns ?? master.lanHost
-        guard let host else { return }
-        let user = NSUserName()
-        var target = "\(user)@\(host)"
-        if master.sshPort != 22 {
-            target += ":\(master.sshPort)"
-        }
-        self.state.remoteTarget = target
     }
 
     private func permissionsPage() -> some View {
@@ -1165,13 +1276,13 @@ struct OnboardingView: View {
 
     private func updateDiscoveryMonitoring(for pageIndex: Int) {
         let isConnectionPage = pageIndex == self.connectionPageIndex
-        let shouldMonitor = isConnectionPage && self.state.connectionMode == .remote
+        let shouldMonitor = isConnectionPage
         if shouldMonitor, !self.monitoringDiscovery {
             self.monitoringDiscovery = true
-            self.masterDiscovery.start()
+            self.gatewayDiscovery.start()
         } else if !shouldMonitor, self.monitoringDiscovery {
             self.monitoringDiscovery = false
-            self.masterDiscovery.stop()
+            self.gatewayDiscovery.stop()
         }
     }
 
@@ -1190,7 +1301,7 @@ struct OnboardingView: View {
     private func stopDiscovery() {
         guard self.monitoringDiscovery else { return }
         self.monitoringDiscovery = false
-        self.masterDiscovery.stop()
+        self.gatewayDiscovery.stop()
     }
 
     private func updateAuthMonitoring(for pageIndex: Int) {

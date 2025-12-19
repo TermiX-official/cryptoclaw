@@ -1,5 +1,5 @@
 ---
-summary: "Node discovery and transports (Bonjour, Tailscale, SSH) for finding the master gateway"
+summary: "Node discovery and transports (Bonjour, Tailscale, SSH) for finding the gateway"
 read_when:
   - Implementing or changing Bonjour discovery/advertising
   - Adjusting remote connection modes (direct vs SSH)
@@ -9,14 +9,14 @@ read_when:
 
 Clawdis has two distinct problems that look similar on the surface:
 
-1) **Operator remote control**: the macOS menu bar app controlling a “master” gateway running elsewhere.
+1) **Operator remote control**: the macOS menu bar app controlling a gateway running elsewhere.
 2) **Node pairing**: iOS/Android (and future nodes) finding a gateway and pairing securely.
 
 The design goal is to keep all network discovery/advertising in the **Node Gateway** (`clawd` / `clawdis gateway`) and keep clients (mac app, iOS) as consumers.
 
 ## Terms
 
-- **Master gateway**: the single, long-running gateway process that owns state (sessions, pairing, node registry) and runs providers.
+- **Gateway**: the single, long-running gateway process that owns state (sessions, pairing, node registry) and runs providers.
 - **Gateway WS (loopback)**: the existing gateway WebSocket control endpoint on `127.0.0.1:18789`.
 - **Bridge (direct transport)**: a LAN/tailnet-facing endpoint owned by the gateway that allows authenticated clients/nodes to call a scoped subset of gateway methods. The bridge exists so the gateway can remain loopback-only.
 - **SSH transport (fallback)**: remote control by forwarding `127.0.0.1:18789` over SSH.
@@ -32,25 +32,24 @@ The design goal is to keep all network discovery/advertising in the **Node Gatew
   - survives multicast/mDNS issues
   - requires no new inbound ports besides SSH
 
-## Discovery inputs (how clients learn where the master is)
+## Discovery inputs (how clients learn where the gateway is)
 
 ### 1) Bonjour / mDNS (LAN only)
 
 Bonjour is best-effort and does not cross networks. It is only used for “same LAN” convenience.
 
 Target direction:
-- The **gateway** advertises itself (and/or its bridge) via Bonjour.
-- Clients browse and show a “pick a master” list, then store the chosen endpoint.
+- The **gateway** advertises its bridge via Bonjour.
+- Clients browse and show a “pick a gateway” list, then store the chosen endpoint.
 
 Troubleshooting and beacon details: `docs/bonjour.md`.
 
 #### Current implementation
 
 - Service types:
-  - `_clawdis-master._tcp` (gateway “master” beacon)
-  - `_clawdis-bridge._tcp` (optional; bridge transport beacon)
+  - `_clawdis-bridge._tcp` (bridge transport beacon)
 - TXT keys (non-secret):
-  - `role=master`
+  - `role=gateway`
   - `lanHost=<hostname>.local`
   - `sshPort=22` (or whatever is advertised)
   - `gatewayPort=18789` (loopback WS port; informational)
@@ -63,8 +62,8 @@ Disable/override:
 - `CLAWDIS_BRIDGE_ENABLED=0` disables the bridge listener.
 - `bridge.bind` / `bridge.port` in `~/.clawdis/clawdis.json` control bridge bind/port (preferred).
 - `CLAWDIS_BRIDGE_HOST` / `CLAWDIS_BRIDGE_PORT` still work as a back-compat override when `bridge.bind` / `bridge.port` are not set.
-- `CLAWDIS_SSH_PORT` overrides the SSH port advertised in the master beacon (defaults to 22).
-- `CLAWDIS_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS) in the master beacon.
+- `CLAWDIS_SSH_PORT` overrides the SSH port advertised in the bridge beacon (defaults to 22).
+- `CLAWDIS_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS) in the bridge beacon.
 
 ### 2) Tailnet (cross-network)
 
@@ -84,7 +83,7 @@ See `docs/remote.md`.
 Recommended client behavior:
 
 1) If a paired direct endpoint is configured and reachable, use it.
-2) Else, if Bonjour finds a master on LAN, offer a one-tap “Use this master” choice and save it as the direct endpoint.
+2) Else, if Bonjour finds a gateway on LAN, offer a one-tap “Use this gateway” choice and save it as the direct endpoint.
 3) Else, if a tailnet DNS/IP is configured, try direct.
 4) Else, fall back to SSH.
 
@@ -105,7 +104,7 @@ The gateway is the source of truth for node/client admission.
   - owns pairing storage + decisions
   - runs the bridge listener (direct transport)
 - macOS app:
-  - UI for picking a master, showing pairing prompts, and troubleshooting
+  - UI for picking a gateway, showing pairing prompts, and troubleshooting
   - SSH tunneling only for the fallback path
 - iOS node:
   - browses Bonjour (LAN) as a convenience only

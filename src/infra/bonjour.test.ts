@@ -99,37 +99,32 @@ describe("gateway bonjour advertiser", () => {
       tailnetDns: "host.tailnet.ts.net",
     });
 
-    expect(createService).toHaveBeenCalledTimes(2);
-    const [masterCall, bridgeCall] = createService.mock.calls as Array<
+    expect(createService).toHaveBeenCalledTimes(1);
+    const [bridgeCall] = createService.mock.calls as Array<
       [Record<string, unknown>]
     >;
-    expect(masterCall?.[0]?.type).toBe("clawdis-master");
-    expect(masterCall?.[0]?.port).toBe(2222);
-    expect(masterCall?.[0]?.domain).toBe("local");
-    expect(masterCall?.[0]?.hostname).toBe("test-host");
-    expect((masterCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe(
-      "test-host.local",
-    );
-    expect((masterCall?.[0]?.txt as Record<string, string>)?.sshPort).toBe(
-      "2222",
-    );
-
     expect(bridgeCall?.[0]?.type).toBe("clawdis-bridge");
     expect(bridgeCall?.[0]?.port).toBe(18790);
     expect(bridgeCall?.[0]?.domain).toBe("local");
     expect(bridgeCall?.[0]?.hostname).toBe("test-host");
+    expect((bridgeCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe(
+      "test-host.local",
+    );
     expect((bridgeCall?.[0]?.txt as Record<string, string>)?.bridgePort).toBe(
       "18790",
+    );
+    expect((bridgeCall?.[0]?.txt as Record<string, string>)?.sshPort).toBe(
+      "2222",
     );
     expect((bridgeCall?.[0]?.txt as Record<string, string>)?.transport).toBe(
       "bridge",
     );
 
     // We don't await `advertise()`, but it should still be called for each service.
-    expect(advertise).toHaveBeenCalledTimes(2);
+    expect(advertise).toHaveBeenCalledTimes(1);
 
     await started.stop();
-    expect(destroy).toHaveBeenCalledTimes(2);
+    expect(destroy).toHaveBeenCalledTimes(1);
     expect(shutdown).toHaveBeenCalledTimes(1);
   });
 
@@ -166,10 +161,8 @@ describe("gateway bonjour advertiser", () => {
       bridgePort: 18790,
     });
 
-    // 2 services × 2 listeners each
+    // 1 service × 2 listeners
     expect(onCalls.map((c) => c.event)).toEqual([
-      "name-change",
-      "hostname-change",
       "name-change",
       "hostname-change",
     ]);
@@ -207,7 +200,7 @@ describe("gateway bonjour advertiser", () => {
     const started = await startGatewayBonjourAdvertiser({
       gatewayPort: 18789,
       sshPort: 2222,
-      bridgePort: 0,
+      bridgePort: 18790,
     });
 
     // initial advertise attempt happens immediately
@@ -257,7 +250,7 @@ describe("gateway bonjour advertiser", () => {
     const started = await startGatewayBonjourAdvertiser({
       gatewayPort: 18789,
       sshPort: 2222,
-      bridgePort: 0,
+      bridgePort: 18790,
     });
 
     expect(advertise).toHaveBeenCalledTimes(1);
@@ -296,11 +289,11 @@ describe("gateway bonjour advertiser", () => {
       bridgePort: 18790,
     });
 
-    const [masterCall] = createService.mock.calls as Array<[ServiceCall]>;
-    expect(masterCall?.[0]?.name).toBe("Mac (Clawdis)");
-    expect(masterCall?.[0]?.domain).toBe("local");
-    expect(masterCall?.[0]?.hostname).toBe("Mac");
-    expect((masterCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe(
+    const [bridgeCall] = createService.mock.calls as Array<[ServiceCall]>;
+    expect(bridgeCall?.[0]?.name).toBe("Mac (Clawdis)");
+    expect(bridgeCall?.[0]?.domain).toBe("local");
+    expect(bridgeCall?.[0]?.hostname).toBe("Mac");
+    expect((bridgeCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe(
       "Mac.local",
     );
 

@@ -6,7 +6,7 @@ read_when:
 ---
 # Bonjour / mDNS discovery
 
-Clawdis uses Bonjour (mDNS / DNS-SD) as a **LAN-only convenience** to discover a running Gateway and (optionally) its bridge transport. It is best-effort and does **not** replace SSH or Tailnet-based connectivity.
+Clawdis uses Bonjour (mDNS / DNS-SD) as a **LAN-only convenience** to discover a running Gateway bridge transport. It is best-effort and does **not** replace SSH or Tailnet-based connectivity.
 
 ## Wide-Area Bonjour (Unicast DNS-SD) over Tailscale
 
@@ -81,14 +81,13 @@ Only the **Node Gateway** (`clawd` / `clawdis gateway`) advertises Bonjour beaco
 
 ## Service types
 
-- `_clawdis-master._tcp` — “master gateway” discovery beacon (primarily for macOS remote-control UX).
-- `_clawdis-bridge._tcp` — bridge transport beacon (used by iOS/Android nodes).
+- `_clawdis-bridge._tcp` — bridge transport beacon (used by macOS/iOS/Android nodes).
 
 ## TXT keys (non-secret hints)
 
 The Gateway advertises small non-secret hints to make UI flows convenient:
 
-- `role=master`
+- `role=gateway`
 - `lanHost=<hostname>.local`
 - `sshPort=<port>` (defaults to 22 when not overridden)
 - `gatewayPort=<port>` (informational; the Gateway WS is typically loopback-only)
@@ -101,10 +100,8 @@ The Gateway advertises small non-secret hints to make UI flows convenient:
 Useful built-in tools:
 
 - Browse instances:
-  - `dns-sd -B _clawdis-master._tcp local.`
   - `dns-sd -B _clawdis-bridge._tcp local.`
 - Resolve one instance (replace `<instance>`):
-  - `dns-sd -L "<instance>" _clawdis-master._tcp local.`
   - `dns-sd -L "<instance>" _clawdis-bridge._tcp local.`
 
 If browsing shows instances but resolving fails, you’re usually hitting a LAN policy / multicast issue.
@@ -151,8 +148,8 @@ Bonjour/DNS-SD often escapes bytes in service instance names as decimal `\\DDD` 
 - `CLAWDIS_BRIDGE_ENABLED=0` disables the bridge listener (and therefore the bridge beacon).
 - `bridge.bind` / `bridge.port` in `~/.clawdis/clawdis.json` control bridge bind/port (preferred).
 - `CLAWDIS_BRIDGE_HOST` / `CLAWDIS_BRIDGE_PORT` still work as a back-compat override when `bridge.bind` / `bridge.port` are not set.
-- `CLAWDIS_SSH_PORT` overrides the SSH port advertised in `_clawdis-master._tcp`.
-- `CLAWDIS_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS) in `_clawdis-master._tcp` (wide-area discovery uses `clawdis.internal.` automatically when enabled).
+- `CLAWDIS_SSH_PORT` overrides the SSH port advertised in `_clawdis-bridge._tcp`.
+- `CLAWDIS_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS) in `_clawdis-bridge._tcp` (wide-area discovery uses `clawdis.internal.` automatically when enabled).
 
 ## Related docs
 

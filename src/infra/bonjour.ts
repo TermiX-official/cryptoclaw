@@ -101,7 +101,7 @@ export async function startGatewayBonjourAdvertiser(
   const displayName = prettifyInstanceName(instanceName);
 
   const txtBase: Record<string, string> = {
-    role: "master",
+    role: "gateway",
     gatewayPort: String(opts.gatewayPort),
     lanHost: `${hostname}.local`,
     displayName,
@@ -118,26 +118,7 @@ export async function startGatewayBonjourAdvertiser(
 
   const services: Array<{ label: string; svc: BonjourService }> = [];
 
-  // Master beacon: used for discovery (auto-fill SSH/direct targets).
-  // We advertise a TCP service so clients can resolve the host; the port itself is informational.
-  const master = responder.createService({
-    name: safeServiceName(instanceName),
-    type: "clawdis-master",
-    protocol: Protocol.TCP,
-    port: opts.sshPort ?? 22,
-    domain: "local",
-    hostname,
-    txt: {
-      ...txtBase,
-      sshPort: String(opts.sshPort ?? 22),
-    },
-  });
-  services.push({
-    label: "master",
-    svc: master as unknown as BonjourService,
-  });
-
-  // Optional bridge beacon (same type used by iOS/Android nodes today).
+  // Bridge beacon (used by macOS/iOS/Android nodes and the mac app onboarding flow).
   if (typeof opts.bridgePort === "number" && opts.bridgePort > 0) {
     const bridge = responder.createService({
       name: safeServiceName(instanceName),
@@ -148,6 +129,7 @@ export async function startGatewayBonjourAdvertiser(
       hostname,
       txt: {
         ...txtBase,
+        sshPort: String(opts.sshPort ?? 22),
         transport: "bridge",
       },
     });

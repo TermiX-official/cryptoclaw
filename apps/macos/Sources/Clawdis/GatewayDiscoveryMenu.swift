@@ -1,12 +1,10 @@
 import SwiftUI
 
-// “master” is part of the discovery protocol naming; keep UI components consistent.
-// swiftlint:disable:next inclusive_language
-struct MasterDiscoveryInlineList: View {
-    var discovery: MasterDiscoveryModel
+struct GatewayDiscoveryInlineList: View {
+    var discovery: GatewayDiscoveryModel
     var currentTarget: String?
-    var onSelect: (MasterDiscoveryModel.DiscoveredMaster) -> Void
-    @State private var hoveredGatewayID: MasterDiscoveryModel.DiscoveredMaster.ID?
+    var onSelect: (GatewayDiscoveryModel.DiscoveredGateway) -> Void
+    @State private var hoveredGatewayID: GatewayDiscoveryModel.DiscoveredGateway.ID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -19,16 +17,16 @@ struct MasterDiscoveryInlineList: View {
                     .foregroundStyle(.secondary)
             }
 
-            if self.discovery.masters.isEmpty {
+            if self.discovery.gateways.isEmpty {
                 Text("No gateways found yet.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(self.discovery.masters.prefix(6)) { gateway in
+                    ForEach(self.discovery.gateways.prefix(6)) { gateway in
                         let target = self.suggestedSSHTarget(gateway)
-                        let selected = target != nil && self.currentTarget?
-                            .trimmingCharacters(in: .whitespacesAndNewlines) == target
+                        let selected = (target != nil && self.currentTarget?
+                            .trimmingCharacters(in: .whitespacesAndNewlines) == target)
 
                         Button {
                             withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
@@ -41,13 +39,11 @@ struct MasterDiscoveryInlineList: View {
                                         .font(.callout.weight(.semibold))
                                         .lineLimit(1)
                                         .truncationMode(.tail)
-                                    if let target {
-                                        Text(target)
-                                            .font(.caption.monospaced())
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                    }
+                                    Text(target ?? "Bridge pairing only")
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
                                 }
                                 Spacer(minLength: 0)
                                 if selected {
@@ -89,7 +85,7 @@ struct MasterDiscoveryInlineList: View {
         .help("Click a discovered gateway to fill the SSH target.")
     }
 
-    private func suggestedSSHTarget(_ gateway: MasterDiscoveryModel.DiscoveredMaster) -> String? {
+    private func suggestedSSHTarget(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) -> String? {
         let host = gateway.tailnetDns ?? gateway.lanHost
         guard let host else { return nil }
         let user = NSUserName()
@@ -107,24 +103,23 @@ struct MasterDiscoveryInlineList: View {
     }
 }
 
-// swiftlint:disable:next inclusive_language
-struct MasterDiscoveryMenu: View {
-    var discovery: MasterDiscoveryModel
-    var onSelect: (MasterDiscoveryModel.DiscoveredMaster) -> Void
+struct GatewayDiscoveryMenu: View {
+    var discovery: GatewayDiscoveryModel
+    var onSelect: (GatewayDiscoveryModel.DiscoveredGateway) -> Void
 
     var body: some View {
         Menu {
-            if self.discovery.masters.isEmpty {
+            if self.discovery.gateways.isEmpty {
                 Button(self.discovery.statusText) {}
                     .disabled(true)
             } else {
-                ForEach(self.discovery.masters) { gateway in
+                ForEach(self.discovery.gateways) { gateway in
                     Button(gateway.displayName) { self.onSelect(gateway) }
                 }
             }
         } label: {
             Image(systemName: "dot.radiowaves.left.and.right")
         }
-        .help("Discover Clawdis masters on your LAN")
+        .help("Discover Clawdis gateways on your LAN")
     }
 }

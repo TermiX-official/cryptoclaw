@@ -28,6 +28,11 @@ final class MacNodeModeCoordinator {
         self.tunnel = nil
     }
 
+    func setPreferredBridgeStableID(_ stableID: String?) {
+        BridgeDiscoveryPreferences.setPreferredStableID(stableID)
+        Task { await self.session.disconnect() }
+    }
+
     private func run() async {
         var retryDelay: UInt64 = 1_000_000_000
         var lastCameraEnabled: Bool? = nil
@@ -132,10 +137,13 @@ final class MacNodeModeCoordinator {
         guard text.contains("NOT_PAIRED") || text.contains("UNAUTHORIZED") else { return false }
 
         do {
+            let shouldSilent = await MainActor.run {
+                AppStateStore.shared.connectionMode == .remote
+            }
             let token = try await MacNodeBridgePairingClient().pairAndHello(
                 endpoint: endpoint,
                 hello: self.makeHello(),
-                silent: true,
+                silent: shouldSilent,
                 onStatus: { [weak self] status in
                     self?.logger.info("mac node pairing: \(status, privacy: .public)")
                 })
@@ -209,6 +217,19 @@ final class MacNodeModeCoordinator {
                     for: .bonjour(type: ClawdisBonjour.bridgeServiceType, domain: domain),
                     using: params)
                 browser.browseResultsChangedHandler = { results, _ in
+                    let preferred = BridgeDiscoveryPreferences.preferredStableID()
+                    if let preferred,
+                       let match = results.first(where: {
+                           if case .service = $0.endpoint {
+                               return BridgeEndpointID.stableID($0.endpoint) == preferred
+                           }
+                           return false
+                       })
+                    {
+                        state.finish(match.endpoint)
+                        return
+                    }
+
                     if let result = results.first(where: { if case .service = $0.endpoint { true } else { false } }) {
                         state.finish(result.endpoint)
                     }

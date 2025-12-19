@@ -8,7 +8,7 @@ struct GeneralSettings: View {
     private let healthStore = HealthStore.shared
     private let gatewayManager = GatewayProcessManager.shared
     // swiftlint:disable:next inclusive_language
-    @State private var masterDiscovery = MasterDiscoveryModel()
+    @State private var gatewayDiscovery = GatewayDiscoveryModel()
     @State private var isInstallingCLI = false
     @State private var cliStatus: String?
     @State private var cliInstalled = false
@@ -152,11 +152,11 @@ struct GeneralSettings: View {
                     .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
-            MasterDiscoveryInlineList(
-                discovery: self.masterDiscovery,
+            GatewayDiscoveryInlineList(
+                discovery: self.gatewayDiscovery,
                 currentTarget: self.state.remoteTarget)
-            { master in
-                self.applyDiscoveredMaster(master)
+            { gateway in
+                self.applyDiscoveredGateway(gateway)
             }
             .padding(.leading, 58)
 
@@ -210,8 +210,8 @@ struct GeneralSettings: View {
                 .lineLimit(1)
         }
         .transition(.opacity)
-        .onAppear { self.masterDiscovery.start() }
-        .onDisappear { self.masterDiscovery.stop() }
+        .onAppear { self.gatewayDiscovery.start() }
+        .onDisappear { self.gatewayDiscovery.stop() }
     }
 
     private var controlStatusLine: String {
@@ -599,13 +599,15 @@ extension GeneralSettings {
     }
 
     // swiftlint:disable:next inclusive_language
-    private func applyDiscoveredMaster(_ master: MasterDiscoveryModel.DiscoveredMaster) {
-        let host = master.tailnetDns ?? master.lanHost
+    private func applyDiscoveredGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) {
+        MacNodeModeCoordinator.shared.setPreferredBridgeStableID(gateway.stableID)
+
+        let host = gateway.tailnetDns ?? gateway.lanHost
         guard let host else { return }
         let user = NSUserName()
         var target = "\(user)@\(host)"
-        if master.sshPort != 22 {
-            target += ":\(master.sshPort)"
+        if gateway.sshPort != 22 {
+            target += ":\(gateway.sshPort)"
         }
         self.state.remoteTarget = target
     }

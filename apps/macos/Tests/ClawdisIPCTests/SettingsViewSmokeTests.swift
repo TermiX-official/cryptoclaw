@@ -35,7 +35,7 @@ struct SettingsViewSmokeTests {
             enabled: false,
             createdAtMs: 1_700_000_000_000,
             updatedAtMs: 1_700_000_100_000,
-            schedule: .every(everyMs: 30_000, anchorMs: nil),
+            schedule: .every(everyMs: 30000, anchorMs: nil),
             sessionTarget: .isolated,
             wakeMode: .nextHeartbeat,
             payload: .agentTurn(
@@ -147,5 +147,9 @@ struct SettingsViewSmokeTests {
     @Test func toolsSettingsBuildsBody() {
         let view = ToolsSettings()
         _ = view.body
+    }
+
+    @Test func toolsSettingsIncludesSummarize() {
+        #expect(ToolsSettings.toolIDsForTests.contains("summarize"))
     }
 }

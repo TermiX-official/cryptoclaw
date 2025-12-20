@@ -28,7 +28,7 @@ struct ClawdisChatComposer: View {
                 }
             }
 
-            if self.showsAttachments && !self.viewModel.attachments.isEmpty {
+            if self.showsAttachments, !self.viewModel.attachments.isEmpty {
                 self.attachmentsStrip
             }
 

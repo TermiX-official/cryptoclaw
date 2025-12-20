@@ -55,6 +55,9 @@ const bridgeListConnected = vi.hoisted(() =>
   vi.fn(() => [] as BridgeClientInfo[]),
 );
 const bridgeSendEvent = vi.hoisted(() => vi.fn());
+const testTailnetIPv4 = vi.hoisted(
+  () => ({ value: undefined as string | undefined }),
+);
 vi.mock("../infra/bridge/server.js", () => ({
   startNodeBridgeServer: vi.fn(async (opts: BridgeStartOpts) => {
     bridgeStartCalls.push(opts);
@@ -67,11 +70,16 @@ vi.mock("../infra/bridge/server.js", () => ({
     };
   }),
 }));
+vi.mock("../infra/tailnet.js", () => ({
+  pickPrimaryTailnetIPv4: () => testTailnetIPv4.value,
+  pickPrimaryTailnetIPv6: () => undefined,
+}));
 
 let testSessionStorePath: string | undefined;
 let testAllowFrom: string[] | undefined;
 let testCronStorePath: string | undefined;
 let testCronEnabled: boolean | undefined = false;
+let testGatewayBind: "auto" | "lan" | "tailnet" | "loopback" | undefined;
 const sessionStoreSaveDelayMs = vi.hoisted(() => ({ value: 0 }));
 vi.mock("../config/sessions.js", async () => {
   const actual = await vi.importActual<typeof import("../config/sessions.js")>(
@@ -96,6 +104,7 @@ vi.mock("../config/config.js", () => ({
       agent: { provider: "anthropic", model: "claude-opus-4-5" },
       session: { mainKey: "main", store: testSessionStorePath },
     },
+    gateway: testGatewayBind ? { bind: testGatewayBind } : undefined,
     cron: (() => {
       const cron: Record<string, unknown> = {};
       if (typeof testCronEnabled === "boolean") cron.enabled = testCronEnabled;
@@ -130,6 +139,8 @@ beforeEach(async () => {
   tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "clawdis-gateway-home-"));
   process.env.HOME = tempHome;
   sessionStoreSaveDelayMs.value = 0;
+  testTailnetIPv4.value = undefined;
+  testGatewayBind = undefined;
 });
 
 afterEach(async () => {
@@ -1551,6 +1562,31 @@ describe("gateway server", () => {
 
     ws.close();
     await server.close();
+  });
+
+  test("hello-ok prefers gateway port for A2UI when tailnet present", async () => {
+    const prevToken = process.env.CLAWDIS_GATEWAY_TOKEN;
+    process.env.CLAWDIS_GATEWAY_TOKEN = "secret";
+    testTailnetIPv4.value = "100.64.0.1";
+    testGatewayBind = "lan";
+
+    const port = await getFreePort();
+    const server = await startGatewayServer(port, { bind: "lan" });
+    const ws = new WebSocket(`ws://127.0.0.1:${port}`, {
+      headers: { Host: `100.64.0.1:${port}` },
+    });
+    await new Promise<void>((resolve) => ws.once("open", resolve));
+
+    const hello = await connectOk(ws);
+    expect(hello.canvasHostUrl).toBe(`http://100.64.0.1:${port}`);
+
+    ws.close();
+    await server.close();
+    if (prevToken === undefined) {
+      delete process.env.CLAWDIS_GATEWAY_TOKEN;
+    } else {
+      process.env.CLAWDIS_GATEWAY_TOKEN = prevToken;
+    }
   });
 
   test("rejects protocol mismatch", async () => {

@@ -6,11 +6,11 @@ import {
   DEFAULT_PROVIDER,
 } from "../agents/defaults.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import {
   DEFAULT_AGENT_WORKSPACE_DIR,
   ensureAgentWorkspace,
 } from "../agents/workspace.js";
-import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { chunkText } from "../auto-reply/chunk.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import {
@@ -188,13 +188,14 @@ export async function agentCommand(
   const {
     sessionId,
     sessionKey,
-    sessionEntry,
+    sessionEntry: resolvedSessionEntry,
     sessionStore,
     storePath,
     isNewSession,
     persistedThinking,
     persistedVerbose,
   } = sessionResolution;
+  let sessionEntry = resolvedSessionEntry;
 
   const resolvedThinkLevel =
     thinkOnce ??
@@ -229,8 +230,8 @@ export async function agentCommand(
 
   // Persist explicit /command overrides to the session store when we have a key.
   if (sessionStore && sessionKey) {
-    const entry =
-      sessionStore[sessionKey] ?? sessionEntry ?? { sessionId, updatedAt: Date.now() };
+    const entry = sessionStore[sessionKey] ??
+      sessionEntry ?? { sessionId, updatedAt: Date.now() };
     const next: SessionEntry = { ...entry, sessionId, updatedAt: Date.now() };
     if (thinkOverride) {
       if (thinkOverride === "off") delete next.thinkingLevel;

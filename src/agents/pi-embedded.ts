@@ -24,12 +24,12 @@ import {
   SessionManager,
   SettingsManager,
 } from "@mariozechner/pi-coding-agent";
-import type { ClawdisConfig } from "../config/config.js";
 import type { ThinkLevel, VerboseLevel } from "../auto-reply/thinking.js";
 import {
   createToolDebouncer,
   formatToolAggregate,
 } from "../auto-reply/tool-meta.js";
+import type { ClawdisConfig } from "../config/config.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { splitMediaFromOutput } from "../media/parse.js";
 import { enqueueCommand } from "../process/command-queue.js";
@@ -48,8 +48,8 @@ import {
   applySkillEnvOverrides,
   applySkillEnvOverridesFromSnapshot,
   buildWorkspaceSkillSnapshot,
-  type SkillSnapshot,
   loadWorkspaceSkillEntries,
+  type SkillSnapshot,
 } from "./skills.js";
 import { buildAgentSystemPrompt } from "./system-prompt.js";
 import { loadWorkspaceBootstrapFiles } from "./workspace.js";

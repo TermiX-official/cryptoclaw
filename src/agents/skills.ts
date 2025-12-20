@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  type Skill,
-  type SkillFrontmatter,
   formatSkillsForPrompt,
   loadSkillsFromDir,
+  type Skill,
+  type SkillFrontmatter,
 } from "@mariozechner/pi-coding-agent";
 
 import type { ClawdisConfig, SkillConfig } from "../config/config.js";
@@ -159,9 +159,7 @@ function resolveClawdisMetadata(
         : undefined;
     return {
       always:
-        typeof clawdisObj.always === "boolean"
-          ? clawdisObj.always
-          : undefined,
+        typeof clawdisObj.always === "boolean" ? clawdisObj.always : undefined,
       skillKey:
         typeof clawdisObj.skillKey === "string"
           ? clawdisObj.skillKey
@@ -212,10 +210,7 @@ function shouldIncludeSkill(params: {
     for (const envName of requiredEnv) {
       if (process.env[envName]) continue;
       if (skillConfig?.env?.[envName]) continue;
-      if (
-        skillConfig?.apiKey &&
-        entry.clawdis?.primaryEnv === envName
-      ) {
+      if (skillConfig?.apiKey && entry.clawdis?.primaryEnv === envName) {
         continue;
       }
       return false;
@@ -294,8 +289,15 @@ export function applySkillEnvOverridesFromSnapshot(params: {
       }
     }
 
-    if (skill.primaryEnv && skillConfig.apiKey && !process.env[skill.primaryEnv]) {
-      updates.push({ key: skill.primaryEnv, prev: process.env[skill.primaryEnv] });
+    if (
+      skill.primaryEnv &&
+      skillConfig.apiKey &&
+      !process.env[skill.primaryEnv]
+    ) {
+      updates.push({
+        key: skill.primaryEnv,
+        prev: process.env[skill.primaryEnv],
+      });
       process.env[skill.primaryEnv] = skillConfig.apiKey;
     }
   }
@@ -332,16 +334,22 @@ function loadSkillEntries(
   for (const skill of managedSkills) merged.set(skill.name, skill);
   for (const skill of workspaceSkills) merged.set(skill.name, skill);
 
-  const skillEntries: SkillEntry[] = Array.from(merged.values()).map((skill) => {
-    let frontmatter: SkillFrontmatter = {};
-    try {
-      const raw = fs.readFileSync(skill.filePath, "utf-8");
-      frontmatter = parseFrontmatter(raw);
-    } catch {
-      // ignore malformed skills
-    }
-    return { skill, frontmatter, clawdis: resolveClawdisMetadata(frontmatter) };
-  });
+  const skillEntries: SkillEntry[] = Array.from(merged.values()).map(
+    (skill) => {
+      let frontmatter: SkillFrontmatter = {};
+      try {
+        const raw = fs.readFileSync(skill.filePath, "utf-8");
+        frontmatter = parseFrontmatter(raw);
+      } catch {
+        // ignore malformed skills
+      }
+      return {
+        skill,
+        frontmatter,
+        clawdis: resolveClawdisMetadata(frontmatter),
+      };
+    },
+  );
   return skillEntries;
 }
 

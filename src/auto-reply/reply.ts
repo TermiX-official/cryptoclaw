@@ -7,11 +7,11 @@ import {
   DEFAULT_PROVIDER,
 } from "../agents/defaults.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import {
   DEFAULT_AGENT_WORKSPACE_DIR,
   ensureAgentWorkspace,
 } from "../agents/workspace.js";
-import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { type ClawdisConfig, loadConfig } from "../config/config.js";
 import {
   DEFAULT_IDLE_MINUTES,

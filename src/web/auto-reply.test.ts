@@ -79,7 +79,7 @@ const makeSessionStore = async (
   await fs.writeFile(storePath, JSON.stringify(entries));
   const cleanup = async () => {
     // Session store writes can be in-flight when the test finishes (e.g. updateLastRoute
-    // after a batched message flush). `fs.rm({ recursive })` can race and throw ENOTEMPTY.
+    // after a message flush). `fs.rm({ recursive })` can race and throw ENOTEMPTY.
     for (let attempt = 0; attempt < 10; attempt += 1) {
       try {
         await fs.rm(dir, { recursive: true, force: true });
@@ -866,8 +866,7 @@ describe("web auto-reply", () => {
     }
   });
 
-  it("batches inbound messages while queue is busy and preserves timestamps", async () => {
-    vi.useFakeTimers();
+  it("processes inbound messages without batching and preserves timestamps", async () => {
     const originalMax = process.getMaxListeners();
     process.setMaxListeners?.(1); // force low to confirm bump
 
@@ -878,7 +877,7 @@ describe("web auto-reply", () => {
     const sendMedia = vi.fn();
     const reply = vi.fn().mockResolvedValue(undefined);
     const sendComposing = vi.fn();
-    const resolver = vi.fn().mockResolvedValue({ text: "batched" });
+    const resolver = vi.fn().mockResolvedValue({ text: "ok" });
 
     let capturedOnMessage:
       | ((msg: import("./inbound.js").WebInboundMessage) => Promise<void>)
@@ -891,12 +890,6 @@ describe("web auto-reply", () => {
       capturedOnMessage = opts.onMessage;
       return { close: vi.fn() };
     };
-
-    // Queue starts busy, then frees after one polling tick.
-    let queueBusy = true;
-    const queueSpy = vi
-      .spyOn(commandQueue, "getQueueSize")
-      .mockImplementation(() => (queueBusy ? 1 : 0));
 
     setLoadConfigMock(() => ({
       inbound: {
@@ -930,25 +923,22 @@ describe("web auto-reply", () => {
       sendMedia,
     });
 
-    // Let the queued batch flush once the queue is free
-    queueBusy = false;
-    await vi.advanceTimersByTimeAsync(200);
-
-    expect(resolver).toHaveBeenCalledTimes(1);
-    const args = resolver.mock.calls[0][0];
-    expect(args.Body).toContain(
+    expect(resolver).toHaveBeenCalledTimes(2);
+    const firstArgs = resolver.mock.calls[0][0];
+    const secondArgs = resolver.mock.calls[1][0];
+    expect(firstArgs.Body).toContain(
       "[WhatsApp +1 2025-01-01 00:00] [clawdis] first",
     );
-    expect(args.Body).toContain(
+    expect(firstArgs.Body).not.toContain("second");
+    expect(secondArgs.Body).toContain(
       "[WhatsApp +1 2025-01-01 01:00] [clawdis] second",
     );
+    expect(secondArgs.Body).not.toContain("first");
 
     // Max listeners bumped to avoid warnings in multi-instance test runs
     expect(process.getMaxListeners?.()).toBeGreaterThanOrEqual(50);
 
-    queueSpy.mockRestore();
     process.setMaxListeners?.(originalMax);
-    vi.useRealTimers();
     await store.cleanup();
   });
 

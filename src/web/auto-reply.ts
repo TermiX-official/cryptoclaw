@@ -768,9 +768,6 @@ export async function monitorWebProvider(
     const MESSAGE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes without any messages
     const WATCHDOG_CHECK_MS = 60 * 1000; // Check every minute
 
-    // Batch inbound messages per conversation while command queue is busy.
-    type PendingBatch = { messages: WebInboundMsg[]; timer?: NodeJS.Timeout };
-    const pendingBatches = new Map<string, PendingBatch>();
     const backgroundTasks = new Set<Promise<unknown>>();
 
     const buildLine = (msg: WebInboundMsg) => {
@@ -799,20 +796,11 @@ export async function monitorWebProvider(
       });
     };
 
-    const processBatch = async (conversationId: string) => {
-      const batch = pendingBatches.get(conversationId);
-      if (!batch || batch.messages.length === 0) return;
-      if (getQueueSize() > 0) {
-        batch.timer = setTimeout(() => processBatch(conversationId), 150);
-        return;
-      }
-      pendingBatches.delete(conversationId);
+    const processMessage = async (msg: WebInboundMsg) => {
+      const conversationId = msg.conversationId ?? msg.from;
+      let combinedBody = buildLine(msg);
 
-      const messages = batch.messages;
-      const latest = messages[messages.length - 1];
-      let combinedBody = messages.map(buildLine).join("\n");
-
-      if (latest.chatType === "group") {
+      if (msg.chatType === "group") {
         const history = groupHistories.get(conversationId) ?? [];
         const historyWithoutCurrent =
           history.length > 0 ? history.slice(0, -1) : [];
@@ -827,13 +815,13 @@ export async function monitorWebProvider(
               }),
             )
             .join("\\n");
-          combinedBody = `[Chat messages since your last reply - for context]\\n${historyText}\\n\\n[Current message - respond to this]\\n${buildLine(latest)}`;
+          combinedBody = `[Chat messages since your last reply - for context]\\n${historyText}\\n\\n[Current message - respond to this]\\n${buildLine(msg)}`;
         }
         // Always surface who sent the triggering message so the agent can address them.
         const senderLabel =
-          latest.senderName && latest.senderE164
-            ? `${latest.senderName} (${latest.senderE164})`
-            : (latest.senderName ?? latest.senderE164 ?? "Unknown");
+          msg.senderName && msg.senderE164
+            ? `${msg.senderName} (${msg.senderE164})`
+            : (msg.senderName ?? msg.senderE164 ?? "Unknown");
         combinedBody = `${combinedBody}\\n[from: ${senderLabel}]`;
         // Clear stored history after using it
         groupHistories.set(conversationId, []);
@@ -841,46 +829,45 @@ export async function monitorWebProvider(
 
       // Echo detection uses combined body so we don't respond twice.
       if (recentlySent.has(combinedBody)) {
-        logVerbose(`Skipping auto-reply: detected echo for combined batch`);
+        logVerbose(`Skipping auto-reply: detected echo for combined message`);
         recentlySent.delete(combinedBody);
         return;
       }
 
-      const correlationId = latest.id ?? newConnectionId();
+      const correlationId = msg.id ?? newConnectionId();
       replyLogger.info(
         {
           connectionId,
           correlationId,
-          from: latest.chatType === "group" ? conversationId : latest.from,
-          to: latest.to,
+          from: msg.chatType === "group" ? conversationId : msg.from,
+          to: msg.to,
           body: elide(combinedBody, 240),
-          mediaType: latest.mediaType ?? null,
-          mediaPath: latest.mediaPath ?? null,
-          batchSize: messages.length,
+          mediaType: msg.mediaType ?? null,
+          mediaPath: msg.mediaPath ?? null,
         },
-        "inbound web message (batched)",
+        "inbound web message",
       );
 
-      const tsDisplay = latest.timestamp
-        ? new Date(latest.timestamp).toISOString()
+      const tsDisplay = msg.timestamp
+        ? new Date(msg.timestamp).toISOString()
         : new Date().toISOString();
       const fromDisplay =
-        latest.chatType === "group" ? conversationId : latest.from;
+        msg.chatType === "group" ? conversationId : msg.from;
       console.log(
-        `\n[${tsDisplay}] ${fromDisplay} -> ${latest.to}: ${combinedBody}`,
+        `\n[${tsDisplay}] ${fromDisplay} -> ${msg.to}: ${combinedBody}`,
       );
 
-      if (latest.chatType !== "group") {
+      if (msg.chatType !== "group") {
         const sessionCfg = cfg.inbound?.session;
         const mainKey = (sessionCfg?.mainKey ?? "main").trim() || "main";
         const storePath = resolveStorePath(sessionCfg?.store);
         const to = (() => {
-          if (latest.senderE164) return normalizeE164(latest.senderE164);
-          // In direct chats, `latest.from` is already the canonical conversation id,
+          if (msg.senderE164) return normalizeE164(msg.senderE164);
+          // In direct chats, `msg.from` is already the canonical conversation id,
           // which is an E.164 string (e.g. "+1555"). Only fall back to JID parsing
           // when we were handed a JID-like string.
-          if (latest.from.includes("@")) return jidToE164(latest.from);
-          return normalizeE164(latest.from);
+          if (msg.from.includes("@")) return jidToE164(msg.from);
+          return normalizeE164(msg.from);
         })();
         if (to) {
           const task = updateLastRoute({
@@ -904,21 +891,21 @@ export async function monitorWebProvider(
       const replyResult = await (replyResolver ?? getReplyFromConfig)(
         {
           Body: combinedBody,
-          From: latest.from,
-          To: latest.to,
-          MessageSid: latest.id,
-          MediaPath: latest.mediaPath,
-          MediaUrl: latest.mediaUrl,
-          MediaType: latest.mediaType,
-          ChatType: latest.chatType,
-          GroupSubject: latest.groupSubject,
-          GroupMembers: latest.groupParticipants?.join(", "),
-          SenderName: latest.senderName,
-          SenderE164: latest.senderE164,
+          From: msg.from,
+          To: msg.to,
+          MessageSid: msg.id,
+          MediaPath: msg.mediaPath,
+          MediaUrl: msg.mediaUrl,
+          MediaType: msg.mediaType,
+          ChatType: msg.chatType,
+          GroupSubject: msg.groupSubject,
+          GroupMembers: msg.groupParticipants?.join(", "),
+          SenderName: msg.senderName,
+          SenderE164: msg.senderE164,
           Surface: "whatsapp",
         },
         {
-          onReplyStart: latest.sendComposing,
+          onReplyStart: msg.sendComposing,
         },
       );
 
@@ -949,7 +936,7 @@ export async function monitorWebProvider(
         try {
           await deliverWebReply({
             replyResult: replyPayload,
-            msg: latest,
+            msg,
             maxMediaBytes,
             replyLogger,
             runtime,
@@ -958,7 +945,7 @@ export async function monitorWebProvider(
 
           if (replyPayload.text) {
             recentlySent.add(replyPayload.text);
-            recentlySent.add(combinedBody); // Prevent echo on the batch text itself
+            recentlySent.add(combinedBody); // Prevent echo on the combined text itself
             logVerbose(
               `Added to echo detection set (size now: ${recentlySent.size}): ${replyPayload.text.substring(0, 50)}...`,
             );
@@ -969,13 +956,13 @@ export async function monitorWebProvider(
           }
 
           const fromDisplay =
-            latest.chatType === "group"
+            msg.chatType === "group"
               ? conversationId
-              : (latest.from ?? "unknown");
+              : (msg.from ?? "unknown");
           if (isVerbose()) {
             console.log(
               success(
-                `↩️  Auto-replied to ${fromDisplay} (web${replyPayload.mediaUrl || replyPayload.mediaUrls?.length ? ", media" : ""}; batched ${messages.length})`,
+                `↩️  Auto-replied to ${fromDisplay} (web${replyPayload.mediaUrl || replyPayload.mediaUrls?.length ? ", media" : ""})`,
               ),
             );
           } else {
@@ -988,22 +975,10 @@ export async function monitorWebProvider(
         } catch (err) {
           console.error(
             danger(
-              `Failed sending web auto-reply to ${latest.from ?? conversationId}: ${String(err)}`,
+              `Failed sending web auto-reply to ${msg.from ?? conversationId}: ${String(err)}`,
             ),
           );
         }
-      }
-    };
-
-    const enqueueBatch = async (msg: WebInboundMsg) => {
-      const key = msg.conversationId ?? msg.from;
-      const bucket = pendingBatches.get(key) ?? { messages: [] };
-      bucket.messages.push(msg);
-      pendingBatches.set(key, bucket);
-      if (getQueueSize() === 0) {
-        await processBatch(key);
-      } else {
-        bucket.timer = bucket.timer ?? setTimeout(() => processBatch(key), 150);
       }
     };
 
@@ -1060,7 +1035,7 @@ export async function monitorWebProvider(
           }
         }
 
-        return enqueueBatch(msg);
+        return processMessage(msg);
       },
     });
 

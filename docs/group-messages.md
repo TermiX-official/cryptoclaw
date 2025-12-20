@@ -51,7 +51,7 @@ Notes:
 - Manual smoke:
   - Send an `@clawd` ping in the group and confirm a reply that references the sender name.
   - Send a second ping and verify the history block is included then cleared on the next turn.
-  - Check gateway logs (run with `--verbose`) to see `inbound web message (batched)` entries showing `from: <groupJid>` and the `[from: …]` suffix.
+- Check gateway logs (run with `--verbose`) to see `inbound web message` entries showing `from: <groupJid>` and the `[from: …]` suffix.
 
 ## Known considerations
 - Heartbeats are intentionally skipped for groups to avoid noisy broadcasts.

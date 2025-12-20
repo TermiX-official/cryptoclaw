@@ -6,6 +6,29 @@ import { v0_8 } from "@a2ui/lit";
 import "@a2ui/lit/ui";
 import { themeContext } from "@clawdis/a2ui-theme-context";
 
+const modalStyles = css`
+  dialog {
+    padding: 24px;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+  }
+
+  dialog::backdrop {
+    background: rgba(5, 8, 16, 0.65);
+    backdrop-filter: blur(6px);
+  }
+`;
+
+const modalElement = customElements.get("a2ui-modal");
+if (modalElement && Array.isArray(modalElement.styles)) {
+  modalElement.styles = [...modalElement.styles, modalStyles];
+}
+
 const empty = Object.freeze({});
 const emptyClasses = () => ({});
 const textHintStyles = () => ({ h1: {}, h2: {}, h3: {}, h4: {}, h5: {}, body: {}, caption: {} });
@@ -92,6 +115,14 @@ const clawdisTheme = {
       borderRadius: "14px",
       padding: "14px",
       boxShadow: cardShadow,
+    },
+    Modal: {
+      background: "rgba(12, 16, 24, 0.92)",
+      border: "1px solid rgba(255,255,255,.12)",
+      borderRadius: "16px",
+      padding: "16px",
+      boxShadow: "0 30px 80px rgba(0,0,0,.6)",
+      width: "min(520px, calc(100vw - 48px))",
     },
     Column: { gap: "10px" },
     Row: { gap: "10px", alignItems: "center" },

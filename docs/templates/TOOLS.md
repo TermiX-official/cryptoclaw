@@ -3,10 +3,10 @@ summary: "Workspace template for TOOLS.md"
 read_when:
   - Bootstrapping a workspace manually
 ---
-# TOOLS.md - User Tool Notes (editable)
+# TOOLS.md - Notes for Skills (Custom Tools & Local Conventions)
 
-This file is for your notes about external tools and conventions.
-It does not define which tools exist; Clawdis provides built-in tools internally.
+This file is for your notes about external tools and local conventions.
+It does not define which tools exist; Clawdis provides tools via skills.
 
 ## Examples
 

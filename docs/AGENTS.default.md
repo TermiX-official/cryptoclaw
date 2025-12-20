@@ -45,10 +45,29 @@ cp docs/AGENTS.default.md ~/.clawdis/workspace/AGENTS.md
 - Don’t run destructive commands unless explicitly asked.
 - Don’t send partial/streaming replies to external messaging surfaces (only final replies).
 
-## Daily memory (recommended)
-- Keep a short daily log at `memory/YYYY-MM-DD.md` (create `memory/` if needed).
-- On session start, read today + yesterday if present.
-- Capture durable facts, preferences, and decisions; avoid secrets.
+## Session start (required)
+- Read `SOUL.md`, `USER.md`, `memory.md`, and today+yesterday in `memory/`.
+- Do it before responding.
+
+## Soul (required)
+- `SOUL.md` defines identity, tone, and boundaries. Keep it current.
+- If you change `SOUL.md`, tell the user.
+- You are a fresh instance each session; continuity lives in these files.
+
+## Shared spaces (recommended)
+- You’re not the user’s voice; be careful in group chats or public channels.
+- Don’t share private data, contact info, or internal notes.
+
+## Memory system (recommended)
+- Daily log: `memory/YYYY-MM-DD.md` (create `memory/` if needed).
+- Long-term memory: `memory.md` for durable facts, preferences, and decisions.
+- On session start, read today + yesterday + `memory.md` if present.
+- Capture: decisions, preferences, constraints, open loops.
+- Avoid secrets unless explicitly requested.
+
+## Tools & skills
+- Tools live in skills; follow each skill’s `SKILL.md` when you need it.
+- Keep environment-specific notes in `TOOLS.md` (Notes for Skills).
 
 ## Backup tip (recommended)
 If you treat this workspace as Clawd’s “memory”, make it a git repo (ideally private) so `AGENTS.md` and your memory files are backed up.

@@ -179,8 +179,17 @@ final class GatewayDiscoveryModel {
     }
 
     private static func txtDictionary(from result: NWBrowser.Result) -> [String: String] {
-        guard case let .bonjour(txt) = result.metadata else { return [:] }
-        return txt.dictionary
+        var merged: [String: String] = [:]
+
+        if case let .bonjour(txt) = result.metadata {
+            merged.merge(txt.dictionary, uniquingKeysWith: { _, new in new })
+        }
+
+        if let endpointTxt = result.endpoint.txtRecord?.dictionary {
+            merged.merge(endpointTxt, uniquingKeysWith: { _, new in new })
+        }
+
+        return merged
     }
 
     private static func prettifyInstanceName(_ decodedName: String) -> String {

@@ -29,7 +29,12 @@ final class GatewayDiscoveryModel {
     private var browsers: [String: NWBrowser] = [:]
     private var gatewaysByDomain: [String: [DiscoveredGateway]] = [:]
     private var statesByDomain: [String: NWBrowser.State] = [:]
-    private let localIdentity: LocalIdentity = GatewayDiscoveryModel.buildLocalIdentity()
+    private var localIdentity: LocalIdentity
+
+    init() {
+        self.localIdentity = Self.buildLocalIdentityFast()
+        self.refreshLocalIdentity()
+    }
 
     func start() {
         if !self.browsers.isEmpty { return }
@@ -237,7 +242,31 @@ final class GatewayDiscoveryModel {
         return false
     }
 
-    private static func buildLocalIdentity() -> LocalIdentity {
+    private func refreshLocalIdentity() {
+        let fastIdentity = self.localIdentity
+        Task.detached(priority: .utility) {
+            let slowIdentity = Self.buildLocalIdentitySlow()
+            let merged = Self.mergeLocalIdentity(fast: fastIdentity, slow: slowIdentity)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                guard self.localIdentity != merged else { return }
+                self.localIdentity = merged
+                self.recomputeGateways()
+            }
+        }
+    }
+
+    private static func mergeLocalIdentity(
+        fast: LocalIdentity,
+        slow: LocalIdentity
+    ) -> LocalIdentity {
+        LocalIdentity(
+            hostTokens: fast.hostTokens.union(slow.hostTokens),
+            displayTokens: fast.displayTokens.union(slow.displayTokens)
+        )
+    }
+
+    private static func buildLocalIdentityFast() -> LocalIdentity {
         var hostTokens: Set<String> = []
         var displayTokens: Set<String> = []
 
@@ -245,20 +274,26 @@ final class GatewayDiscoveryModel {
         if let token = normalizeHostToken(hostName) {
             hostTokens.insert(token)
         }
+
+        if let token = normalizeDisplayToken(InstanceIdentity.displayName) {
+            displayTokens.insert(token)
+        }
+
+        return LocalIdentity(hostTokens: hostTokens, displayTokens: displayTokens)
+    }
+
+    private static func buildLocalIdentitySlow() -> LocalIdentity {
+        var hostTokens: Set<String> = []
+        var displayTokens: Set<String> = []
+
         if let host = Host.current().name,
            let token = normalizeHostToken(host)
         {
             hostTokens.insert(token)
         }
 
-        let displayCandidates = [
-            Host.current().localizedName,
-            InstanceIdentity.displayName,
-        ]
-        for raw in displayCandidates {
-            if let token = normalizeDisplayToken(raw) {
-                displayTokens.insert(token)
-            }
+        if let token = normalizeDisplayToken(Host.current().localizedName) {
+            displayTokens.insert(token)
         }
 
         return LocalIdentity(hostTokens: hostTokens, displayTokens: displayTokens)

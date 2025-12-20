@@ -17,6 +17,7 @@ import {
   saveSessionStore,
 } from "./config/sessions.js";
 import { ensureBinary } from "./infra/binaries.js";
+import { isMainModule } from "./infra/is-main.js";
 import { ensureClawdisCliOnPath } from "./infra/path-env.js";
 import {
   describePortOwner,
@@ -68,8 +69,9 @@ export {
   waitForever,
 };
 
-const isMain =
-  process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+const isMain = isMainModule({
+  currentFile: fileURLToPath(import.meta.url),
+});
 
 if (isMain) {
   // Global error handlers to prevent silent crashes from unhandled rejections/exceptions.

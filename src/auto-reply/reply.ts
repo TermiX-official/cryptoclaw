@@ -589,7 +589,9 @@ export async function getReplyFromConfig(
     isNewSession &&
     baseBodyTrimmedRaw.length === 0 &&
     rawBodyTrimmed.length > 0;
-  const baseBodyFinal = isBareSessionReset ? BARE_SESSION_RESET_PROMPT : baseBody;
+  const baseBodyFinal = isBareSessionReset
+    ? BARE_SESSION_RESET_PROMPT
+    : baseBody;
   const baseBodyTrimmed = baseBodyFinal.trim();
   // Bail early if the cleaned body is empty to avoid sending blank prompts to the agent.
   // This can happen if an inbound platform delivers an empty text message or we strip everything out.

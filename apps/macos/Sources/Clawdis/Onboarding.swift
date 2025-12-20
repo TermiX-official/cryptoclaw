@@ -146,8 +146,8 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             GlowingClawdisIcon(size: 156, glowIntensity: 0.28)
-                .offset(y: 58)
-                .frame(height: 226)
+                .offset(y: 13)
+                .frame(height: 181)
 
             GeometryReader { _ in
                 HStack(spacing: 0) {
@@ -167,7 +167,7 @@ struct OnboardingView: View {
 
             self.navigationBar
         }
-        .frame(width: self.pageWidth, height: 820)
+        .frame(width: self.pageWidth, height: 840)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             self.currentPage = 0
@@ -1134,7 +1134,7 @@ struct OnboardingView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding(.horizontal, 28)
-        .padding(.bottom, 28)
+        .padding(.bottom, 36)
         .frame(minHeight: 60)
     }
 

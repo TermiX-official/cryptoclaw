@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import { DisconnectReason } from "@whiskeysockets/baileys";
+
 import { danger, info, success } from "../globals.js";
 import { logInfo } from "../logger.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -7,6 +9,8 @@ import { renderQrPngBase64 } from "./qr-image.js";
 import {
   createWaSocket,
   formatError,
+  getStatusCode,
+  logoutWeb,
   readWebSelfId,
   waitForWaConnection,
   webAuthExists,
@@ -22,6 +26,7 @@ type ActiveLogin = {
   qrDataUrl?: string;
   connected: boolean;
   error?: string;
+  errorStatus?: number;
   waitPromise: Promise<void>;
 };
 
@@ -127,6 +132,7 @@ export async function startWebLoginWithQr(
     .catch((err) => {
       if (activeLogin?.id === login.id) {
         activeLogin.error = formatError(err);
+        activeLogin.errorStatus = getStatusCode(err);
       }
     });
 
@@ -186,6 +192,14 @@ export async function waitForWebLogin(
   }
 
   if (login.error) {
+    if (login.errorStatus === DisconnectReason.loggedOut) {
+      await logoutWeb(runtime);
+      const message =
+        "WhatsApp reported the session is logged out. Cleared cached web session; please scan a new QR.";
+      await resetActiveLogin(message);
+      runtime.log(danger(message));
+      return { connected: false, message };
+    }
     const message = `WhatsApp login failed: ${login.error}`;
     await resetActiveLogin(message);
     runtime.log(danger(message));

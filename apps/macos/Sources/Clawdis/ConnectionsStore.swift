@@ -158,10 +158,11 @@ final class ConnectionsStore {
         }
     }
 
-    func startWhatsAppLogin(force: Bool) async {
+    func startWhatsAppLogin(force: Bool, autoWait: Bool = true) async {
         guard !self.whatsappBusy else { return }
         self.whatsappBusy = true
         defer { self.whatsappBusy = false }
+        var shouldAutoWait = false
         do {
             let params: [String: AnyCodable] = [
                 "force": AnyCodable(force),
@@ -174,12 +175,16 @@ final class ConnectionsStore {
             self.whatsappLoginMessage = result.message
             self.whatsappLoginQrDataUrl = result.qrDataUrl
             self.whatsappLoginConnected = nil
+            shouldAutoWait = autoWait && result.qrDataUrl != nil
         } catch {
             self.whatsappLoginMessage = error.localizedDescription
             self.whatsappLoginQrDataUrl = nil
             self.whatsappLoginConnected = nil
         }
         await self.refresh(probe: true)
+        if shouldAutoWait {
+            Task { await self.waitWhatsAppLogin() }
+        }
     }
 
     func waitWhatsAppLogin(timeoutMs: Int = 120_000) async {

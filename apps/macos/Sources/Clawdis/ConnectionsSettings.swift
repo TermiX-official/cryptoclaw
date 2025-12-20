@@ -84,12 +84,6 @@ struct ConnectionsSettings: View {
                     .buttonStyle(.bordered)
                     .disabled(self.store.whatsappBusy)
 
-                    Button("Wait for scan") {
-                        Task { await self.store.waitWhatsAppLogin() }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(self.store.whatsappBusy)
-
                     Spacer()
 
                     Button("Logout") {

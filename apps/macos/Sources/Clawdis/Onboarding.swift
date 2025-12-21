@@ -168,7 +168,7 @@ struct OnboardingView: View {
             Spacer(minLength: 0)
             self.navigationBar
         }
-        .frame(width: self.pageWidth, height: 805)
+        .frame(width: self.pageWidth, height: 644)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             self.currentPage = 0

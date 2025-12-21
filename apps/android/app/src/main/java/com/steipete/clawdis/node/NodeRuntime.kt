@@ -166,6 +166,7 @@ class NodeRuntime(context: Context) {
   val manualHost: StateFlow<String> = prefs.manualHost
   val manualPort: StateFlow<Int> = prefs.manualPort
   val lastDiscoveredStableId: StateFlow<String> = prefs.lastDiscoveredStableId
+  val canvasDebugStatusEnabled: StateFlow<Boolean> = prefs.canvasDebugStatusEnabled
 
   private var didAutoConnect = false
   private var suppressWakeWordsSync = false
@@ -246,6 +247,22 @@ class NodeRuntime(context: Context) {
         connect(target)
       }
     }
+
+    scope.launch {
+      combine(
+        canvasDebugStatusEnabled,
+        statusText,
+        serverName,
+        remoteAddress,
+      ) { debugEnabled, status, server, remote ->
+        Quad(debugEnabled, status, server, remote)
+      }.distinctUntilChanged()
+        .collect { (debugEnabled, status, server, remote) ->
+          canvas.setDebugStatusEnabled(debugEnabled)
+          if (!debugEnabled) return@collect
+          canvas.setDebugStatus(status, server ?: remote)
+        }
+    }
   }
 
   fun setForeground(value: Boolean) {
@@ -274,6 +291,10 @@ class NodeRuntime(context: Context) {
 
   fun setManualPort(value: Int) {
     prefs.setManualPort(value)
+  }
+
+  fun setCanvasDebugStatusEnabled(value: Boolean) {
+    prefs.setCanvasDebugStatusEnabled(value)
   }
 
   fun setWakeWords(words: List<String>) {

@@ -38,6 +38,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val manualEnabled: StateFlow<Boolean> = runtime.manualEnabled
   val manualHost: StateFlow<String> = runtime.manualHost
   val manualPort: StateFlow<Int> = runtime.manualPort
+  val canvasDebugStatusEnabled: StateFlow<Boolean> = runtime.canvasDebugStatusEnabled
 
   val chatSessionKey: StateFlow<String> = runtime.chatSessionKey
   val chatSessionId: StateFlow<String?> = runtime.chatSessionId
@@ -76,6 +77,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
   fun setManualPort(value: Int) {
     runtime.setManualPort(value)
+  }
+
+  fun setCanvasDebugStatusEnabled(value: Boolean) {
+    runtime.setCanvasDebugStatusEnabled(value)
   }
 
   fun setWakeWords(words: List<String>) {

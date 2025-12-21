@@ -63,6 +63,10 @@ class SecurePrefs(context: Context) {
     MutableStateFlow(prefs.getString("bridge.lastDiscoveredStableId", "")!!)
   val lastDiscoveredStableId: StateFlow<String> = _lastDiscoveredStableId
 
+  private val _canvasDebugStatusEnabled =
+    MutableStateFlow(prefs.getBoolean("canvas.debugStatusEnabled", false))
+  val canvasDebugStatusEnabled: StateFlow<Boolean> = _canvasDebugStatusEnabled
+
   private val _wakeWords = MutableStateFlow(loadWakeWords())
   val wakeWords: StateFlow<List<String>> = _wakeWords
 
@@ -105,6 +109,11 @@ class SecurePrefs(context: Context) {
   fun setManualPort(value: Int) {
     prefs.edit { putInt("bridge.manual.port", value) }
     _manualPort.value = value
+  }
+
+  fun setCanvasDebugStatusEnabled(value: Boolean) {
+    prefs.edit { putBoolean("canvas.debugStatusEnabled", value) }
+    _canvasDebugStatusEnabled.value = value
   }
 
   fun loadBridgeToken(): String? {

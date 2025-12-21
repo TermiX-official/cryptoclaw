@@ -187,6 +187,10 @@ private fun CanvasView(viewModel: MainViewModel, modifier: Modifier = Modifier) 
                 "onReceivedHttpError: ${errorResponse.statusCode} ${errorResponse.reasonPhrase} ${request.url}",
               )
             }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+              viewModel.canvas.onPageFinished()
+            }
           }
         setBackgroundColor(Color.BLACK)
         setLayerType(View.LAYER_TYPE_HARDWARE, null)

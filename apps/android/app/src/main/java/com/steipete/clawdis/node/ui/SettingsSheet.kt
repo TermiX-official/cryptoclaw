@@ -64,6 +64,7 @@ fun SettingsSheet(viewModel: MainViewModel) {
   val manualEnabled by viewModel.manualEnabled.collectAsState()
   val manualHost by viewModel.manualHost.collectAsState()
   val manualPort by viewModel.manualPort.collectAsState()
+  val canvasDebugStatusEnabled by viewModel.canvasDebugStatusEnabled.collectAsState()
   val statusText by viewModel.statusText.collectAsState()
   val serverName by viewModel.serverName.collectAsState()
   val remoteAddress by viewModel.remoteAddress.collectAsState()
@@ -391,6 +392,23 @@ fun SettingsSheet(viewModel: MainViewModel) {
         headlineContent = { Text("Prevent Sleep") },
         supportingContent = { Text("Keeps the screen awake while Clawdis is open.") },
         trailingContent = { Switch(checked = preventSleep, onCheckedChange = viewModel::setPreventSleep) },
+      )
+    }
+
+    item { HorizontalDivider() }
+
+    // Debug
+    item { Text("Debug", style = MaterialTheme.typography.titleSmall) }
+    item {
+      ListItem(
+        headlineContent = { Text("Debug Canvas Status") },
+        supportingContent = { Text("Show status text in the canvas when debug is enabled.") },
+        trailingContent = {
+          Switch(
+            checked = canvasDebugStatusEnabled,
+            onCheckedChange = viewModel::setCanvasDebugStatusEnabled,
+          )
+        },
       )
     }
 

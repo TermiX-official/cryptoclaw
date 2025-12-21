@@ -11,6 +11,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import android.util.Base64
+import org.json.JSONObject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -25,6 +26,9 @@ class CanvasController {
 
   @Volatile private var webView: WebView? = null
   @Volatile private var url: String? = null
+  @Volatile private var debugStatusEnabled: Boolean = false
+  @Volatile private var debugStatusTitle: String? = null
+  @Volatile private var debugStatusSubtitle: String? = null
 
   private val scaffoldAssetUrl = "file:///android_asset/CanvasScaffold/scaffold.html"
 
@@ -36,6 +40,7 @@ class CanvasController {
   fun attach(webView: WebView) {
     this.webView = webView
     reload()
+    applyDebugStatus()
   }
 
   fun navigate(url: String) {
@@ -47,6 +52,21 @@ class CanvasController {
   fun currentUrl(): String? = url
 
   fun isDefaultCanvas(): Boolean = url == null
+
+  fun setDebugStatusEnabled(enabled: Boolean) {
+    debugStatusEnabled = enabled
+    applyDebugStatus()
+  }
+
+  fun setDebugStatus(title: String?, subtitle: String?) {
+    debugStatusTitle = title
+    debugStatusSubtitle = subtitle
+    applyDebugStatus()
+  }
+
+  fun onPageFinished() {
+    applyDebugStatus()
+  }
 
   private inline fun withWebViewOnMain(crossinline block: (WebView) -> Unit) {
     val wv = webView ?: return
@@ -65,6 +85,32 @@ class CanvasController {
       } else {
         wv.loadUrl(currentUrl)
       }
+    }
+  }
+
+  private fun applyDebugStatus() {
+    val enabled = debugStatusEnabled
+    val title = debugStatusTitle
+    val subtitle = debugStatusSubtitle
+    withWebViewOnMain { wv ->
+      val titleJs = title?.let { JSONObject.quote(it) } ?: "null"
+      val subtitleJs = subtitle?.let { JSONObject.quote(it) } ?: "null"
+      val js = """
+        (() => {
+          try {
+            const api = globalThis.__clawdis;
+            if (!api) return;
+            if (typeof api.setDebugStatusEnabled === 'function') {
+              api.setDebugStatusEnabled(${if (enabled) "true" else "false"});
+            }
+            if (!${if (enabled) "true" else "false"}) return;
+            if (typeof api.setStatus === 'function') {
+              api.setStatus($titleJs, $subtitleJs);
+            }
+          } catch (_) {}
+        })();
+      """.trimIndent()
+      wv.evaluateJavascript(js, null)
     }
   }
 

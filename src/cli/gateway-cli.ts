@@ -8,8 +8,9 @@ import {
   type GatewayWsLogStyle,
   setGatewayWsLogStyle,
 } from "../gateway/ws-logging.js";
-import { info, setVerbose } from "../globals.js";
+import { setVerbose } from "../globals.js";
 import { GatewayLockError } from "../infra/gateway-lock.js";
+import { createSubsystemLogger } from "../logging.js";
 import { defaultRuntime } from "../runtime.js";
 import { createDefaultDeps } from "./deps.js";
 import { forceFreePortAndWait } from "./ports.js";
@@ -22,6 +23,8 @@ type GatewayRpcOpts = {
   timeout?: string;
   expectFinal?: boolean;
 };
+
+const gatewayLog = createSubsystemLogger("gateway");
 
 const gatewayCallOpts = (cmd: Command) =>
   cmd
@@ -172,18 +175,16 @@ export function registerGatewayCli(program: Command) {
         process.removeListener("SIGINT", onSigint);
 
         if (shuttingDown) {
-          defaultRuntime.log(
-            info(`gateway: received ${signal} during shutdown; exiting now`),
+          gatewayLog.info(
+            `received ${signal} during shutdown; exiting now`,
           );
           defaultRuntime.exit(0);
         }
         shuttingDown = true;
-        defaultRuntime.log(info(`gateway: received ${signal}; shutting down`));
+        gatewayLog.info(`received ${signal}; shutting down`);
 
         forceExitTimer = setTimeout(() => {
-          defaultRuntime.error(
-            "gateway: shutdown timed out; exiting without full cleanup",
-          );
+          gatewayLog.error("shutdown timed out; exiting without full cleanup");
           defaultRuntime.exit(0);
         }, 5000);
 
@@ -191,7 +192,7 @@ export function registerGatewayCli(program: Command) {
           try {
             await server?.close();
           } catch (err) {
-            defaultRuntime.error(`gateway: shutdown error: ${String(err)}`);
+            gatewayLog.error(`shutdown error: ${String(err)}`);
           } finally {
             if (forceExitTimer) clearTimeout(forceExitTimer);
             defaultRuntime.exit(0);
@@ -313,23 +314,21 @@ export function registerGatewayCli(program: Command) {
               sigtermTimeoutMs: 700,
             });
           if (killed.length === 0) {
-            defaultRuntime.log(info(`Force: no listeners on port ${port}`));
+            gatewayLog.info(`force: no listeners on port ${port}`);
           } else {
             for (const proc of killed) {
-              defaultRuntime.log(
-                info(
-                  `Force: killed pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""} on port ${port}`,
-                ),
+              gatewayLog.info(
+                `force: killed pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""} on port ${port}`,
               );
             }
             if (escalatedToSigkill) {
-              defaultRuntime.log(
-                info(`Force: escalated to SIGKILL while freeing port ${port}`),
+              gatewayLog.info(
+                `force: escalated to SIGKILL while freeing port ${port}`,
               );
             }
             if (waitedMs > 0) {
-              defaultRuntime.log(
-                info(`Force: waited ${waitedMs}ms for port ${port} to free`),
+              gatewayLog.info(
+                `force: waited ${waitedMs}ms for port ${port} to free`,
               );
             }
           }
@@ -415,19 +414,17 @@ export function registerGatewayCli(program: Command) {
         process.removeListener("SIGINT", onSigint);
 
         if (shuttingDown) {
-          defaultRuntime.log(
-            info(`gateway: received ${signal} during shutdown; exiting now`),
+          gatewayLog.info(
+            `received ${signal} during shutdown; exiting now`,
           );
           defaultRuntime.exit(0);
         }
         shuttingDown = true;
-        defaultRuntime.log(info(`gateway: received ${signal}; shutting down`));
+        gatewayLog.info(`received ${signal}; shutting down`);
 
         // Avoid hanging forever if a provider task ignores abort.
         forceExitTimer = setTimeout(() => {
-          defaultRuntime.error(
-            "gateway: shutdown timed out; exiting without full cleanup",
-          );
+          gatewayLog.error("shutdown timed out; exiting without full cleanup");
           defaultRuntime.exit(0);
         }, 5000);
 
@@ -435,7 +432,7 @@ export function registerGatewayCli(program: Command) {
           try {
             await server?.close();
           } catch (err) {
-            defaultRuntime.error(`gateway: shutdown error: ${String(err)}`);
+            gatewayLog.error(`shutdown error: ${String(err)}`);
           } finally {
             if (forceExitTimer) clearTimeout(forceExitTimer);
             defaultRuntime.exit(0);

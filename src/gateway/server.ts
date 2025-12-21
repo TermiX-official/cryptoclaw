@@ -104,8 +104,12 @@ import {
   WIDE_AREA_DISCOVERY_DOMAIN,
   writeWideAreaBridgeZone,
 } from "../infra/widearea-dns.js";
-import { logError, logInfo, logWarn } from "../logger.js";
-import { getChildLogger, getResolvedLoggerSettings } from "../logging.js";
+import {
+  createSubsystemLogger,
+  getChildLogger,
+  getResolvedLoggerSettings,
+  runtimeForLogger,
+} from "../logging.js";
 import { setCommandLaneConcurrency } from "../process/command-queue.js";
 import { runExec } from "../process/exec.js";
 import { monitorWebProvider, webAuthExists } from "../providers/web/index.js";
@@ -131,6 +135,22 @@ import { buildMessageWithAttachments } from "./chat-attachments.js";
 import { handleControlUiHttpRequest } from "./control-ui.js";
 
 ensureClawdisCliOnPath();
+
+const log = createSubsystemLogger("gateway");
+const logCanvas = log.child("canvas");
+const logBridge = log.child("bridge");
+const logDiscovery = log.child("discovery");
+const logTailscale = log.child("tailscale");
+const logProviders = log.child("providers");
+const logBrowser = log.child("browser");
+const logHealth = log.child("health");
+const logCron = log.child("cron");
+const logWsControl = log.child("ws");
+const logWhatsApp = logProviders.child("whatsapp");
+const logTelegram = logProviders.child("telegram");
+const canvasRuntime = runtimeForLogger(logCanvas);
+const whatsappRuntimeEnv = runtimeForLogger(logWhatsApp);
+const telegramRuntimeEnv = runtimeForLogger(logTelegram);
 
 function resolveBonjourCliPath(): string | undefined {
   const envPath = process.env.CLAWDIS_CLI_PATH?.trim();
@@ -174,7 +194,7 @@ async function startBrowserControlServerIfEnabled(): Promise<void> {
     ? await import(override)
     : await import("../browser/server.js");
   stopBrowserControlServerIfStarted = mod.stopBrowserControlServer;
-  await mod.startBrowserControlServerFromConfig(defaultRuntime);
+  await mod.startBrowserControlServerFromConfig();
 }
 
 type GatewayModelChoice = {
@@ -544,6 +564,38 @@ const getGatewayToken = () => process.env.CLAWDIS_GATEWAY_TOKEN;
 
 function formatForLog(value: unknown): string {
   try {
+    if (value instanceof Error) {
+      const parts: string[] = [];
+      if (value.name) parts.push(value.name);
+      if (value.message) parts.push(value.message);
+      const code =
+        "code" in value && (typeof value.code === "string" || typeof value.code === "number")
+          ? String(value.code)
+          : "";
+      if (code) parts.push(`code=${code}`);
+      const combined = parts.filter(Boolean).join(": ").trim();
+      if (combined) {
+        return combined.length > LOG_VALUE_LIMIT
+          ? `${combined.slice(0, LOG_VALUE_LIMIT)}...`
+          : combined;
+      }
+    }
+    if (value && typeof value === "object") {
+      const rec = value as Record<string, unknown>;
+      if (typeof rec.message === "string" && rec.message.trim()) {
+        const name = typeof rec.name === "string" ? rec.name.trim() : "";
+        const code =
+          typeof rec.code === "string" || typeof rec.code === "number"
+            ? String(rec.code)
+            : "";
+        const parts = [name, rec.message.trim()].filter(Boolean);
+        if (code) parts.push(`code=${code}`);
+        const combined = parts.join(": ").trim();
+        return combined.length > LOG_VALUE_LIMIT
+          ? `${combined.slice(0, LOG_VALUE_LIMIT)}...`
+          : combined;
+      }
+    }
     const str =
       typeof value === "string" || typeof value === "number"
         ? String(value)
@@ -1171,19 +1223,19 @@ export async function startGatewayServer(
   if (canvasHostEnabled) {
     try {
       const handler = await createCanvasHostHandler({
-        runtime: defaultRuntime,
+        runtime: canvasRuntime,
         rootDir: cfgAtStart.canvasHost?.root,
         basePath: CANVAS_HOST_PATH,
         allowInTests: opts.allowCanvasHostInTests,
       });
       if (handler.rootDir) {
         canvasHost = handler;
-        defaultRuntime.log(
+        logCanvas.info(
           `canvas host mounted at http://${bindHost}:${port}${CANVAS_HOST_PATH}/ (root ${handler.rootDir})`,
         );
       }
     } catch (err) {
-      logWarn(`gateway: canvas host failed to start: ${String(err)}`);
+      logCanvas.warn(`canvas host failed to start: ${String(err)}`);
     }
   }
 
@@ -1361,12 +1413,10 @@ export async function startGatewayServer(
         connected: false,
         lastError: "not linked",
       };
-      defaultRuntime.log(
-        "gateway: skipping WhatsApp Web provider (no linked session)",
-      );
+      logWhatsApp.info("skipping provider start (no linked session)");
       return;
     }
-    defaultRuntime.log("gateway: starting WhatsApp Web provider");
+    logWhatsApp.info("starting provider");
     whatsappAbort = new AbortController();
     whatsappRuntime = {
       ...whatsappRuntime,
@@ -1379,7 +1429,7 @@ export async function startGatewayServer(
       undefined,
       true,
       undefined,
-      defaultRuntime,
+      whatsappRuntimeEnv,
       whatsappAbort.signal,
       { statusSink: updateWhatsAppStatus },
     )
@@ -1388,7 +1438,7 @@ export async function startGatewayServer(
           ...whatsappRuntime,
           lastError: formatError(err),
         };
-        logError(`web provider exited: ${formatError(err)}`);
+        logWhatsApp.error(`provider exited: ${formatError(err)}`);
       })
       .finally(() => {
         whatsappAbort = null;
@@ -1430,12 +1480,10 @@ export async function startGatewayServer(
         running: false,
         lastError: "not configured",
       };
-      defaultRuntime.log(
-        "gateway: skipping Telegram provider (no TELEGRAM_BOT_TOKEN/config)",
-      );
+      logTelegram.info("skipping provider start (no TELEGRAM_BOT_TOKEN/config)");
       return;
     }
-    defaultRuntime.log("gateway: starting Telegram provider");
+    logTelegram.info("starting provider");
     telegramAbort = new AbortController();
     telegramRuntime = {
       ...telegramRuntime,
@@ -1446,7 +1494,7 @@ export async function startGatewayServer(
     };
     const task = monitorTelegramProvider({
       token: telegramToken.trim(),
-      runtime: defaultRuntime,
+      runtime: telegramRuntimeEnv,
       abortSignal: telegramAbort.signal,
       useWebhook: Boolean(cfg.telegram?.webhookUrl),
       webhookUrl: cfg.telegram?.webhookUrl,
@@ -1458,7 +1506,7 @@ export async function startGatewayServer(
           ...telegramRuntime,
           lastError: formatError(err),
         };
-        logError(`telegram provider exited: ${formatError(err)}`);
+        logTelegram.error(`provider exited: ${formatError(err)}`);
       })
       .finally(() => {
         telegramAbort = null;
@@ -1596,7 +1644,7 @@ export async function startGatewayServer(
   if (canvasHostEnabled && bridgeEnabled && bridgeHost) {
     try {
       const started = await startCanvasHost({
-        runtime: defaultRuntime,
+        runtime: canvasRuntime,
         rootDir: cfgAtStart.canvasHost?.root,
         port: canvasHostPort,
         listenHost: bridgeHost,
@@ -1606,8 +1654,8 @@ export async function startGatewayServer(
         canvasHostServer = started;
       }
     } catch (err) {
-      logWarn(
-        `gateway: canvas host failed to start on ${bridgeHost}:${canvasHostPort}: ${String(err)}`,
+      logCanvas.warn(
+        `failed to start on ${bridgeHost}:${canvasHostPort}: ${String(err)}`,
       );
     }
   }
@@ -2266,7 +2314,7 @@ export async function startGatewayServer(
           defaultRuntime,
           deps,
         ).catch((err) => {
-          logWarn(`bridge: agent failed node=${nodeId}: ${formatForLog(err)}`);
+          logBridge.warn(`agent failed node=${nodeId}: ${formatForLog(err)}`);
         });
         return;
       }
@@ -2341,7 +2389,7 @@ export async function startGatewayServer(
           defaultRuntime,
           deps,
         ).catch((err) => {
-          logWarn(`bridge: agent failed node=${nodeId}: ${formatForLog(err)}`);
+          logBridge.warn(`agent failed node=${nodeId}: ${formatForLog(err)}`);
         });
         return;
       }
@@ -2484,16 +2532,16 @@ export async function startGatewayServer(
       });
       if (started.port > 0) {
         bridge = started;
-        defaultRuntime.log(
-          `bridge listening on tcp://${bridgeHost}:${bridge.port} (node)`,
+        logBridge.info(
+          `listening on tcp://${bridgeHost}:${bridge.port} (node)`,
         );
       }
     } catch (err) {
-      logWarn(`gateway: bridge failed to start: ${String(err)}`);
+      logBridge.warn(`failed to start: ${String(err)}`);
     }
   } else if (bridgeEnabled && bridgePort > 0 && !bridgeHost) {
-    logWarn(
-      "gateway: bridge bind policy requested tailnet IP, but no tailnet interface was found; refusing to start bridge",
+    logBridge.warn(
+      "bind policy requested tailnet IP, but no tailnet interface was found; refusing to start bridge",
     );
   }
 
@@ -2518,14 +2566,14 @@ export async function startGatewayServer(
     });
     bonjourStop = bonjour.stop;
   } catch (err) {
-    logWarn(`gateway: bonjour advertising failed: ${String(err)}`);
+    logDiscovery.warn(`bonjour advertising failed: ${String(err)}`);
   }
 
   if (wideAreaDiscoveryEnabled && bridge?.port) {
     const tailnetIPv4 = pickPrimaryTailnetIPv4();
     if (!tailnetIPv4) {
-      logWarn(
-        "gateway: discovery.wideArea.enabled is true, but no Tailscale IPv4 address was found; skipping unicast DNS-SD zone update",
+      logDiscovery.warn(
+        "discovery.wideArea.enabled is true, but no Tailscale IPv4 address was found; skipping unicast DNS-SD zone update",
       );
     } else {
       try {
@@ -2537,11 +2585,13 @@ export async function startGatewayServer(
           tailnetIPv6: tailnetIPv6 ?? undefined,
           tailnetDns,
         });
-        defaultRuntime.log(
-          `discovery: wide-area DNS-SD ${result.changed ? "updated" : "unchanged"} (${WIDE_AREA_DISCOVERY_DOMAIN} → ${result.zonePath})`,
+        logDiscovery.info(
+          `wide-area DNS-SD ${result.changed ? "updated" : "unchanged"} (${WIDE_AREA_DISCOVERY_DOMAIN} → ${result.zonePath})`,
         );
       } catch (err) {
-        logWarn(`gateway: wide-area discovery update failed: ${String(err)}`);
+        logDiscovery.warn(
+          `wide-area discovery update failed: ${String(err)}`,
+        );
       }
     }
   }
@@ -2563,13 +2613,13 @@ export async function startGatewayServer(
   // periodic health refresh to keep cached snapshot warm
   const healthInterval = setInterval(() => {
     void refreshHealthSnapshot({ probe: true }).catch((err) =>
-      logError(`health refresh failed: ${formatError(err)}`),
+      logHealth.error(`refresh failed: ${formatError(err)}`),
     );
   }, HEALTH_REFRESH_INTERVAL_MS);
 
   // Prime cache so first client gets a snapshot without waiting.
   void refreshHealthSnapshot({ probe: true }).catch((err) =>
-    logError(`initial health refresh failed: ${formatError(err)}`),
+    logHealth.error(`initial refresh failed: ${formatError(err)}`),
   );
 
   // dedupe cache cleanup
@@ -2676,7 +2726,7 @@ export async function startGatewayServer(
 
   void cron
     .start()
-    .catch((err) => logError(`cron failed to start: ${String(err)}`));
+    .catch((err) => logCron.error(`failed to start: ${String(err)}`));
 
   wss.on("connection", (socket, upgradeReq) => {
     let client: Client | null = null;
@@ -2722,19 +2772,19 @@ export async function startGatewayServer(
     };
 
     socket.once("error", (err) => {
-      logWarn(
-        `[gws] error conn=${connId} remote=${remoteAddr ?? "?"}: ${formatError(err)}`,
+      logWsControl.warn(
+        `error conn=${connId} remote=${remoteAddr ?? "?"}: ${formatError(err)}`,
       );
       close();
     });
     socket.once("close", (code, reason) => {
       if (!client) {
-        logWarn(
-          `[gws] closed before connect conn=${connId} remote=${remoteAddr ?? "?"} code=${code ?? "n/a"} reason=${reason?.toString() || "n/a"}`,
+        logWsControl.warn(
+          `closed before connect conn=${connId} remote=${remoteAddr ?? "?"} code=${code ?? "n/a"} reason=${reason?.toString() || "n/a"}`,
         );
       }
       if (client && isWebchatConnect(client.connect)) {
-        logInfo(
+        logWsControl.info(
           `webchat disconnected code=${code} reason=${reason?.toString() || "n/a"} conn=${connId}`,
         );
       }
@@ -2763,8 +2813,8 @@ export async function startGatewayServer(
 
     const handshakeTimer = setTimeout(() => {
       if (!client) {
-        logWarn(
-          `[gws] handshake timeout conn=${connId} remote=${remoteAddr ?? "?"}`,
+        logWsControl.warn(
+          `handshake timeout conn=${connId} remote=${remoteAddr ?? "?"}`,
         );
         close();
       }
@@ -2797,8 +2847,8 @@ export async function startGatewayServer(
                 ),
               });
             } else {
-              logWarn(
-                `[gws] invalid handshake conn=${connId} remote=${remoteAddr ?? "?"}`,
+              logWsControl.warn(
+                `invalid handshake conn=${connId} remote=${remoteAddr ?? "?"}`,
               );
             }
             socket.close(1008, "invalid handshake");
@@ -2815,8 +2865,8 @@ export async function startGatewayServer(
             maxProtocol < PROTOCOL_VERSION ||
             minProtocol > PROTOCOL_VERSION
           ) {
-            logWarn(
-              `[gws] protocol mismatch conn=${connId} remote=${remoteAddr ?? "?"} client=${connectParams.client.name} ${connectParams.client.mode} v${connectParams.client.version}`,
+            logWsControl.warn(
+              `protocol mismatch conn=${connId} remote=${remoteAddr ?? "?"} client=${connectParams.client.name} ${connectParams.client.mode} v${connectParams.client.version}`,
             );
             send({
               type: "res",
@@ -2841,8 +2891,8 @@ export async function startGatewayServer(
             req: upgradeReq,
           });
           if (!authResult.ok) {
-            logWarn(
-              `[gws] unauthorized conn=${connId} remote=${remoteAddr ?? "?"} client=${connectParams.client.name} ${connectParams.client.mode} v${connectParams.client.version}`,
+            logWsControl.warn(
+              `unauthorized conn=${connId} remote=${remoteAddr ?? "?"} client=${connectParams.client.name} ${connectParams.client.mode} v${connectParams.client.version}`,
             );
             send({
               type: "res",
@@ -2872,7 +2922,7 @@ export async function startGatewayServer(
           });
 
           if (isWebchatConnect(connectParams)) {
-            logInfo(
+            logWsControl.info(
               `webchat connected conn=${connId} remote=${remoteAddr ?? "?"} client=${connectParams.client.name} ${connectParams.client.mode} v${connectParams.client.version}`,
             );
           }
@@ -2934,7 +2984,9 @@ export async function startGatewayServer(
 
           clients.add(client);
           void refreshHealthSnapshot({ probe: true }).catch((err) =>
-            logError(`post-connect health refresh failed: ${formatError(err)}`),
+            logHealth.error(
+              `post-connect health refresh failed: ${formatError(err)}`,
+            ),
           );
           return;
         }
@@ -3035,7 +3087,7 @@ export async function startGatewayServer(
               if (cached && now - cached.ts < HEALTH_REFRESH_INTERVAL_MS) {
                 respond(true, cached, undefined, { cached: true });
                 void refreshHealthSnapshot({ probe: false }).catch((err) =>
-                  logError(
+                  logHealth.error(
                     `background health refresh failed: ${formatError(err)}`,
                   ),
                 );
@@ -4933,7 +4985,7 @@ export async function startGatewayServer(
             }
           }
         })().catch((err) => {
-          logError(`gateway: request handler failed: ${formatForLog(err)}`);
+          log.error(`request handler failed: ${formatForLog(err)}`);
           respond(
             false,
             undefined,
@@ -4941,7 +4993,7 @@ export async function startGatewayServer(
           );
         });
       } catch (err) {
-        logError(`gateway: parse/handle error: ${String(err)}`);
+        log.error(`parse/handle error: ${String(err)}`);
         logWs("out", "parse-error", { connId, error: formatForLog(err) });
         // If still in handshake, close; otherwise respond error
         if (!client) {
@@ -4951,10 +5003,8 @@ export async function startGatewayServer(
     });
   });
 
-  defaultRuntime.log(
-    `gateway listening on ws://${bindHost}:${port} (PID ${process.pid})`,
-  );
-  defaultRuntime.log(`gateway log file: ${getResolvedLoggerSettings().file}`);
+  log.info(`listening on ws://${bindHost}:${port} (PID ${process.pid})`);
+  log.info(`log file: ${getResolvedLoggerSettings().file}`);
   let tailscaleCleanup: (() => Promise<void>) | null = null;
   if (tailscaleMode !== "off") {
     try {
@@ -4965,15 +5015,15 @@ export async function startGatewayServer(
       }
       const host = await getTailnetHostname().catch(() => null);
       if (host) {
-        logInfo(
-          `tailscale ${tailscaleMode} enabled: https://${host}/ui/ (WS via wss://${host})`,
+        logTailscale.info(
+          `${tailscaleMode} enabled: https://${host}/ui/ (WS via wss://${host})`,
         );
       } else {
-        logInfo(`tailscale ${tailscaleMode} enabled`);
+        logTailscale.info(`${tailscaleMode} enabled`);
       }
     } catch (err) {
-      logWarn(
-        `tailscale ${tailscaleMode} failed: ${err instanceof Error ? err.message : String(err)}`,
+      logTailscale.warn(
+        `${tailscaleMode} failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     if (tailscaleConfig.resetOnExit) {
@@ -4985,8 +5035,8 @@ export async function startGatewayServer(
             await disableTailscaleFunnel();
           }
         } catch (err) {
-          logWarn(
-            `tailscale ${tailscaleMode} cleanup failed: ${err instanceof Error ? err.message : String(err)}`,
+          logTailscale.warn(
+            `${tailscaleMode} cleanup failed: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
       };
@@ -4995,7 +5045,7 @@ export async function startGatewayServer(
 
   // Start clawd browser control server (unless disabled via config).
   void startBrowserControlServerIfEnabled().catch((err) => {
-    logError(`gateway: clawd browser server failed to start: ${String(err)}`);
+    logBrowser.error(`server failed to start: ${String(err)}`);
   });
 
   // Launch configured providers (WhatsApp Web, Telegram) so gateway replies via the
@@ -5003,9 +5053,7 @@ export async function startGatewayServer(
   if (process.env.CLAWDIS_SKIP_PROVIDERS !== "1") {
     void startProviders();
   } else {
-    defaultRuntime.log(
-      "gateway: skipping provider start (CLAWDIS_SKIP_PROVIDERS=1)",
-    );
+    logProviders.info("skipping provider start (CLAWDIS_SKIP_PROVIDERS=1)");
   }
 
   return {

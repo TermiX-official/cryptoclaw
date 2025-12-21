@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.0.0-beta2 — 2025-12-21
+
+Second beta focused on bundled gateway packaging, skills management, onboarding polish, and provider reliability.
+
+### Highlights
+- Bundled gateway packaging: bun-compiled embedded gateway, new `gateway-daemon` command, launchd support, DMG packaging (zip+DMG).
+- Skills platform: managed/bundled skills, install metadata + installers (uv), skill search + website, media/transcription helpers.
+- macOS app: new Connections settings w/ provider status + QR login, skills settings redesign w/ install targets, models list loaded from the Gateway, clearer local/remote gateway choices.
+- Web/agent UX: tool summary streaming + runtime toggle, WhatsApp QR login tool, agent steering queue, voice wake routes to main session, workspace bootstrap ritual.
+
+### Gateway & providers
+- Gateway: `models.list`, provider status events + RPC coverage, tailscale auth + PAM, bind-mode config, enriched agent WS logs, safer upgrade socket handling, fixed handshake auth crash.
+- WhatsApp Web: QR login flow improvements (logged-out clearing, wait flow), self-chat mode handling, removed batching delay, web inbox made non-blocking.
+- Telegram: normalized chat IDs with clearer error reporting.
+
+### Canvas & browser control
+- Canvas host served on Gateway port; removed standalone canvasHost port config; restored action bridge; refreshed A2UI bundle + message context; bridge canvas host for nodes.
+- Browser control API simplified; added MCP tool dispatch + native actions; control server can start without Playwright; hook timeouts extended.
+
+### macOS UI polish
+- Onboarding chat UI: kickoff flow, bubble tails, spacing + bottom bar refinements, window sizing tweaks, show Dock icon during onboarding.
+- Skills UI: stabilized action column, fixed install target access, refined list layout and sizing, always show CLI installer.
+- Remote/local gateway: auto-enable local gateway, clearer labels, re-ensure remote tunnel, hide local bridge discovery in remote mode.
+
+### Build, CI, deps
+- Bundled playwright-core + chromium-bidi/long; bun gateway bytecode builds; swiftformat/biome CI fixes; iOS lint script updates; Android icon/compiler updates; ignored new ClawdisKit `.swiftpm` path.
+
+### Docs
+- README architecture refresh + npm header image fix; onboarding/bootstrap steps; skills install guidance + new skills; browser/canvas control docs; bundled gateway + DMG packaging notes.
+
 ## 2.0.0-beta1 — 2025-12-19
 
 First Clawdis release post rebrand. This is a semver-major because we dropped legacy providers/agents and moved defaults to new paths while adding a full macOS companion app, a WebSocket Gateway, and an iOS node.

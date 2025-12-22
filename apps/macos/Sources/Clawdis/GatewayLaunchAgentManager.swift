@@ -36,7 +36,9 @@ enum GatewayLaunchAgentManager {
                     ? "Failed to bootstrap gateway launchd job"
                     : bootstrap.output.trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            _ = await self.runLaunchctl(["kickstart", "-k", "gui/\(getuid())/\(gatewayLaunchdLabel)"])
+            // Note: removed redundant `kickstart -k` that caused race condition.
+            // bootstrap already starts the job; kickstart -k would kill it immediately
+            // and with KeepAlive=true, cause a restart loop with port conflicts.
             return nil
         }
 

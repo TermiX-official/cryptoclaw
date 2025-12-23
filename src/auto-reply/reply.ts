@@ -243,6 +243,9 @@ export async function getReplyFromConfig(
   let persistedThinking: string | undefined;
   let persistedVerbose: string | undefined;
 
+  const isGroup =
+    typeof ctx.From === "string" &&
+    (ctx.From.includes("@g.us") || ctx.From.startsWith("group:"));
   const triggerBodyNormalized = stripStructuralPrefixes(ctx.Body ?? "")
     .trim()
     .toLowerCase();
@@ -252,7 +255,9 @@ export async function getReplyFromConfig(
   // Timestamp/message prefixes (e.g. "[Dec 4 17:35] ") are added by the
   // web inbox before we get here. They prevented reset triggers like "/new"
   // from matching, so strip structural wrappers when checking for resets.
-  const strippedForReset = triggerBodyNormalized;
+  const strippedForReset = isGroup
+    ? stripMentions(triggerBodyNormalized, ctx, cfg)
+    : triggerBodyNormalized;
   for (const trigger of resetTriggers) {
     if (!trigger) continue;
     if (trimmedBody === trigger || strippedForReset === trigger) {
@@ -330,10 +335,6 @@ export async function getReplyFromConfig(
     const requireMention = cfg.inbound?.groupChat?.requireMention;
     return requireMention === false ? "always" : "mention";
   };
-
-  const isGroup =
-    typeof ctx.From === "string" &&
-    (ctx.From.includes("@g.us") || ctx.From.startsWith("group:"));
 
   let resolvedThinkLevel =
     inlineThink ??

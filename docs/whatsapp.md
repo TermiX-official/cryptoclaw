@@ -1,0 +1,121 @@
+---
+summary: "WhatsApp (web provider) integration: login, inbox, replies, media, and ops"
+read_when:
+  - Working on WhatsApp/web provider behavior or inbox routing
+---
+# WhatsApp (web provider)
+
+Updated: 2025-12-23
+
+Status: WhatsApp Web via Baileys only. Gateway owns the single session.
+
+## Goals
+- One WhatsApp identity, one gateway session.
+- Deterministic routing: replies return to WhatsApp, no model routing.
+- Model sees enough context to understand quoted replies.
+
+## Architecture (who owns what)
+- **Gateway** owns the Baileys socket and inbox loop.
+- **CLI / macOS app** talk to the gateway; no direct Baileys use.
+- **Active listener** is required for outbound sends; otherwise send fails fast.
+
+## Login + credentials
+- Login command: `clawdis login` (QR via Linked Devices).
+- Credentials stored in `~/.clawdis/credentials/creds.json`.
+- Backup copy at `creds.json.bak` (restored on corruption).
+- Logout: `clawdis logout` deletes creds and session store.
+- Logged-out socket => error instructs re-link.
+
+## Inbound flow (DM + group)
+- WhatsApp events come from `messages.upsert` (Baileys).
+- Status/broadcast chats are ignored.
+- Direct chats use E.164; groups use group JID.
+- **Allowlist**: `inbound.allowFrom` enforced for direct chats only.
+  - If allowFrom is empty, default allowlist = self number (self-chat mode).
+- **Self-chat mode**: avoids auto read receipts and ignores mention JIDs.
+- Read receipts sent for non-self-chat DMs.
+
+## Message normalization (what the model sees)
+- `Body` is the current message body with envelope.
+- Quoted reply context is **always appended**:
+  ```
+  [Replying to +1555]
+  <quoted text or <media:...>>
+  [/Replying]
+  ```
+- Reply metadata also set:
+  - `ReplyToId` = stanzaId
+  - `ReplyToBody` = quoted body or media placeholder
+  - `ReplyToSender` = E.164 when known
+- Media-only inbound messages use placeholders:
+  - `<media:image|video|audio|document|sticker>`
+
+## Groups
+- Groups map to `group:<jid>` sessions.
+- Activation modes:
+  - `mention` (default): requires @mention or regex match.
+  - `always`: always triggers.
+- `/activation mention|always` is owner-only.
+- Owner = `inbound.allowFrom` (or self E.164 if unset).
+- **History injection**:
+  - Recent messages (default 50) inserted under:
+    `[Chat messages since your last reply - for context]`
+  - Current message under:
+    `[Current message - respond to this]`
+  - Sender suffix appended: `[from: Name (+E164)]`
+- Group metadata cached 5 min (subject + participants).
+
+## Reply delivery (threading)
+- Outbound replies are sent as **native replies** (quoted message).
+- Model does not need IDs for threading; gateway attaches quote.
+
+## Outbound send (text + media)
+- Uses active web listener; error if gateway not running.
+- Text chunking: 4k max per message.
+- Media:
+  - Image/video/audio/document supported.
+  - Audio sent as PTT; `audio/ogg` => `audio/ogg; codecs=opus`.
+  - Caption only on first media item.
+  - Media fetch supports HTTP(S) and local paths.
+
+## Media limits + optimization
+- Default cap: 5 MB (per media item).
+- Override: `inbound.agent.mediaMaxMb`.
+- Images are auto-optimized to JPEG under cap (resize + quality sweep).
+- Oversize media => error; media reply falls back to text warning.
+
+## Heartbeats
+- **Gateway heartbeat** logs connection health (`web.heartbeatSeconds`, default 60s).
+- **Reply heartbeat** asks agent on a timer (`inbound.agent.heartbeatMinutes`).
+  - Uses `HEARTBEAT` prompt + `HEARTBEAT_TOKEN` skip behavior.
+  - Skips if queue busy or last inbound was a group.
+  - Falls back to last direct recipient if needed.
+
+## Reconnect behavior
+- Backoff policy: `web.reconnect`:
+  - `initialMs`, `maxMs`, `factor`, `jitter`, `maxAttempts`.
+- If maxAttempts reached, web monitoring stops (degraded).
+- Logged-out => stop and require re-link.
+
+## Config quick map
+- `inbound.allowFrom` (DM allowlist).
+- `inbound.groupChat.mentionPatterns`
+- `inbound.groupChat.historyLimit`
+- `inbound.messagePrefix` (inbound prefix)
+- `inbound.responsePrefix` (outbound prefix)
+- `inbound.agent.mediaMaxMb`
+- `inbound.agent.heartbeatMinutes`
+- `inbound.session.*` (scope, idle, store, mainKey)
+- `web.heartbeatSeconds`
+- `web.reconnect.*`
+
+## Logs + troubleshooting
+- Subsystems: `whatsapp/inbound`, `whatsapp/outbound`, `web-heartbeat`, `web-reconnect`.
+- Log file: `/tmp/clawdis/clawdis-YYYY-MM-DD.log` (configurable).
+- Troubleshooting guide: `docs/refactor/web-gateway-troubleshooting.md`.
+
+## Tests
+- `src/web/auto-reply.test.ts` (mention gating, history injection, reply flow)
+- `src/web/monitor-inbox.test.ts` (inbound parsing + reply context)
+- `src/web/outbound.test.ts` (send mapping + media)
+

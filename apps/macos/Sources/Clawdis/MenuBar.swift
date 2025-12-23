@@ -338,7 +338,7 @@ final class UpdateStatus {
 import Sparkle
 
 @MainActor
-final class SparkleUpdaterController: NSObject, UpdaterProviding, SPUUpdaterDelegate {
+final class SparkleUpdaterController: NSObject, UpdaterProviding {
     private lazy var controller = SPUStandardUpdaterController(
         startingUpdater: false,
         updaterDelegate: self,
@@ -397,6 +397,9 @@ final class SparkleUpdaterController: NSObject, UpdaterProviding, SPUUpdaterDele
         }
     }
 }
+
+@MainActor
+extension SparkleUpdaterController: SPUUpdaterDelegate {}
 
 private func isDeveloperIDSigned(bundleURL: URL) -> Bool {
     var staticCode: SecStaticCode?

@@ -25,6 +25,7 @@
 - Streamed `<think>` segments are stripped before partial replies are emitted.
 - System prompt now tags allowlisted owner numbers as the user identity to avoid mistaken “friend” assumptions.
 - LM Studio/Ollama replies now require <final> tags; streaming ignores content until <final> begins.
+- UI perf: pause repeat animations when scenes are inactive (typing dots, onboarding glow, iOS status pulse), throttle voice overlay level updates, and reduce overlay focus churn.
 - Canvas defaults/A2UI auto-nav aligned; debug status overlay centered; redundant await removed in `CanvasManager`.
 - Gateway launchd loop fixed by removing redundant `kickstart -k`.
 - CLI now hints when Peekaboo is unauthorized.

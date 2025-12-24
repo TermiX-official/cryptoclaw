@@ -1,5 +1,6 @@
 import AppKit
 import QuartzCore
+import SwiftUI
 
 extension VoiceWakeOverlayController {
     private func present() {

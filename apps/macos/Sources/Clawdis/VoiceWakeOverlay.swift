@@ -18,7 +18,7 @@ final class VoiceWakeOverlayController {
 
     enum Source: String { case wakeWord, pushToTalk }
 
-    private(set) var model = Model()
+    var model = Model()
     var isVisible: Bool { self.model.isVisible }
 
     struct Model {

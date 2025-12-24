@@ -189,6 +189,14 @@ Browser control (optional):
 - [`docs/discovery.md`](docs/discovery.md)
 - [`docs/agent.md`](docs/agent.md)
 - Webhooks + external triggers: [`docs/webhook.md`](docs/webhook.md)
+- Gmail hooks (email → wake): [`docs/gmail-pubsub.md`](docs/gmail-pubsub.md)
+
+## Email hooks (Gmail)
+
+```bash
+clawdis hooks gmail setup --account you@gmail.com
+clawdis hooks gmail run
+```
 - [`docs/security.md`](docs/security.md)
 - [`docs/troubleshooting.md`](docs/troubleshooting.md)
 - [`docs/ios/connect.md`](docs/ios/connect.md)

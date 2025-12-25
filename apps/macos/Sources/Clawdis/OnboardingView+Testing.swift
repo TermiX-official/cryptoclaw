@@ -18,7 +18,7 @@ extension OnboardingView {
             isLocal: false)
         discovery.gateways = [gateway]
 
-        var view = OnboardingView(
+        let view = OnboardingView(
             state: state,
             permissionMonitor: PermissionMonitor.shared,
             discoveryModel: discovery)

@@ -99,7 +99,7 @@ extension CronSettings {
         store.selectedJobId = job.id
         store.runEntries = [run]
 
-        var view = CronSettings(store: store)
+        let view = CronSettings(store: store)
         _ = view.body
         _ = view.jobRow(job)
         _ = view.jobContextMenu(job)

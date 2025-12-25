@@ -662,7 +662,7 @@ extension GeneralSettings {
         state.remoteProjectRoot = "/tmp/clawdis"
         state.remoteCliPath = "/tmp/clawdis"
 
-        var view = GeneralSettings(state: state)
+        let view = GeneralSettings(state: state)
         view.gatewayStatus = GatewayEnvironmentStatus(
             kind: .ok,
             nodeVersion: "1.0.0",

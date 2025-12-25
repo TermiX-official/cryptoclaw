@@ -878,7 +878,7 @@ struct DebugSettings_Previews: PreviewProvider {
 @MainActor
 extension DebugSettings {
     static func exerciseForTesting() async {
-        var view = DebugSettings()
+        let view = DebugSettings()
         view.modelsCount = 3
         view.modelsLoading = false
         view.modelsError = "Failed to load models"

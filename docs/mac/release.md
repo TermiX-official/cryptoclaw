@@ -49,28 +49,12 @@ ditto -c -k --keepParent apps/macos/.build/release/Clawdis.app.dSYM dist/Clawdis
 ```
 
 ## Appcast entry
-1. Generate the ed25519 signature (requires `SPARKLE_PRIVATE_KEY_FILE`):
-   ```bash
-   SPARKLE_PRIVATE_KEY_FILE=/Users/steipete/Library/CloudStorage/Dropbox/Backup/Sparkle/ed25519-private-key \
-   apps/macos/.build/artifacts/sparkle/Sparkle/bin/sign_update dist/Clawdis-0.1.0.zip
-   ```
-   Copy the reported signature and file size.
-2. Edit `appcast.xml` (root of repo), add a new `<item>` at the top pointing to the GitHub release asset. Example snippet to adapt:
-   ```xml
-   <item>
-     <title>Clawdis 0.1.0</title>
-     <sparkle:releaseNotesLink>https://github.com/steipete/clawdis/releases/tag/v0.1.0</sparkle:releaseNotesLink>
-     <pubDate>Sun, 07 Dec 2025 12:00:00 +0000</pubDate>
-     <enclosure url="https://github.com/steipete/clawdis/releases/download/v0.1.0/Clawdis-0.1.0.zip"
-                sparkle:edSignature="<signature from sign_update>"
-                sparkle:version="0.1.0"
-                sparkle:shortVersionString="0.1.0"
-                length="<zip byte size>"
-                type="application/octet-stream" />
-   </item>
-   ```
-   Keep the newest item first; leave the channel metadata intact.
-3. Commit the updated `appcast.xml` alongside the release assets (zip + dSYM) when publishing.
+Use the release note generator so Sparkle renders formatted HTML notes:
+```bash
+SPARKLE_PRIVATE_KEY_FILE=/Users/steipete/Library/CloudStorage/Dropbox/Backup/Sparkle/ed25519-private-key scripts/make_appcast.sh dist/Clawdis-0.1.0.zip   https://raw.githubusercontent.com/steipete/clawdis/main/appcast.xml
+```
+Generates HTML release notes from `CHANGELOG.md` (via `scripts/changelog-to-html.sh`) and embeds them in the appcast entry.
+Commit the updated `appcast.xml` alongside the release assets (zip + dSYM) when publishing.
 
 ## Publish & verify
 - Upload `Clawdis-0.1.0.zip` (and `Clawdis-0.1.0.dSYM.zip`) to the GitHub release for tag `v0.1.0`.

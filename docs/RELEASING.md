@@ -32,7 +32,7 @@ Use `pnpm` (Node 22+) from the repo root. Keep the working tree clean before tag
 
 5) **macOS app (Sparkle)**
 - [ ] Build + sign the macOS app, then zip it for distribution.
-- [ ] Generate the Sparkle signature and update `appcast.xml`.
+- [ ] Generate the Sparkle appcast (HTML notes via `scripts/make_appcast.sh`) and update `appcast.xml`.
 - [ ] Keep the app zip (and optional dSYM zip) ready to attach to the GitHub release.
 - [ ] Follow `docs/mac/release.md` for the exact commands and required env vars.
 

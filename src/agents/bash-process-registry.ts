@@ -79,12 +79,17 @@ export function appendOutput(
 ) {
   session.pendingStdout ??= [];
   session.pendingStderr ??= [];
-  const buffer = stream === "stdout" ? session.pendingStdout : session.pendingStderr;
+  const buffer =
+    stream === "stdout" ? session.pendingStdout : session.pendingStderr;
   buffer.push(chunk);
   session.totalOutputChars += chunk.length;
-  const aggregated = trimWithCap(session.aggregated + chunk, session.maxOutputChars);
+  const aggregated = trimWithCap(
+    session.aggregated + chunk,
+    session.maxOutputChars,
+  );
   session.truncated =
-    session.truncated || aggregated.length < session.aggregated.length + chunk.length;
+    session.truncated ||
+    aggregated.length < session.aggregated.length + chunk.length;
   session.aggregated = aggregated;
   session.tail = tail(session.aggregated, 2000);
 }
@@ -175,6 +180,9 @@ function pruneFinishedSessions() {
 
 function startSweeper() {
   if (sweeper) return;
-  sweeper = setInterval(pruneFinishedSessions, Math.max(30_000, JOB_TTL_MS / 6));
+  sweeper = setInterval(
+    pruneFinishedSessions,
+    Math.max(30_000, JOB_TTL_MS / 6),
+  );
   sweeper.unref?.();
 }

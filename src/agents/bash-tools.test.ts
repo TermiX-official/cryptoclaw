@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { bashTool, processTool } from "./bash-tools.js";
 import { resetProcessRegistryForTests } from "./bash-process-registry.js";
+import { bashTool, processTool } from "./bash-tools.js";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,7 +49,9 @@ describe("bash tool backgrounding", () => {
     const sessionId = (result.details as { sessionId: string }).sessionId;
 
     const list = await processTool.execute("call2", { action: "list" });
-    const sessions = (list.details as { sessions: Array<{ sessionId: string }> }).sessions;
+    const sessions = (
+      list.details as { sessions: Array<{ sessionId: string }> }
+    ).sessions;
     expect(sessions.some((s) => s.sessionId === sessionId)).toBe(true);
   });
 });

@@ -1,8 +1,8 @@
+import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-ai";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
-import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
 
 import {
   addSession,
@@ -16,7 +16,11 @@ import {
   markBackgrounded,
   markExited,
 } from "./bash-process-registry.js";
-import { getShellConfig, killProcessTree, sanitizeBinaryOutput } from "./shell-utils.js";
+import {
+  getShellConfig,
+  killProcessTree,
+  sanitizeBinaryOutput,
+} from "./shell-utils.js";
 
 const CHUNK_LIMIT = 8 * 1024;
 const DEFAULT_YIELD_MS = clampNumber(
@@ -79,7 +83,7 @@ export const bashTool: AgentTool<typeof bashSchema, BashToolDetails> = {
   description:
     "Execute bash with background continuation. Use yieldMs/background to continue later via process tool.",
   parameters: bashSchema,
-  execute: async (toolCallId, args, signal, onUpdate) => {
+  execute: async (_toolCallId, args, signal, onUpdate) => {
     const params = args as {
       command: string;
       workdir?: string;
@@ -106,12 +110,13 @@ export const bashTool: AgentTool<typeof bashSchema, BashToolDetails> = {
     const workdir = params.workdir?.trim() || process.cwd();
 
     const { shell, args: shellArgs } = getShellConfig();
+    const env = params.env ?? {};
     const child: ChildProcessWithoutNullStreams = spawn(
       shell,
       [...shellArgs, params.command],
       {
         cwd: workdir,
-        env: { ...process.env, ...(params.env ?? {}) },
+        env: { ...process.env, ...env },
         detached: true,
         stdio: ["pipe", "pipe", "pipe"],
       },
@@ -243,8 +248,11 @@ export const bashTool: AgentTool<typeof bashSchema, BashToolDetails> = {
         if (timeoutTimer) clearTimeout(timeoutTimer);
         const durationMs = Date.now() - startedAt;
         const wasSignal = exitSignal != null;
-        const isSuccess = code === 0 && !wasSignal && !signal?.aborted && !timedOut;
-        const status: "completed" | "failed" = isSuccess ? "completed" : "failed";
+        const isSuccess =
+          code === 0 && !wasSignal && !signal?.aborted && !timedOut;
+        const status: "completed" | "failed" = isSuccess
+          ? "completed"
+          : "failed";
         markExited(session, code, exitSignal, status);
 
         if (yielded || session.backgrounded) return;
@@ -352,7 +360,10 @@ export const processTool: AgentTool<typeof processSchema> = {
         );
       return {
         content: [
-          { type: "text", text: lines.join("\n") || "No running or recent sessions." },
+          {
+            type: "text",
+            text: lines.join("\n") || "No running or recent sessions.",
+          },
         ],
         details: { status: "completed", sessions: [...running, ...finished] },
       };
@@ -360,7 +371,9 @@ export const processTool: AgentTool<typeof processSchema> = {
 
     if (!params.sessionId) {
       return {
-        content: [{ type: "text", text: "sessionId is required for this action." }],
+        content: [
+          { type: "text", text: "sessionId is required for this action." },
+        ],
         details: { status: "failed" },
       };
     }
@@ -389,7 +402,8 @@ export const processTool: AgentTool<typeof processSchema> = {
                 },
               ],
               details: {
-                status: finished.status === "completed" ? "completed" : "failed",
+                status:
+                  finished.status === "completed" ? "completed" : "failed",
                 sessionId: params.sessionId,
                 exitCode: finished.exitCode ?? undefined,
                 aggregated: finished.aggregated,
@@ -398,7 +412,10 @@ export const processTool: AgentTool<typeof processSchema> = {
           }
           return {
             content: [
-              { type: "text", text: `No session found for ${params.sessionId}` },
+              {
+                type: "text",
+                text: `No session found for ${params.sessionId}`,
+              },
             ],
             details: { status: "failed" },
           };
@@ -421,7 +438,12 @@ export const processTool: AgentTool<typeof processSchema> = {
         if (exited) {
           const status =
             exitCode === 0 && exitSignal == null ? "completed" : "failed";
-          markExited(session, session.exitCode ?? null, session.exitSignal ?? null, status);
+          markExited(
+            session,
+            session.exitCode ?? null,
+            session.exitSignal ?? null,
+            status,
+          );
         }
         const status = exited
           ? exitCode === 0 && exitSignal == null
@@ -470,9 +492,7 @@ export const processTool: AgentTool<typeof processSchema> = {
           const total = session.aggregated.length;
           const slice = session.aggregated.slice(
             params.offset ?? 0,
-            params.limit
-              ? (params.offset ?? 0) + params.limit
-              : undefined,
+            params.limit ? (params.offset ?? 0) + params.limit : undefined,
           );
           return {
             content: [{ type: "text", text: slice || "(no output yet)" }],
@@ -488,15 +508,12 @@ export const processTool: AgentTool<typeof processSchema> = {
           const total = finished.aggregated.length;
           const slice = finished.aggregated.slice(
             params.offset ?? 0,
-            params.limit
-              ? (params.offset ?? 0) + params.limit
-              : undefined,
+            params.limit ? (params.offset ?? 0) + params.limit : undefined,
           );
-          const status = finished.status === "completed" ? "completed" : "failed";
+          const status =
+            finished.status === "completed" ? "completed" : "failed";
           return {
-            content: [
-              { type: "text", text: slice || "(no output recorded)" },
-            ],
+            content: [{ type: "text", text: slice || "(no output recorded)" }],
             details: {
               status,
               sessionId: params.sessionId,
@@ -519,7 +536,10 @@ export const processTool: AgentTool<typeof processSchema> = {
         if (!session) {
           return {
             content: [
-              { type: "text", text: `No active session found for ${params.sessionId}` },
+              {
+                type: "text",
+                text: `No active session found for ${params.sessionId}`,
+              },
             ],
             details: { status: "failed" },
           };
@@ -572,7 +592,10 @@ export const processTool: AgentTool<typeof processSchema> = {
         if (!session) {
           return {
             content: [
-              { type: "text", text: `No active session found for ${params.sessionId}` },
+              {
+                type: "text",
+                text: `No active session found for ${params.sessionId}`,
+              },
             ],
             details: { status: "failed" },
           };

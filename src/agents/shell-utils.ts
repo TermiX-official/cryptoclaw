@@ -11,9 +11,20 @@ export function getShellConfig(): { shell: string; args: string[] } {
 }
 
 export function sanitizeBinaryOutput(text: string): string {
-  return text
-    .replace(/[\p{Format}\p{Surrogate}]/gu, "")
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+  const scrubbed = text.replace(/[\p{Format}\p{Surrogate}]/gu, "");
+  if (!scrubbed) return scrubbed;
+  const chunks: string[] = [];
+  for (const char of scrubbed) {
+    const code = char.codePointAt(0);
+    if (code == null) continue;
+    if (code === 0x09 || code === 0x0a || code === 0x0d) {
+      chunks.push(char);
+      continue;
+    }
+    if (code < 0x20) continue;
+    chunks.push(char);
+  }
+  return chunks.join("");
 }
 
 export function killProcessTree(pid: number): void {

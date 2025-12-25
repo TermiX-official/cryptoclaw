@@ -1,4 +1,6 @@
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { ProcessSession } from "./bash-process-registry.js";
 import {
   addSession,
   appendOutput,
@@ -8,20 +10,16 @@ import {
   resetProcessRegistryForTests,
 } from "./bash-process-registry.js";
 
-type DummyChild = {
-  pid?: number;
-};
-
 describe("bash process registry", () => {
   beforeEach(() => {
     resetProcessRegistryForTests();
   });
 
   it("captures output and truncates", () => {
-    const session = {
+    const session: ProcessSession = {
       id: "sess",
       command: "echo test",
-      child: { pid: 123 } as DummyChild,
+      child: { pid: 123 } as ChildProcessWithoutNullStreams,
       startedAt: Date.now(),
       cwd: "/tmp",
       maxOutputChars: 10,
@@ -37,19 +35,19 @@ describe("bash process registry", () => {
       backgrounded: false,
     };
 
-    addSession(session as any);
-    appendOutput(session as any, "stdout", "0123456789");
-    appendOutput(session as any, "stdout", "abcdef");
+    addSession(session);
+    appendOutput(session, "stdout", "0123456789");
+    appendOutput(session, "stdout", "abcdef");
 
     expect(session.aggregated).toBe("6789abcdef");
     expect(session.truncated).toBe(true);
   });
 
   it("only persists finished sessions when backgrounded", () => {
-    const session = {
+    const session: ProcessSession = {
       id: "sess",
       command: "echo test",
-      child: { pid: 123 } as DummyChild,
+      child: { pid: 123 } as ChildProcessWithoutNullStreams,
       startedAt: Date.now(),
       cwd: "/tmp",
       maxOutputChars: 100,
@@ -65,12 +63,12 @@ describe("bash process registry", () => {
       backgrounded: false,
     };
 
-    addSession(session as any);
-    markExited(session as any, 0, null, "completed");
+    addSession(session);
+    markExited(session, 0, null, "completed");
     expect(listFinishedSessions()).toHaveLength(0);
 
-    markBackgrounded(session as any);
-    markExited(session as any, 0, null, "completed");
+    markBackgrounded(session);
+    markExited(session, 0, null, "completed");
     expect(listFinishedSessions()).toHaveLength(1);
   });
 });

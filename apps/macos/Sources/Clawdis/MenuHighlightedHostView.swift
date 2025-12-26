@@ -79,9 +79,11 @@ final class HighlightedMenuItemHostView: NSView {
     }
 
     private func updateSizing() {
-        self.hosting.frame.size.width = self.targetWidth
+        let width = max(1, self.superview?.bounds.width ?? self.targetWidth)
+        self.targetWidth = width
+        self.hosting.frame.size.width = width
         let size = self.hosting.fittingSize
-        self.frame = NSRect(origin: .zero, size: NSSize(width: self.targetWidth, height: size.height))
+        self.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
     }
 
 }

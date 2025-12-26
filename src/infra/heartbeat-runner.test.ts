@@ -6,10 +6,10 @@ import { HEARTBEAT_PROMPT } from "../auto-reply/heartbeat.js";
 import * as replyModule from "../auto-reply/reply.js";
 import type { ClawdisConfig } from "../config/config.js";
 import {
-  runHeartbeatOnce,
   resolveHeartbeatDeliveryTarget,
   resolveHeartbeatIntervalMs,
   resolveHeartbeatPrompt,
+  runHeartbeatOnce,
 } from "./heartbeat-runner.js";
 
 describe("resolveHeartbeatIntervalMs", () => {

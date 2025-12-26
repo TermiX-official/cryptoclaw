@@ -447,7 +447,7 @@ final class MenuSessionsInjector: NSObject, NSMenuDelegate {
         }
 
         if let version = entry.version?.nonEmpty {
-            menu.addItem(self.makeNodeCopyItem(label: "Version", value: "v\(version)"))
+            menu.addItem(self.makeNodeCopyItem(label: "Version", value: self.formatVersionLabel(version)))
         }
 
         menu.addItem(self.makeNodeDetailItem(label: "Last seen", value: entry.ageDescription))
@@ -487,7 +487,15 @@ final class MenuSessionsInjector: NSObject, NSMenuDelegate {
         item.representedObject = url
         return item
     }
-
+    private func formatVersionLabel(_ version: String) -> String {
+        let trimmed = version.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return version }
+        if trimmed.hasPrefix("v") { return trimmed }
+        if let first = trimmed.unicodeScalars.first, CharacterSet.decimalDigits.contains(first) {
+            return "v\(trimmed)"
+        }
+        return trimmed
+    }
     @objc
     private func patchThinking(_ sender: NSMenuItem) {
         guard let dict = sender.representedObject as? [String: Any],

@@ -16,6 +16,7 @@ import com.steipete.clawdis.node.bridge.BridgeEndpoint
 import com.steipete.clawdis.node.bridge.BridgePairingClient
 import com.steipete.clawdis.node.bridge.BridgeSession
 import com.steipete.clawdis.node.node.CameraCaptureManager
+import com.steipete.clawdis.node.BuildConfig
 import com.steipete.clawdis.node.node.CanvasController
 import com.steipete.clawdis.node.node.ScreenRecordManager
 import com.steipete.clawdis.node.protocol.ClawdisCapability
@@ -346,6 +347,13 @@ class NodeRuntime(context: Context) {
               add(ClawdisCapability.VoiceWake.rawValue)
             }
           }
+          val versionName = BuildConfig.VERSION_NAME.trim().ifEmpty { "dev" }
+          val advertisedVersion =
+            if (BuildConfig.DEBUG && !versionName.contains("dev", ignoreCase = true)) {
+              "$versionName-dev"
+            } else {
+              versionName
+            }
           BridgePairingClient().pairAndHello(
             endpoint = endpoint,
             hello =
@@ -354,7 +362,7 @@ class NodeRuntime(context: Context) {
                 displayName = displayName.value,
                 token = null,
                 platform = "Android",
-                version = "dev",
+                version = advertisedVersion,
                 deviceFamily = "Android",
                 modelIdentifier = modelIdentifier,
                 caps = caps,
@@ -372,6 +380,13 @@ class NodeRuntime(context: Context) {
 
       val authToken = requireNotNull(resolved.token).trim()
       prefs.saveBridgeToken(authToken)
+      val versionName = BuildConfig.VERSION_NAME.trim().ifEmpty { "dev" }
+      val advertisedVersion =
+        if (BuildConfig.DEBUG && !versionName.contains("dev", ignoreCase = true)) {
+          "$versionName-dev"
+        } else {
+          versionName
+        }
       session.connect(
         endpoint = endpoint,
         hello =
@@ -380,7 +395,7 @@ class NodeRuntime(context: Context) {
             displayName = displayName.value,
             token = authToken,
             platform = "Android",
-            version = "dev",
+            version = advertisedVersion,
             deviceFamily = "Android",
             modelIdentifier = modelIdentifier,
             caps =

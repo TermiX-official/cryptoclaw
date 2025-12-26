@@ -11,6 +11,7 @@ import {
   saveSessionStore,
   type SessionEntry,
 } from "../config/sessions.js";
+import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging.js";
 import { getQueueSize } from "../process/command-queue.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -367,13 +368,14 @@ export async function runHeartbeatOnce(opts: {
     });
     return { status: "ran", durationMs: Date.now() - startedAt };
   } catch (err) {
+    const reason = formatErrorMessage(err);
     emitHeartbeatEvent({
       status: "failed",
-      reason: String(err),
+      reason,
       durationMs: Date.now() - startedAt,
     });
-    log.error("heartbeat failed", { error: String(err) });
-    return { status: "failed", reason: String(err) };
+    log.error(`heartbeat failed: ${reason}`, { error: reason });
+    return { status: "failed", reason };
   }
 }
 

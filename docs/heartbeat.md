@@ -13,7 +13,7 @@ Goal: add a simple heartbeat poll for the embedded agent that only notifies user
 
 ## Config & defaults
 - New config key: `agent.heartbeat` with:
-  - `every`: duration string (`ms`, `s`, `m`; default unit minutes). `0m` disables.
+  - `every`: duration string (`ms`, `s`, `m`, `h`; default unit minutes). `0m` disables.
   - `model`: optional override model (`provider/model`) for heartbeat runs.
 - Default: disabled unless `agent.heartbeat.every` is set.
 - New optional idle override for heartbeats: `session.heartbeatIdleMinutes` (defaults to `idleMinutes`). Heartbeat skips do **not** update the session `updatedAt` so idle expiry still works.

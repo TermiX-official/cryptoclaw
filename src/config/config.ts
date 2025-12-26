@@ -463,7 +463,7 @@ const HeartbeatSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["every"],
-        message: "invalid duration (use ms, s, m)",
+        message: "invalid duration (use ms, s, m, h)",
       });
     }
   })

@@ -15,6 +15,10 @@ describe("parseDurationMs", () => {
     expect(parseDurationMs("1m")).toBe(60_000);
   });
 
+  it("parses hours suffix", () => {
+    expect(parseDurationMs("2h")).toBe(7_200_000);
+  });
+
   it("supports decimals", () => {
     expect(parseDurationMs("0.5s")).toBe(500);
   });

@@ -148,7 +148,7 @@ If you omit the provider, CLAWDIS currently assumes `anthropic` as a temporary
 deprecation fallback.
 
 `agent.heartbeat` configures periodic heartbeat runs:
-- `every`: duration string (`ms`, `s`, `m`); default unit minutes. Omit or set
+- `every`: duration string (`ms`, `s`, `m`, `h`); default unit minutes. Omit or set
   `0m` to disable.
 - `model`: optional override model for heartbeat runs (`provider/model`).
 

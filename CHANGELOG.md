@@ -1,13 +1,15 @@
 # Changelog
 
-## 2.0.0-beta3 — Unreleased (2025-12-25)
+## 2.0.0-beta3 — Unreleased (2025-12-26)
 
 ### Highlights
 - First-class Clawdis tools (browser, canvas, nodes, cron) replace the old `clawdis-*` skills; tool schemas are now injected directly into the agent runtime (including selector-based browser actions).
 - Per-session model selection + custom model providers: `models.providers` merges into `~/.clawdis/agent/models.json` (merge/replace modes) for LiteLLM, local OpenAI-compatible servers, Anthropic proxies, etc.
 - Group chat activation modes: per-group `/activation mention|always` command with status visibility.
+- Discord bot transport for DMs and guild text channels, with allowlists + mention gating.
 - Gateway webhooks: external `wake` and isolated `agent` hooks with dedicated token auth.
 - Hook mappings + Gmail Pub/Sub helper (`clawdis hooks gmail setup/run`) with auto-renew + Tailscale Funnel support.
+- Command queue modes + per-session overrides (`/queue ...`) and new `agent.maxConcurrent` cap for safe parallelism across sessions.
 - Background bash tasks: `bash` auto-yields after 20s (or on demand) with a `process` tool to list/poll/log/write/kill sessions.
 - Gateway in-process restart: `clawdis_gateway` tool action triggers a SIGUSR1 restart without needing a supervisor.
 
@@ -42,6 +44,13 @@
 - Canvas defaults/A2UI auto-nav aligned; debug status overlay centered; redundant await removed in `CanvasManager`.
 - Gateway launchd loop fixed by removing redundant `kickstart -k`.
 - CLI now hints when Peekaboo is unauthorized.
+- WhatsApp web inbox listeners now clean up on close to avoid duplicate handlers.
+
+### Providers & Routing
+- New Discord provider for DMs + guild text channels with allowlists and mention-gated replies by default.
+- `routing.queue` now controls queue vs interrupt behavior globally + per surface (defaults: WhatsApp/Telegram interrupt, Discord/WebChat queue).
+- `/queue <mode>` supports one-shot or per-session overrides; `/queue reset|default` clears overrides.
+- `agent.maxConcurrent` caps global parallel runs while keeping per-session serialization.
 
 ### macOS app
 - Update-ready state surfaced in the menu; menu sections regrouped with session submenus.
@@ -63,7 +72,8 @@
 ### Build, Dev, Docs
 - Notarization flow added for macOS release artifacts; packaging scripts updated.
 - Added type-aware oxlint; docs list resolves from cwd; formatting/lint cleanup and dependency bumps (Peekaboo).
-- Docs refreshed for tools, custom model providers, group activation commands, logging, restart semantics, release notes, GitHub pages CTAs, and npm pitfalls.
+- Docs refreshed for tools, custom model providers, Discord, queue/routing, group activation commands, logging, restart semantics, release notes, GitHub pages CTAs, and npm pitfalls.
+- `pnpm build` now skips A2UI bundling for faster builds (run `pnpm canvas:a2ui:bundle` when needed).
 
 ### Tests
 - Coverage added for models config merging, WhatsApp reply context, QR login flows, auto-reply behavior, and gateway SIGTERM timeouts.

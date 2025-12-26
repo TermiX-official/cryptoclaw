@@ -253,9 +253,16 @@ export function routeLogsToStderr(): void {
   forceConsoleToStderr = true;
 }
 
-const SUPPRESSED_CONSOLE_PREFIXES = ["Closing session:"] as const;
+const SUPPRESSED_CONSOLE_PREFIXES = [
+  "Closing session:",
+  "Opening session:",
+  "Removing old closed session:",
+  "Session already closed",
+  "Session already open",
+] as const;
 
 function shouldSuppressConsoleMessage(message: string): boolean {
+  if (isVerbose()) return false;
   return SUPPRESSED_CONSOLE_PREFIXES.some((prefix) =>
     message.startsWith(prefix),
   );

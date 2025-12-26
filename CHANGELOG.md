@@ -25,6 +25,7 @@
 - WhatsApp inbound now normalizes more wrapper types so quoted reply bodies are extracted reliably.
 - WhatsApp send now preserves existing JIDs (including group `@g.us`) instead of coercing to `@s.whatsapp.net`. (Thanks @arun-8687.)
 - Telegram/WhatsApp: reply context stays in `Body`/`ReplyTo*`, but outbound replies no longer thread to the original message. (Thanks @joshp123 for the PR and follow-up question.)
+- Suppressed libsignal session cleanup spam from console logs unless verbose mode is enabled.
 - WhatsApp web creds persistence hardened; credentials are restored before auth checks and QR login auto-restarts if it stalls.
 - Group chats now honor `routing.groupChat.requireMention=false` as the default activation when no per-group override exists.
 - Gateway auth no longer supports PAM/system mode; use token or shared password.

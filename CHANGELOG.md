@@ -76,6 +76,7 @@
 - Menu hover highlights now span the full width (including submenu arrows).
 - Menu session rows now refresh while open without width changes (no more stuck “Loading sessions…”).
 - Menu width no longer grows on hover when moving the mouse across rows.
+- Context usage bars now have higher contrast in light mode.
 - macOS node timeouts now share a single async timeout helper for consistent behavior.
 - WebChat window defaults tightened (narrower width, edge-to-edge layout) and the SwiftUI tag removed from the title.
 

@@ -12,6 +12,16 @@ struct ContextUsageBar: View {
         if match == .darkAqua { return base }
         return base.blended(withFraction: 0.24, of: .black) ?? base
     }
+    private static let trackFill: NSColor = .init(name: nil) { appearance in
+        let match = appearance.bestMatch(from: [.aqua, .darkAqua])
+        if match == .darkAqua { return NSColor.white.withAlphaComponent(0.14) }
+        return NSColor.black.withAlphaComponent(0.16)
+    }
+    private static let trackStroke: NSColor = .init(name: nil) { appearance in
+        let match = appearance.bestMatch(from: [.aqua, .darkAqua])
+        if match == .darkAqua { return NSColor.white.withAlphaComponent(0.22) }
+        return NSColor.black.withAlphaComponent(0.28)
+    }
 
     private var clampedFractionUsed: Double {
         guard self.contextTokens > 0 else { return 0 }
@@ -58,8 +68,8 @@ struct ContextUsageBar: View {
     @ViewBuilder
     private func barBody(width: CGFloat, fraction: Double) -> some View {
         let radius = self.height / 2
-        let trackFill = Color.white.opacity(0.12)
-        let trackStroke = Color.white.opacity(0.18)
+        let trackFill = Color(nsColor: Self.trackFill)
+        let trackStroke = Color(nsColor: Self.trackStroke)
         let fillWidth = max(1, floor(width * CGFloat(fraction)))
 
         ZStack(alignment: .leading) {

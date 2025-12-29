@@ -7,12 +7,12 @@ struct TalkOverlayView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             TalkOrbView(phase: self.controller.model.phase, level: self.controller.model.level)
-                .frame(width: 72, height: 72)
+                .frame(width: 80, height: 80)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     TalkModeController.shared.stopSpeaking(reason: .userTap)
                 }
-                .padding(10)
+                .padding(16)
 
             Button {
                 TalkModeController.shared.exitTalkMode()
@@ -29,7 +29,7 @@ struct TalkOverlayView: View {
             .padding(4)
             .onHover { self.hovering = $0 }
         }
-        .frame(width: 92, height: 92, alignment: .center)
+        .frame(width: 120, height: 120, alignment: .center)
     }
 }
 

@@ -20,9 +20,9 @@ final class TalkOverlayController {
     private var window: NSPanel?
     private var hostingView: NSHostingView<TalkOverlayView>?
 
-    private let width: CGFloat = 92
-    private let height: CGFloat = 92
-    private let padding: CGFloat = 8
+    private let width: CGFloat = 120
+    private let height: CGFloat = 120
+    private let padding: CGFloat = 6
 
     func present() {
         self.ensureWindow()

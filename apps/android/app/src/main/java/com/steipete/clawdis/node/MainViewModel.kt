@@ -24,6 +24,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val serverName: StateFlow<String?> = runtime.serverName
   val remoteAddress: StateFlow<String?> = runtime.remoteAddress
   val isForeground: StateFlow<Boolean> = runtime.isForeground
+  val seamColorArgb: StateFlow<Long> = runtime.seamColorArgb
 
   val cameraHud: StateFlow<CameraHudState?> = runtime.cameraHud
   val cameraFlashToken: StateFlow<Long> = runtime.cameraFlashToken

@@ -147,7 +147,9 @@ private struct CanvasContent: View {
                     // Talk mode lives on a side bubble so it doesn't get buried in settings.
                     OverlayButton(
                         systemImage: self.appModel.talkMode.isEnabled ? "waveform.circle.fill" : "waveform.circle",
-                        brighten: self.brightenButtons)
+                        brighten: self.brightenButtons,
+                        tint: self.appModel.seamColor,
+                        isActive: self.appModel.talkMode.isEnabled)
                     {
                         let next = !self.appModel.talkMode.isEnabled
                         self.talkEnabled = next
@@ -251,13 +253,15 @@ private struct CanvasContent: View {
 private struct OverlayButton: View {
     let systemImage: String
     let brighten: Bool
+    var tint: Color? = nil
+    var isActive: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: self.action) {
             Image(systemName: self.systemImage)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(self.isActive ? (self.tint ?? .primary) : .primary)
                 .padding(10)
                 .background {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -276,8 +280,25 @@ private struct OverlayButton: View {
                                 .blendMode(.overlay)
                         }
                         .overlay {
+                            if let tint {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                tint.opacity(self.isActive ? 0.22 : 0.14),
+                                                tint.opacity(self.isActive ? 0.10 : 0.06),
+                                                .clear,
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing))
+                                    .blendMode(.overlay)
+                            }
+                        }
+                        .overlay {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .strokeBorder(.white.opacity(self.brighten ? 0.24 : 0.18), lineWidth: 0.5)
+                                .strokeBorder(
+                                    (self.tint ?? .white).opacity(self.isActive ? 0.34 : (self.brighten ? 0.24 : 0.18)),
+                                    lineWidth: self.isActive ? 0.7 : 0.5)
                         }
                         .shadow(color: .black.opacity(0.35), radius: 12, y: 6)
                 }

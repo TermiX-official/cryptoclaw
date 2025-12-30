@@ -462,6 +462,20 @@ Defaults:
 }
 ```
 
+### `ui` (Appearance)
+
+Optional accent color used by the native apps for UI chrome (e.g. Talk Mode bubble tint).
+
+If unset, clients fall back to a muted light-blue.
+
+```json5
+{
+  ui: {
+    seamColor: "#FF4500" // hex (RRGGBB or #RRGGBB)
+  }
+}
+```
+
 ### `gateway` (Gateway server mode + bind)
 
 Use `gateway.mode` to explicitly declare whether this machine should run the Gateway.

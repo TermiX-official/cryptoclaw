@@ -130,6 +130,9 @@ final class AppState {
         }
     }
 
+    /// Gateway-provided UI accent color (hex). Optional; clients provide a default.
+    var seamColorHex: String?
+
     var iconOverride: IconOverrideSelection {
         didSet { self.ifNotPreview { UserDefaults.standard.set(self.iconOverride.rawValue, forKey: iconOverrideKey) } }
     }
@@ -226,6 +229,7 @@ final class AppState {
         self.voicePushToTalkEnabled = UserDefaults.standard
             .object(forKey: voicePushToTalkEnabledKey) as? Bool ?? false
         self.talkEnabled = UserDefaults.standard.bool(forKey: talkEnabledKey)
+        self.seamColorHex = nil
         if let storedHeartbeats = UserDefaults.standard.object(forKey: heartbeatsEnabledKey) as? Bool {
             self.heartbeatsEnabled = storedHeartbeats
         } else {

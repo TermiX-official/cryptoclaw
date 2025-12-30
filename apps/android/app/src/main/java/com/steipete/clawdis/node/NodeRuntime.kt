@@ -120,6 +120,9 @@ class NodeRuntime(context: Context) {
   private val _remoteAddress = MutableStateFlow<String?>(null)
   val remoteAddress: StateFlow<String?> = _remoteAddress.asStateFlow()
 
+  private val _seamColorArgb = MutableStateFlow(DEFAULT_SEAM_COLOR_ARGB)
+  val seamColorArgb: StateFlow<Long> = _seamColorArgb.asStateFlow()
+
   private val _isForeground = MutableStateFlow(true)
   val isForeground: StateFlow<Boolean> = _isForeground.asStateFlow()
 
@@ -133,6 +136,8 @@ class NodeRuntime(context: Context) {
         _serverName.value = name
         _remoteAddress.value = remote
         _isConnected.value = true
+        _seamColorArgb.value = DEFAULT_SEAM_COLOR_ARGB
+        scope.launch { refreshBrandingFromGateway() }
         scope.launch { refreshWakeWordsFromGateway() }
         maybeNavigateToA2uiOnConnect()
       },
@@ -155,6 +160,7 @@ class NodeRuntime(context: Context) {
     _serverName.value = null
     _remoteAddress.value = null
     _isConnected.value = false
+    _seamColorArgb.value = DEFAULT_SEAM_COLOR_ARGB
     chat.onDisconnected(message)
     showLocalCanvasOnDisconnect()
   }
@@ -618,6 +624,21 @@ class NodeRuntime(context: Context) {
     }
   }
 
+  private suspend fun refreshBrandingFromGateway() {
+    if (!_isConnected.value) return
+    try {
+      val res = session.request("config.get", "{}")
+      val root = json.parseToJsonElement(res).asObjectOrNull()
+      val config = root?.get("config").asObjectOrNull()
+      val ui = config?.get("ui").asObjectOrNull()
+      val raw = ui?.get("seamColor").asStringOrNull()?.trim()
+      val parsed = parseHexColorArgb(raw) ?: return
+      _seamColorArgb.value = parsed
+    } catch (_: Throwable) {
+      // ignore
+    }
+  }
+
   private suspend fun handleInvoke(command: String, paramsJson: String?): BridgeSession.InvokeResult {
     if (
       command.startsWith(ClawdisCanvasCommand.NamespacePrefix) ||
@@ -901,6 +922,8 @@ class NodeRuntime(context: Context) {
 
 private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
+private const val DEFAULT_SEAM_COLOR_ARGB: Long = 0xFF9EE0FF
+
 private const val a2uiReadyCheckJS: String =
   """
   (() => {
@@ -955,3 +978,12 @@ private fun JsonElement?.asStringOrNull(): String? =
     is JsonPrimitive -> content
     else -> null
   }
+
+private fun parseHexColorArgb(raw: String?): Long? {
+  val trimmed = raw?.trim().orEmpty()
+  if (trimmed.isEmpty()) return null
+  val hex = if (trimmed.startsWith("#")) trimmed.drop(1) else trimmed
+  if (hex.length != 6) return null
+  val rgb = hex.toLongOrNull(16) ?: return null
+  return 0xFF000000L or rgb
+}

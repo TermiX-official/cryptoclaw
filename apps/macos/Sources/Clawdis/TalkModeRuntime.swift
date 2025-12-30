@@ -537,6 +537,11 @@ actor TalkModeRuntime {
                 params: nil,
                 timeoutMs: 8000)
             let talk = snap.config?["talk"]?.dictionaryValue
+            let ui = snap.config?["ui"]?.dictionaryValue
+            let rawSeam = ui?["seamColor"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            await MainActor.run {
+                AppStateStore.shared.seamColorHex = rawSeam.isEmpty ? nil : rawSeam
+            }
             let voice = talk?["voiceId"]?.stringValue
             let model = talk?["modelId"]?.stringValue
             let outputFormat = talk?["outputFormat"]?.stringValue

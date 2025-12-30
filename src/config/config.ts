@@ -346,6 +346,10 @@ export type ClawdisConfig = {
   };
   logging?: LoggingConfig;
   browser?: BrowserConfig;
+  ui?: {
+    /** Accent color for Clawdis UI chrome (hex). */
+    seamColor?: string;
+  };
   skillsLoad?: SkillsLoadConfig;
   skillsInstall?: SkillsInstallConfig;
   models?: ModelsConfig;
@@ -493,6 +497,10 @@ const TranscribeAudioSchema = z
     timeoutSeconds: z.number().int().positive().optional(),
   })
   .optional();
+
+const HexColorSchema = z
+  .string()
+  .regex(/^#?[0-9a-fA-F]{6}$/, "expected hex color (RRGGBB)");
 
 const SessionSchema = z
   .object({
@@ -670,6 +678,11 @@ const ClawdisSchema = z.object({
       color: z.string().optional(),
       headless: z.boolean().optional(),
       attachOnly: z.boolean().optional(),
+    })
+    .optional(),
+  ui: z
+    .object({
+      seamColor: HexColorSchema.optional(),
     })
     .optional(),
   models: ModelsConfigSchema,

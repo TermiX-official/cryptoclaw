@@ -2,40 +2,66 @@ import SwiftUI
 
 struct TalkOverlayView: View {
     var controller: TalkOverlayController
-    @State private var hovering = false
+    @State private var appState = AppStateStore.shared
+    @State private var hoveringWindow = false
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            TalkOrbView(phase: self.controller.model.phase, level: self.controller.model.level)
+        ZStack {
+            TalkOrbView(
+                phase: self.controller.model.phase,
+                level: self.controller.model.level,
+                accent: self.seamColor)
                 .frame(width: 96, height: 96)
-                .contentShape(Rectangle())
+                .contentShape(Circle())
                 .onTapGesture {
                     TalkModeController.shared.stopSpeaking(reason: .userTap)
                 }
-                .padding(26)
-
-            Button {
-                TalkModeController.shared.exitTalkMode()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.white.opacity(self.hovering ? 0.95 : 0.7))
-                    .frame(width: 18, height: 18)
-                    .background(Color.black.opacity(self.hovering ? 0.45 : 0.3))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .contentShape(Circle())
-            .padding(4)
-            .onHover { self.hovering = $0 }
+                .overlay(alignment: .topLeading) {
+                    Button {
+                        TalkModeController.shared.exitTalkMode()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.white.opacity(0.95))
+                            .frame(width: 18, height: 18)
+                            .background(Color.black.opacity(0.4))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Circle())
+                    .offset(x: -10, y: -10)
+                    .opacity(self.hoveringWindow ? 1 : 0)
+                    .animation(.easeOut(duration: 0.12), value: self.hoveringWindow)
+                    .allowsHitTesting(self.hoveringWindow)
+                }
         }
-        .frame(width: 160, height: 160, alignment: .center)
+        .frame(width: TalkOverlayController.overlaySize, height: TalkOverlayController.overlaySize, alignment: .center)
+        .contentShape(Rectangle())
+        .onHover { self.hoveringWindow = $0 }
+    }
+
+    private static let defaultSeamColor = Color(red: 0.62, green: 0.88, blue: 1.0)
+
+    private var seamColor: Color {
+        Self.color(fromHex: self.appState.seamColorHex) ?? Self.defaultSeamColor
+    }
+
+    private static func color(fromHex raw: String?) -> Color? {
+        let trimmed = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let hex = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
+        guard hex.count == 6, let value = Int(hex, radix: 16) else { return nil }
+        let r = Double((value >> 16) & 0xFF) / 255.0
+        let g = Double((value >> 8) & 0xFF) / 255.0
+        let b = Double(value & 0xFF) / 255.0
+        return Color(red: r, green: g, blue: b)
     }
 }
 
 private struct TalkOrbView: View {
     let phase: TalkModePhase
     let level: Double
+    let accent: Color
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -50,7 +76,7 @@ private struct TalkOrbView: View {
                     .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 5)
                     .scaleEffect(pulse * listenScale)
 
-                TalkWaveRings(phase: phase, level: level, time: t)
+                TalkWaveRings(phase: phase, level: level, time: t, accent: self.accent)
 
                 if phase == .thinking {
                     TalkOrbitArcs(time: t)
@@ -61,7 +87,7 @@ private struct TalkOrbView: View {
 
     private var orbGradient: RadialGradient {
         RadialGradient(
-            colors: [Color.white, Color(red: 0.62, green: 0.88, blue: 1.0)],
+            colors: [Color.white, self.accent],
             center: .topLeading,
             startRadius: 4,
             endRadius: 52)
@@ -72,7 +98,7 @@ private struct TalkWaveRings: View {
     let phase: TalkModePhase
     let level: Double
     let time: TimeInterval
-    private let ringColor = Color(red: 0.82, green: 0.94, blue: 1.0)
+    let accent: Color
 
     var body: some View {
         ZStack {
@@ -83,7 +109,7 @@ private struct TalkWaveRings: View {
                 let scale = 0.75 + progress * amplitude + (phase == .listening ? level * 0.15 : 0)
                 let alpha = phase == .speaking ? 0.72 : phase == .listening ? 0.58 + level * 0.28 : 0.4
                 Circle()
-                    .stroke(self.ringColor.opacity(alpha - progress * 0.3), lineWidth: 1.6)
+                    .stroke(self.accent.opacity(alpha - progress * 0.3), lineWidth: 1.6)
                     .scaleEffect(scale)
                     .opacity(alpha - progress * 0.6)
             }

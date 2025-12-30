@@ -7,6 +7,7 @@ import SwiftUI
 @Observable
 final class TalkOverlayController {
     static let shared = TalkOverlayController()
+    static let overlaySize: CGFloat = 220
 
     private let logger = Logger(subsystem: "com.steipete.clawdis", category: "talk.overlay")
 
@@ -19,9 +20,6 @@ final class TalkOverlayController {
     var model = Model()
     private var window: NSPanel?
     private var hostingView: NSHostingView<TalkOverlayView>?
-
-    private let width: CGFloat = 160
-    private let height: CGFloat = 160
     private let padding: CGFloat = 8
 
     func present() {
@@ -84,7 +82,7 @@ final class TalkOverlayController {
     private func ensureWindow() {
         if self.window != nil { return }
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: self.width, height: self.height),
+            contentRect: NSRect(x: 0, y: 0, width: Self.overlaySize, height: Self.overlaySize),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false)
@@ -109,7 +107,7 @@ final class TalkOverlayController {
 
     private func targetFrame() -> NSRect {
         guard let screen = NSScreen.main else { return .zero }
-        let size = NSSize(width: self.width, height: self.height)
+        let size = NSSize(width: Self.overlaySize, height: Self.overlaySize)
         let visible = screen.visibleFrame
         let origin = CGPoint(
             x: visible.maxX - size.width - self.padding,

@@ -57,6 +57,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -81,6 +83,8 @@ fun RootScreen(viewModel: MainViewModel) {
   val isForeground by viewModel.isForeground.collectAsState()
   val voiceWakeStatusText by viewModel.voiceWakeStatusText.collectAsState()
   val talkEnabled by viewModel.talkEnabled.collectAsState()
+  val seamColorArgb by viewModel.seamColorArgb.collectAsState()
+  val seamColor = remember(seamColorArgb) { ComposeColor(seamColorArgb) }
   val audioPermissionLauncher =
     rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
       if (granted) viewModel.setTalkEnabled(true)
@@ -225,6 +229,14 @@ fun RootScreen(viewModel: MainViewModel) {
       )
 
       // Talk mode gets a dedicated side bubble instead of burying it in settings.
+      val baseOverlay = overlayContainerColor()
+      val talkContainer =
+        lerp(
+          baseOverlay,
+          seamColor.copy(alpha = baseOverlay.alpha),
+          if (talkEnabled) 0.35f else 0.22f,
+        )
+      val talkContent = if (talkEnabled) seamColor else overlayIconColor()
       OverlayIconButton(
         onClick = {
           val next = !talkEnabled
@@ -238,12 +250,12 @@ fun RootScreen(viewModel: MainViewModel) {
             viewModel.setTalkEnabled(false)
           }
         },
+        containerColor = talkContainer,
+        contentColor = talkContent,
         icon = {
-          val tint = if (talkEnabled) MaterialTheme.colorScheme.primary else LocalContentColor.current
           Icon(
             Icons.Default.RecordVoiceOver,
             contentDescription = "Talk Mode",
-            tint = tint,
           )
         },
       )
@@ -278,14 +290,16 @@ private enum class Sheet {
 private fun OverlayIconButton(
   onClick: () -> Unit,
   icon: @Composable () -> Unit,
+  containerColor: ComposeColor? = null,
+  contentColor: ComposeColor? = null,
 ) {
   FilledTonalIconButton(
     onClick = onClick,
     modifier = Modifier.size(44.dp),
     colors =
       IconButtonDefaults.filledTonalIconButtonColors(
-        containerColor = overlayContainerColor(),
-        contentColor = overlayIconColor(),
+        containerColor = containerColor ?: overlayContainerColor(),
+        contentColor = contentColor ?: overlayIconColor(),
       ),
   ) {
     icon()

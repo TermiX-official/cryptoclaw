@@ -22,6 +22,7 @@ final class NodeAppModel {
     var bridgeServerName: String?
     var bridgeRemoteAddress: String?
     var connectedBridgeID: String?
+    var seamColorHex: String?
 
     private let bridge = BridgeSession()
     private var bridgeTask: Task<Void, Never>?
@@ -225,6 +226,7 @@ final class NodeAppModel {
                                     self.bridgeRemoteAddress = addr
                                 }
                             }
+                            await self.refreshBrandingFromGateway()
                             await self.startVoiceWakeSync()
                             await self.showA2UIOnConnectIfNeeded()
                         },
@@ -264,6 +266,7 @@ final class NodeAppModel {
                 self.bridgeServerName = nil
                 self.bridgeRemoteAddress = nil
                 self.connectedBridgeID = nil
+                self.seamColorHex = nil
                 self.showLocalCanvasOnDisconnect()
             }
         }
@@ -279,7 +282,40 @@ final class NodeAppModel {
         self.bridgeServerName = nil
         self.bridgeRemoteAddress = nil
         self.connectedBridgeID = nil
+        self.seamColorHex = nil
         self.showLocalCanvasOnDisconnect()
+    }
+
+    var seamColor: Color {
+        Self.color(fromHex: self.seamColorHex) ?? Self.defaultSeamColor
+    }
+
+    private static let defaultSeamColor = Color(red: 0.62, green: 0.88, blue: 1.0)
+
+    private static func color(fromHex raw: String?) -> Color? {
+        let trimmed = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let hex = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
+        guard hex.count == 6, let value = Int(hex, radix: 16) else { return nil }
+        let r = Double((value >> 16) & 0xFF) / 255.0
+        let g = Double((value >> 8) & 0xFF) / 255.0
+        let b = Double(value & 0xFF) / 255.0
+        return Color(red: r, green: g, blue: b)
+    }
+
+    private func refreshBrandingFromGateway() async {
+        do {
+            let res = try await self.bridge.request(method: "config.get", paramsJSON: "{}", timeoutSeconds: 8)
+            guard let json = try JSONSerialization.jsonObject(with: res) as? [String: Any] else { return }
+            guard let config = json["config"] as? [String: Any] else { return }
+            let ui = config["ui"] as? [String: Any]
+            let raw = (ui?["seamColor"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            await MainActor.run {
+                self.seamColorHex = raw.isEmpty ? nil : raw
+            }
+        } catch {
+            // ignore
+        }
     }
 
     func setGlobalWakeWords(_ words: [String]) async {

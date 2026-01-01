@@ -23,6 +23,7 @@
 - CLI: add Signal CLI auto-install from GitHub releases in the wizard and persist wizard run metadata in config.
 - CLI: add remote gateway client config (gateway.remote.*) with Bonjour-assisted discovery.
 - Skills: allow `bun` as a node manager for skill installs.
+- Skills: add `things-mac` (Things 3 CLI) for read/search plus add/update via URL scheme.
 - Tests: add a Docker-based onboarding E2E harness.
 - Tests: harden wizard E2E flows for reset, providers, skills, and remote non-interactive runs.
 

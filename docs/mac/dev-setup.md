@@ -11,7 +11,7 @@ This guide covers the necessary steps to build and run the Clawdis macOS applica
 
 Before building the app, ensure you have the following installed:
 
-1.  **Xcode**: Required for Swift development.
+1.  **Xcode 26.2+**: Required for Swift development.
 2.  **Node.js & pnpm**: Required for the gateway and CLI components.
 3.  **Bun**: Required to package the embedded gateway relay.
     ```bash

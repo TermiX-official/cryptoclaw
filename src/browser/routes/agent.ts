@@ -339,6 +339,8 @@ export function registerBrowserAgentRoutes(
     const body = readBody(req);
     const targetId = toStringOrEmpty(body.targetId) || undefined;
     const ref = toStringOrEmpty(body.ref) || undefined;
+    const inputRef = toStringOrEmpty(body.inputRef) || undefined;
+    const element = toStringOrEmpty(body.element) || undefined;
     const paths = toStringArray(body.paths) ?? [];
     const timeoutMs = toNumber(body.timeoutMs);
     if (!paths.length) return jsonError(res, 400, "paths are required");
@@ -346,18 +348,35 @@ export function registerBrowserAgentRoutes(
       const tab = await ctx.ensureTabAvailable(targetId);
       const pw = await requirePwAi(res, "file chooser hook");
       if (!pw) return;
-      await pw.armFileUploadViaPlaywright({
-        cdpPort: ctx.state().cdpPort,
-        targetId: tab.targetId,
-        paths,
-        timeoutMs: timeoutMs ?? undefined,
-      });
-      if (ref) {
-        await pw.clickViaPlaywright({
+      if (inputRef || element) {
+        if (ref) {
+          return jsonError(
+            res,
+            400,
+            "ref cannot be combined with inputRef/element",
+          );
+        }
+        await pw.setInputFilesViaPlaywright({
           cdpPort: ctx.state().cdpPort,
           targetId: tab.targetId,
-          ref,
+          inputRef,
+          element,
+          paths,
         });
+      } else {
+        await pw.armFileUploadViaPlaywright({
+          cdpPort: ctx.state().cdpPort,
+          targetId: tab.targetId,
+          paths,
+          timeoutMs: timeoutMs ?? undefined,
+        });
+        if (ref) {
+          await pw.clickViaPlaywright({
+            cdpPort: ctx.state().cdpPort,
+            targetId: tab.targetId,
+            ref,
+          });
+        }
       }
       res.json({ ok: true });
     } catch (err) {

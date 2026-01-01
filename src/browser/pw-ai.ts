@@ -22,6 +22,7 @@ export {
   pressKeyViaPlaywright,
   resizeViewportViaPlaywright,
   selectOptionViaPlaywright,
+  setInputFilesViaPlaywright,
   snapshotAiViaPlaywright,
   takeScreenshotViaPlaywright,
   typeViaPlaywright,

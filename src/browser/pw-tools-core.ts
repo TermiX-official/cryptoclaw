@@ -303,6 +303,44 @@ export async function armFileUploadViaPlaywright(opts: {
     });
 }
 
+export async function setInputFilesViaPlaywright(opts: {
+  cdpPort: number;
+  targetId?: string;
+  inputRef?: string;
+  element?: string;
+  paths: string[];
+}): Promise<void> {
+  const page = await getPageForTargetId(opts);
+  ensurePageState(page);
+  if (!opts.paths.length) throw new Error("paths are required");
+  const inputRef =
+    typeof opts.inputRef === "string" ? opts.inputRef.trim() : "";
+  const element = typeof opts.element === "string" ? opts.element.trim() : "";
+  if (inputRef && element) {
+    throw new Error("inputRef and element are mutually exclusive");
+  }
+  if (!inputRef && !element) {
+    throw new Error("inputRef or element is required");
+  }
+
+  const locator = inputRef
+    ? refLocator(page, inputRef)
+    : page.locator(element).first();
+
+  await locator.setInputFiles(opts.paths);
+  try {
+    const handle = await locator.elementHandle();
+    if (handle) {
+      await handle.evaluate((el) => {
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
+  } catch {
+    // Best-effort for sites that don't react to setInputFiles alone.
+  }
+}
+
 export async function armDialogViaPlaywright(opts: {
   cdpPort: number;
   targetId?: string;

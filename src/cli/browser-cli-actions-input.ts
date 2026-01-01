@@ -302,6 +302,8 @@ export function registerBrowserActionInputCommands(
     .description("Arm file upload for the next file chooser")
     .argument("<paths...>", "File paths to upload")
     .option("--ref <ref>", "Ref id from ai snapshot to click after arming")
+    .option("--input-ref <ref>", "Ref id for <input type=file> to set directly")
+    .option("--element <selector>", "CSS selector for <input type=file>")
     .option("--target-id <id>", "CDP target id (or unique prefix)")
     .option(
       "--timeout-ms <ms>",
@@ -315,6 +317,8 @@ export function registerBrowserActionInputCommands(
         const result = await browserArmFileChooser(baseUrl, {
           paths,
           ref: opts.ref?.trim() || undefined,
+          inputRef: opts.inputRef?.trim() || undefined,
+          element: opts.element?.trim() || undefined,
           targetId: opts.targetId?.trim() || undefined,
           timeoutMs: Number.isFinite(opts.timeoutMs)
             ? opts.timeoutMs

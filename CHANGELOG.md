@@ -19,7 +19,7 @@
 
 ### Fixes
 - Docs/agent tools: clarify that browser `wait` should be avoided by default and used only in exceptional cases.
-- Browser tools: `upload` can auto-click a ref after arming and now emits input/change events after `setFiles` so sites like X pick up attachments.
+- Browser tools: `upload` supports auto-click refs, direct `inputRef`/`element` file inputs, and emits input/change after `setFiles` so JS-heavy sites pick up attachments.
 - macOS: Voice Wake now fully tears down the Speech pipeline when disabled (cancel pending restarts, drop stale callbacks) to avoid high CPU in the background.
 - macOS menu: add a Talk Mode action alongside the Open Dashboard/Chat/Canvas entries.
 - macOS Debug: hide “Restart Gateway” when the app won’t start a local gateway (remote mode / attach-only).

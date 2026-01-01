@@ -33,6 +33,7 @@ const pwMocks = vi.hoisted(() => ({
   pressKeyViaPlaywright: vi.fn(async () => {}),
   resizeViewportViaPlaywright: vi.fn(async () => {}),
   selectOptionViaPlaywright: vi.fn(async () => {}),
+  setInputFilesViaPlaywright: vi.fn(async () => {}),
   snapshotAiViaPlaywright: vi.fn(async () => ({ snapshot: "ok" })),
   takeScreenshotViaPlaywright: vi.fn(async () => ({
     buffer: Buffer.from("png"),
@@ -491,6 +492,37 @@ describe("browser control server", () => {
       cdpPort: testPort + 1,
       targetId: "abcd1234",
       ref: "e12",
+    });
+
+    const uploadWithInputRef = await realFetch(`${base}/hooks/file-chooser`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: ["/tmp/c.txt"], inputRef: "e99" }),
+    }).then((r) => r.json());
+    expect(uploadWithInputRef).toMatchObject({ ok: true });
+    expect(pwMocks.setInputFilesViaPlaywright).toHaveBeenCalledWith({
+      cdpPort: testPort + 1,
+      targetId: "abcd1234",
+      inputRef: "e99",
+      element: undefined,
+      paths: ["/tmp/c.txt"],
+    });
+
+    const uploadWithElement = await realFetch(`${base}/hooks/file-chooser`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paths: ["/tmp/d.txt"],
+        element: "input[type=file]",
+      }),
+    }).then((r) => r.json());
+    expect(uploadWithElement).toMatchObject({ ok: true });
+    expect(pwMocks.setInputFilesViaPlaywright).toHaveBeenCalledWith({
+      cdpPort: testPort + 1,
+      targetId: "abcd1234",
+      inputRef: undefined,
+      element: "input[type=file]",
+      paths: ["/tmp/d.txt"],
     });
 
     const dialog = await realFetch(`${base}/hooks/dialog`, {

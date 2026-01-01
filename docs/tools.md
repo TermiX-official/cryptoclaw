@@ -53,6 +53,7 @@ Notes:
 - `act` requires `ref` from `snapshot --format ai`; use `evaluate` for rare CSS selector needs.
 - Avoid `act` → `wait` by default; use it only in exceptional cases (no reliable UI state to wait on).
 - `upload` can optionally pass a `ref` to auto-click after arming.
+- `upload` also supports `inputRef` (aria ref) or `element` (CSS selector) to set `<input type="file">` directly.
 
 ### `clawdis_canvas`
 Drive the node Canvas (present, eval, snapshot, A2UI).

@@ -523,19 +523,6 @@ function renderProvider(
               />
             </label>
             <label class="field">
-              <span>Reactions</span>
-              <select
-                .value=${props.discordForm.enableReactions ? "yes" : "no"}
-                @change=${(e: Event) =>
-                  props.onDiscordChange({
-                    enableReactions: (e.target as HTMLSelectElement).value === "yes",
-                  })}
-              >
-                <option value="yes">Enabled</option>
-                <option value="no">Disabled</option>
-              </select>
-            </label>
-            <label class="field">
               <span>Slash command</span>
               <select
                 .value=${props.discordForm.slashEnabled ? "yes" : "no"}

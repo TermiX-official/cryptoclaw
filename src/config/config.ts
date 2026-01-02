@@ -247,8 +247,6 @@ export type DiscordConfig = {
   textChunkLimit?: number;
   mediaMaxMb?: number;
   historyLimit?: number;
-  /** Allow agent-triggered Discord reactions (default: true). */
-  enableReactions?: boolean;
   /** Per-action tool gating (default: true for all). */
   actions?: DiscordActionConfig;
   /** Control reply threading when reply tags are present (off|first|all). */
@@ -1052,7 +1050,6 @@ const ClawdisSchema = z.object({
         .optional(),
       mediaMaxMb: z.number().positive().optional(),
       historyLimit: z.number().int().min(0).optional(),
-      enableReactions: z.boolean().optional(),
       actions: z
         .object({
           reactions: z.boolean().optional(),

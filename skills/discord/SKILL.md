@@ -1,13 +1,13 @@
 ---
 name: discord
-description: Use when you need to control Discord from Clawdis via the discord tool: add reactions, send stickers, or create polls in Discord DMs or channels. Trigger for tasks like reacting to a message, posting a sticker, or running a quick poll for a decision.
+description: Use when you need to control Discord from Clawdis via the discord tool: send messages, react, post stickers, run polls, manage threads/pins/search, fetch permissions or member/role/channel info, or handle moderation actions in Discord DMs or channels.
 ---
 
 # Discord Actions
 
 ## Overview
 
-Use `discord` to manage messages, reactions, threads, and moderation. Reactions are gated by `discord.enableReactions` (default `true`). You can disable groups via `discord.actions.*`. The tool uses the bot token configured for Clawdis.
+Use `discord` to manage messages, reactions, threads, polls, and moderation. You can disable groups via `discord.actions.*` (defaults to enabled, except roles/moderation). The tool uses the bot token configured for Clawdis.
 
 ## Inputs to collect
 
@@ -91,7 +91,7 @@ Message context lines include `discord message id` and `channel` fields you can 
 ## Action gating
 
 Use `discord.actions.*` to disable action groups:
-- `reactions` (react + reactions list)
+- `reactions` (react + reactions list + emojiList)
 - `stickers`, `polls`, `permissions`, `messages`, `threads`, `pins`, `search`
 - `memberInfo`, `roleInfo`, `channelInfo`, `voiceStatus`, `events`
 - `roles` (role add/remove, default `false`)

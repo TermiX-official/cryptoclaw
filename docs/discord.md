@@ -27,7 +27,7 @@ Status: ready for DM and guild text channels via the official Discord bot gatewa
 8. Optional guild rules: set `discord.guilds` keyed by guild id (preferred) or slug, with per-channel rules.
 9. Optional slash commands: enable `discord.slashCommand` to accept user-installed app commands (ephemeral replies). Slash invocations respect the same DM/guild allowlists.
 10. Optional guild context history: set `discord.historyLimit` (default 20) to include the last N guild messages as context when replying to a mention. Set `0` to disable.
-11. Reactions: the agent can trigger reactions via the `discord` tool (gated by `discord.enableReactions`).
+11. Reactions: the agent can trigger reactions via the `discord` tool (gated by `discord.actions.*`).
 12. Slash commands use isolated session keys (`${sessionPrefix}:${userId}`) rather than the shared `main` session.
 
 Note: Discord does not provide a simple username → id lookup without extra guild context, so prefer ids or `<@id>` mentions for DM delivery targets.
@@ -50,7 +50,6 @@ Note: Guild context `[from:]` lines include `author.tag` + `id` to make ping-rea
     enabled: true,
     token: "abc.123",
     mediaMaxMb: 8,
-    enableReactions: true,
     actions: {
       reactions: true,
       stickers: true,
@@ -110,7 +109,6 @@ Note: Guild context `[from:]` lines include `author.tag` + `id` to make ping-rea
 - `slashCommand`: optional config for user-installed slash commands (ephemeral responses).
 - `mediaMaxMb`: clamp inbound media saved to disk.
 - `historyLimit`: number of recent guild messages to include as context when replying to a mention (default 20, `0` disables).
-- `enableReactions`: allow agent-triggered reactions via the `discord` tool (default `true`).
 - `actions`: per-action tool gates; omit to allow all (set `false` to disable).
   - `reactions` (covers react + read reactions)
   - `stickers`, `polls`, `permissions`, `messages`, `threads`, `pins`, `search`

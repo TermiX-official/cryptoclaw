@@ -143,7 +143,6 @@ export class ClawdisApp extends LitElement {
     groupChannels: "",
     mediaMaxMb: "",
     historyLimit: "",
-    enableReactions: true,
     slashEnabled: false,
     slashName: "",
     slashSessionPrefix: "",

@@ -246,12 +246,6 @@ export async function saveDiscordConfig(state: ConnectionsState) {
       }
     }
 
-    if (form.enableReactions) {
-      delete discord.enableReactions;
-    } else {
-      discord.enableReactions = false;
-    }
-
     const slash = { ...(discord.slashCommand ?? {}) } as Record<string, unknown>;
     if (form.slashEnabled) {
       slash.enabled = true;

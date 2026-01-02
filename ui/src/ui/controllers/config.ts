@@ -99,8 +99,6 @@ export function applyConfigSnapshot(state: ConfigState, snapshot: ConfigSnapshot
       typeof discord.mediaMaxMb === "number" ? String(discord.mediaMaxMb) : "",
     historyLimit:
       typeof discord.historyLimit === "number" ? String(discord.historyLimit) : "",
-    enableReactions:
-      typeof discord.enableReactions === "boolean" ? discord.enableReactions : true,
     slashEnabled: typeof slash.enabled === "boolean" ? slash.enabled : false,
     slashName: typeof slash.name === "string" ? slash.name : "",
     slashSessionPrefix:

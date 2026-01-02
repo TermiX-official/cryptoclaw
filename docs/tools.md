@@ -141,8 +141,7 @@ Notes:
 - `to` accepts `channel:<id>` or `user:<id>`.
 - Polls require 2–10 answers and default to 24 hours.
 - `reactions` returns per-emoji user lists (limited to 100 per reaction).
-- Reactions respect `discord.enableReactions` (default `true`).
-- `discord.actions.roles` + `discord.actions.moderation` default to `false`.
+- `discord.actions.*` gates Discord tool actions; `roles` + `moderation` default to `false`.
 - `searchMessages` follows the Discord preview spec (limit max 25, channel/author filters accept arrays).
 
 ## Parameters (common)

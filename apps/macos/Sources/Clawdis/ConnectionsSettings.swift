@@ -311,12 +311,6 @@ struct ConnectionsSettings: View {
                             .textFieldStyle(.roundedBorder)
                     }
                     GridRow {
-                        self.gridLabel("Reactions")
-                        Toggle("", isOn: self.$store.discordEnableReactions)
-                            .labelsHidden()
-                            .toggleStyle(.checkbox)
-                    }
-                    GridRow {
                         self.gridLabel("Slash command")
                         Toggle("", isOn: self.$store.discordSlashEnabled)
                             .labelsHidden()

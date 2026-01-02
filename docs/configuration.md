@@ -221,7 +221,6 @@ Configure the Discord bot by setting the bot token and optional gating:
     enabled: true,
     token: "your-bot-token",
     mediaMaxMb: 8,                          // clamp inbound media size
-    enableReactions: true,                  // allow agent-triggered reactions
     actions: {                              // tool action gates (false disables)
       reactions: true,
       stickers: true,

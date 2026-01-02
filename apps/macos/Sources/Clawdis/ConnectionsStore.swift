@@ -174,7 +174,6 @@ final class ConnectionsStore {
     var discordGroupChannels: String = ""
     var discordMediaMaxMb: String = ""
     var discordHistoryLimit: String = ""
-    var discordEnableReactions = true
     var discordSlashEnabled = false
     var discordSlashName: String = ""
     var discordSlashSessionPrefix: String = ""
@@ -420,7 +419,6 @@ final class ConnectionsStore {
             } else {
                 self.discordHistoryLimit = ""
             }
-            self.discordEnableReactions = discord?["enableReactions"]?.boolValue ?? true
             let slash = discord?["slashCommand"]?.dictionaryValue
             self.discordSlashEnabled = slash?["enabled"]?.boolValue ?? false
             self.discordSlashName = slash?["name"]?.stringValue ?? ""
@@ -642,12 +640,6 @@ final class ConnectionsStore {
             discord["historyLimit"] = value
         } else {
             discord.removeValue(forKey: "historyLimit")
-        }
-
-        if self.discordEnableReactions {
-            discord.removeValue(forKey: "enableReactions")
-        } else {
-            discord["enableReactions"] = false
         }
 
         var slash: [String: Any] = (discord["slashCommand"] as? [String: Any]) ?? [:]

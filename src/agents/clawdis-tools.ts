@@ -1758,11 +1758,6 @@ function createDiscordTool(): AnyAgentTool {
           if (!isActionEnabled("reactions")) {
             throw new Error("Discord reactions are disabled.");
           }
-          if (cfg.discord?.enableReactions === false) {
-            throw new Error(
-              "Discord reactions are disabled (set discord.enableReactions=true).",
-            );
-          }
           const channelId = readStringParam(params, "channelId", {
             required: true,
           });

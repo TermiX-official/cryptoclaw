@@ -16,7 +16,6 @@ export type DiscordForm = {
   groupChannels: string;
   mediaMaxMb: string;
   historyLimit: string;
-  enableReactions: boolean;
   slashEnabled: boolean;
   slashName: string;
   slashSessionPrefix: string;

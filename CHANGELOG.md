@@ -26,6 +26,7 @@
 - Signal: add `signal-cli` JSON-RPC support for send/receive via the Signal provider.
 - iMessage: add imsg JSON-RPC integration (stdio), chat_id routing, and group chat support.
 - Chat UI: add recent-session dropdown switcher (main first) in macOS/iOS/Android + Control UI.
+- UI: add Discord/Signal/iMessage connection panels in macOS + Control UI (thanks @thewilloftheshadow).
 - Discord: allow agent-triggered reactions via `clawdis_discord` when enabled, and surface message ids in context.
 - Discord: revamp guild routing config with per-guild/channel rules and slugged display names; add optional group DM support (default off).
 - Discord: remove legacy guild/channel ignore lists in favor of per-guild allowlists (and proposed per-guild ignore lists).

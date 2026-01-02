@@ -167,12 +167,18 @@ final class ConnectionsStore {
     var telegramWebhookSecret: String = ""
     var telegramWebhookPath: String = ""
     var telegramBusy = false
+    var discordEnabled = true
     var discordToken: String = ""
-    var discordRequireMention = true
     var discordAllowFrom: String = ""
-    var discordGuildAllowFrom: String = ""
-    var discordGuildUsersAllowFrom: String = ""
+    var discordGroupEnabled = false
+    var discordGroupChannels: String = ""
     var discordMediaMaxMb: String = ""
+    var discordHistoryLimit: String = ""
+    var discordEnableReactions = true
+    var discordSlashEnabled = false
+    var discordSlashName: String = ""
+    var discordSlashSessionPrefix: String = ""
+    var discordSlashEphemeral = true
     var signalEnabled = true
     var signalAccount: String = ""
     var signalHttpUrl: String = ""
@@ -378,9 +384,10 @@ final class ConnectionsStore {
             self.telegramWebhookPath = telegram?["webhookPath"]?.stringValue ?? ""
 
             let discord = snap.config?["discord"]?.dictionaryValue
+            self.discordEnabled = discord?["enabled"]?.boolValue ?? true
             self.discordToken = discord?["token"]?.stringValue ?? ""
-            self.discordRequireMention = discord?["requireMention"]?.boolValue ?? true
-            if let allow = discord?["allowFrom"]?.arrayValue {
+            let discordDm = discord?["dm"]?.dictionaryValue
+            if let allow = discordDm?["allowFrom"]?.arrayValue {
                 let strings = allow.compactMap { entry -> String? in
                     if let str = entry.stringValue { return str }
                     if let intVal = entry.intValue { return String(intVal) }
@@ -391,38 +398,34 @@ final class ConnectionsStore {
             } else {
                 self.discordAllowFrom = ""
             }
-            if let guildAllow = discord?["guildAllowFrom"]?.dictionaryValue {
-                if let guilds = guildAllow["guilds"]?.arrayValue {
-                    let strings = guilds.compactMap { entry -> String? in
-                        if let str = entry.stringValue { return str }
-                        if let intVal = entry.intValue { return String(intVal) }
-                        if let doubleVal = entry.doubleValue { return String(Int(doubleVal)) }
-                        return nil
-                    }
-                    self.discordGuildAllowFrom = strings.joined(separator: ", ")
-                } else {
-                    self.discordGuildAllowFrom = ""
+            self.discordGroupEnabled = discordDm?["groupEnabled"]?.boolValue ?? false
+            if let channels = discordDm?["groupChannels"]?.arrayValue {
+                let strings = channels.compactMap { entry -> String? in
+                    if let str = entry.stringValue { return str }
+                    if let intVal = entry.intValue { return String(intVal) }
+                    if let doubleVal = entry.doubleValue { return String(Int(doubleVal)) }
+                    return nil
                 }
-                if let users = guildAllow["users"]?.arrayValue {
-                    let strings = users.compactMap { entry -> String? in
-                        if let str = entry.stringValue { return str }
-                        if let intVal = entry.intValue { return String(intVal) }
-                        if let doubleVal = entry.doubleValue { return String(Int(doubleVal)) }
-                        return nil
-                    }
-                    self.discordGuildUsersAllowFrom = strings.joined(separator: ", ")
-                } else {
-                    self.discordGuildUsersAllowFrom = ""
-                }
+                self.discordGroupChannels = strings.joined(separator: ", ")
             } else {
-                self.discordGuildAllowFrom = ""
-                self.discordGuildUsersAllowFrom = ""
+                self.discordGroupChannels = ""
             }
             if let media = discord?["mediaMaxMb"]?.doubleValue ?? discord?["mediaMaxMb"]?.intValue.map(Double.init) {
                 self.discordMediaMaxMb = String(Int(media))
             } else {
                 self.discordMediaMaxMb = ""
             }
+            if let history = discord?["historyLimit"]?.doubleValue ?? discord?["historyLimit"]?.intValue.map(Double.init) {
+                self.discordHistoryLimit = String(Int(history))
+            } else {
+                self.discordHistoryLimit = ""
+            }
+            self.discordEnableReactions = discord?["enableReactions"]?.boolValue ?? true
+            let slash = discord?["slashCommand"]?.dictionaryValue
+            self.discordSlashEnabled = slash?["enabled"]?.boolValue ?? false
+            self.discordSlashName = slash?["name"]?.stringValue ?? ""
+            self.discordSlashSessionPrefix = slash?["sessionPrefix"]?.stringValue ?? ""
+            self.discordSlashEphemeral = slash?["ephemeral"]?.boolValue ?? true
 
             let signal = snap.config?["signal"]?.dictionaryValue
             self.signalEnabled = signal?["enabled"]?.boolValue ?? true
@@ -580,6 +583,11 @@ final class ConnectionsStore {
         }
 
         var discord: [String: Any] = (self.configRoot["discord"] as? [String: Any]) ?? [:]
+        if self.discordEnabled {
+            discord.removeValue(forKey: "enabled")
+        } else {
+            discord["enabled"] = false
+        }
         let token = self.discordToken.trimmingCharacters(in: .whitespacesAndNewlines)
         if token.isEmpty {
             discord.removeValue(forKey: "token")
@@ -587,43 +595,37 @@ final class ConnectionsStore {
             discord["token"] = token
         }
 
-        discord["requireMention"] = self.discordRequireMention
-
+        var dm: [String: Any] = (discord["dm"] as? [String: Any]) ?? [:]
         let allow = self.discordAllowFrom
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         if allow.isEmpty {
-            discord.removeValue(forKey: "allowFrom")
+            dm.removeValue(forKey: "allowFrom")
         } else {
-            discord["allowFrom"] = allow
+            dm["allowFrom"] = allow
         }
 
-        var guildAllow: [String: Any] = (discord["guildAllowFrom"] as? [String: Any]) ?? [:]
-        let guilds = self.discordGuildAllowFrom
+        if self.discordGroupEnabled {
+            dm["groupEnabled"] = true
+        } else {
+            dm.removeValue(forKey: "groupEnabled")
+        }
+
+        let groupChannels = self.discordGroupChannels
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        if guilds.isEmpty {
-            guildAllow.removeValue(forKey: "guilds")
+        if groupChannels.isEmpty {
+            dm.removeValue(forKey: "groupChannels")
         } else {
-            guildAllow["guilds"] = guilds
+            dm["groupChannels"] = groupChannels
         }
 
-        let users = self.discordGuildUsersAllowFrom
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        if users.isEmpty {
-            guildAllow.removeValue(forKey: "users")
+        if dm.isEmpty {
+            discord.removeValue(forKey: "dm")
         } else {
-            guildAllow["users"] = users
-        }
-
-        if guildAllow.isEmpty {
-            discord.removeValue(forKey: "guildAllowFrom")
-        } else {
-            discord["guildAllowFrom"] = guildAllow
+            discord["dm"] = dm
         }
 
         let media = self.discordMediaMaxMb.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -631,6 +633,50 @@ final class ConnectionsStore {
             discord.removeValue(forKey: "mediaMaxMb")
         } else if let value = Double(media) {
             discord["mediaMaxMb"] = value
+        }
+
+        let history = self.discordHistoryLimit.trimmingCharacters(in: .whitespacesAndNewlines)
+        if history.isEmpty {
+            discord.removeValue(forKey: "historyLimit")
+        } else if let value = Int(history), value >= 0 {
+            discord["historyLimit"] = value
+        } else {
+            discord.removeValue(forKey: "historyLimit")
+        }
+
+        if self.discordEnableReactions {
+            discord.removeValue(forKey: "enableReactions")
+        } else {
+            discord["enableReactions"] = false
+        }
+
+        var slash: [String: Any] = (discord["slashCommand"] as? [String: Any]) ?? [:]
+        if self.discordSlashEnabled {
+            slash["enabled"] = true
+        } else {
+            slash.removeValue(forKey: "enabled")
+        }
+        let slashName = self.discordSlashName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if slashName.isEmpty {
+            slash.removeValue(forKey: "name")
+        } else {
+            slash["name"] = slashName
+        }
+        let slashPrefix = self.discordSlashSessionPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        if slashPrefix.isEmpty {
+            slash.removeValue(forKey: "sessionPrefix")
+        } else {
+            slash["sessionPrefix"] = slashPrefix
+        }
+        if self.discordSlashEphemeral {
+            slash.removeValue(forKey: "ephemeral")
+        } else {
+            slash["ephemeral"] = false
+        }
+        if slash.isEmpty {
+            discord.removeValue(forKey: "slashCommand")
+        } else {
+            discord["slashCommand"] = slash
         }
 
         if discord.isEmpty {

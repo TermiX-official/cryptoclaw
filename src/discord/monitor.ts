@@ -69,7 +69,8 @@ export type DiscordChannelConfigResolved = {
 function summarizeAllowList(list?: Array<string | number>) {
   if (!list || list.length === 0) return "any";
   const sample = list.slice(0, 4).map((entry) => String(entry));
-  const suffix = list.length > sample.length ? ` (+${list.length - sample.length})` : "";
+  const suffix =
+    list.length > sample.length ? ` (+${list.length - sample.length})` : "";
   return `${sample.join(", ")}${suffix}`;
 }
 
@@ -77,7 +78,8 @@ function summarizeGuilds(entries?: Record<string, DiscordGuildEntryResolved>) {
   if (!entries || Object.keys(entries).length === 0) return "any";
   const keys = Object.keys(entries);
   const sample = keys.slice(0, 4);
-  const suffix = keys.length > sample.length ? ` (+${keys.length - sample.length})` : "";
+  const suffix =
+    keys.length > sample.length ? ` (+${keys.length - sample.length})` : "";
   return `${sample.join(", ")}${suffix}`;
 }
 

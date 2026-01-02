@@ -217,11 +217,16 @@ export async function saveDiscordConfig(state: ConnectionsState) {
       delete discord.mediaMaxMb;
     }
 
-    const historyLimit = Number(form.historyLimit);
-    if (Number.isFinite(historyLimit) && historyLimit >= 0) {
-      discord.historyLimit = historyLimit;
-    } else {
+    const historyLimitRaw = form.historyLimit.trim();
+    if (historyLimitRaw.length === 0) {
       delete discord.historyLimit;
+    } else {
+      const historyLimit = Number(historyLimitRaw);
+      if (Number.isFinite(historyLimit) && historyLimit >= 0) {
+        discord.historyLimit = historyLimit;
+      } else {
+        delete discord.historyLimit;
+      }
     }
 
     if (form.enableReactions) {

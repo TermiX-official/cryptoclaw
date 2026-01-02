@@ -264,6 +264,12 @@ struct ConnectionsSettings: View {
 
                 Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 10) {
                     GridRow {
+                        self.gridLabel("Enabled")
+                        Toggle("", isOn: self.$store.discordEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
+                    }
+                    GridRow {
                         self.gridLabel("Bot token")
                         if self.showDiscordToken {
                             TextField("bot token", text: self.$store.discordToken)
@@ -279,30 +285,58 @@ struct ConnectionsSettings: View {
                             .disabled(self.isDiscordTokenLocked)
                     }
                     GridRow {
-                        self.gridLabel("Require mention")
-                        Toggle("", isOn: self.$store.discordRequireMention)
+                        self.gridLabel("Allow DMs from")
+                        TextField("123456789, username#1234", text: self.$store.discordAllowFrom)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    GridRow {
+                        self.gridLabel("Group DMs")
+                        Toggle("", isOn: self.$store.discordGroupEnabled)
                             .labelsHidden()
                             .toggleStyle(.checkbox)
                     }
                     GridRow {
-                        self.gridLabel("Allow from")
-                        TextField("discord:123, user:456", text: self.$store.discordAllowFrom)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    GridRow {
-                        self.gridLabel("Allow guilds")
-                        TextField("guildId1, guildId2", text: self.$store.discordGuildAllowFrom)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    GridRow {
-                        self.gridLabel("Allow guild users")
-                        TextField("userId1, userId2", text: self.$store.discordGuildUsersAllowFrom)
+                        self.gridLabel("Group channels")
+                        TextField("channelId1, channelId2", text: self.$store.discordGroupChannels)
                             .textFieldStyle(.roundedBorder)
                     }
                     GridRow {
                         self.gridLabel("Media max MB")
                         TextField("8", text: self.$store.discordMediaMaxMb)
                             .textFieldStyle(.roundedBorder)
+                    }
+                    GridRow {
+                        self.gridLabel("History limit")
+                        TextField("20", text: self.$store.discordHistoryLimit)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    GridRow {
+                        self.gridLabel("Reactions")
+                        Toggle("", isOn: self.$store.discordEnableReactions)
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
+                    }
+                    GridRow {
+                        self.gridLabel("Slash command")
+                        Toggle("", isOn: self.$store.discordSlashEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
+                    }
+                    GridRow {
+                        self.gridLabel("Slash name")
+                        TextField("clawd", text: self.$store.discordSlashName)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    GridRow {
+                        self.gridLabel("Slash session prefix")
+                        TextField("discord:slash", text: self.$store.discordSlashSessionPrefix)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    GridRow {
+                        self.gridLabel("Slash ephemeral")
+                        Toggle("", isOn: self.$store.discordSlashEphemeral)
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
                     }
                 }
 

@@ -2074,6 +2074,15 @@ export async function startGatewayServer(
   const startTelegramProvider = async () => {
     if (telegramTask) return;
     const cfg = loadConfig();
+    if (!cfg.telegram) {
+      telegramRuntime = {
+        ...telegramRuntime,
+        running: false,
+        lastError: "not configured",
+      };
+      logTelegram.info("skipping provider start (telegram not configured)");
+      return;
+    }
     if (cfg.telegram?.enabled === false) {
       telegramRuntime = {
         ...telegramRuntime,
@@ -2168,6 +2177,15 @@ export async function startGatewayServer(
   const startDiscordProvider = async () => {
     if (discordTask) return;
     const cfg = loadConfig();
+    if (!cfg.discord) {
+      discordRuntime = {
+        ...discordRuntime,
+        running: false,
+        lastError: "not configured",
+      };
+      logDiscord.info("skipping provider start (discord not configured)");
+      return;
+    }
     if (cfg.discord?.enabled === false) {
       discordRuntime = {
         ...discordRuntime,
@@ -2268,6 +2286,26 @@ export async function startGatewayServer(
         lastError: "disabled",
       };
       logSignal.info("skipping provider start (signal.enabled=false)");
+      return;
+    }
+    const signalCfg = cfg.signal;
+    const signalMeaningfullyConfigured = Boolean(
+      signalCfg.account?.trim() ||
+        signalCfg.httpUrl?.trim() ||
+        signalCfg.cliPath?.trim() ||
+        signalCfg.httpHost?.trim() ||
+        typeof signalCfg.httpPort === "number" ||
+        typeof signalCfg.autoStart === "boolean",
+    );
+    if (!signalMeaningfullyConfigured) {
+      signalRuntime = {
+        ...signalRuntime,
+        running: false,
+        lastError: "not configured",
+      };
+      logSignal.info(
+        "skipping provider start (signal config present but missing required fields)",
+      );
       return;
     }
     const host = cfg.signal?.httpHost?.trim() || "127.0.0.1";
@@ -4345,21 +4383,33 @@ export async function startGatewayServer(
                   ? Math.max(1000, timeoutMsRaw)
                   : 10_000;
               const cfg = loadConfig();
+              const telegramCfg = cfg.telegram;
+              const telegramEnabled =
+                Boolean(telegramCfg) && telegramCfg?.enabled !== false;
               const { token: telegramToken, source: tokenSource } =
-                resolveTelegramToken(cfg);
+                telegramEnabled
+                  ? resolveTelegramToken(cfg)
+                  : { token: "", source: "none" as const };
               let telegramProbe: TelegramProbe | undefined;
               let lastProbeAt: number | null = null;
-              if (probe && telegramToken) {
+              if (probe && telegramToken && telegramEnabled) {
                 telegramProbe = await probeTelegram(
                   telegramToken,
                   timeoutMs,
-                  cfg.telegram?.proxy,
+                  telegramCfg?.proxy,
                 );
                 lastProbeAt = Date.now();
               }
 
-              const discordEnvToken = process.env.DISCORD_BOT_TOKEN?.trim();
-              const discordConfigToken = cfg.discord?.token?.trim();
+              const discordCfg = cfg.discord;
+              const discordEnabled =
+                Boolean(discordCfg) && discordCfg?.enabled !== false;
+              const discordEnvToken = discordEnabled
+                ? process.env.DISCORD_BOT_TOKEN?.trim()
+                : "";
+              const discordConfigToken = discordEnabled
+                ? discordCfg?.token?.trim()
+                : "";
               const discordToken = discordEnvToken || discordConfigToken || "";
               const discordTokenSource = discordEnvToken
                 ? "env"
@@ -4368,7 +4418,7 @@ export async function startGatewayServer(
                   : "none";
               let discordProbe: DiscordProbe | undefined;
               let discordLastProbeAt: number | null = null;
-              if (probe && discordToken) {
+              if (probe && discordToken && discordEnabled) {
                 discordProbe = await probeDiscord(discordToken, timeoutMs);
                 discordLastProbeAt = Date.now();
               }
@@ -4380,7 +4430,17 @@ export async function startGatewayServer(
               const signalBaseUrl =
                 signalCfg?.httpUrl?.trim() ||
                 `http://${signalHost}:${signalPort}`;
-              const signalConfigured = Boolean(signalCfg) && signalEnabled;
+              const signalConfigured =
+                Boolean(signalCfg) &&
+                signalEnabled &&
+                Boolean(
+                  signalCfg?.account?.trim() ||
+                    signalCfg?.httpUrl?.trim() ||
+                    signalCfg?.cliPath?.trim() ||
+                    signalCfg?.httpHost?.trim() ||
+                    typeof signalCfg?.httpPort === "number" ||
+                    typeof signalCfg?.autoStart === "boolean",
+                );
               let signalProbe: SignalProbe | undefined;
               let signalLastProbeAt: number | null = null;
               if (probe && signalConfigured) {
@@ -4422,7 +4482,7 @@ export async function startGatewayServer(
                     lastError: whatsappRuntime.lastError ?? null,
                   },
                   telegram: {
-                    configured: Boolean(telegramToken),
+                    configured: telegramEnabled && Boolean(telegramToken),
                     tokenSource,
                     running: telegramRuntime.running,
                     mode: telegramRuntime.mode ?? null,
@@ -4433,7 +4493,7 @@ export async function startGatewayServer(
                     lastProbeAt,
                   },
                   discord: {
-                    configured: Boolean(discordToken),
+                    configured: discordEnabled && Boolean(discordToken),
                     tokenSource: discordTokenSource,
                     running: discordRuntime.running,
                     lastStartAt: discordRuntime.lastStartAt ?? null,

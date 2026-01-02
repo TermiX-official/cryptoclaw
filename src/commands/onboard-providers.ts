@@ -301,7 +301,15 @@ export async function setupProviders(
         }),
         runtime,
       );
-      if (!keepEnv) {
+      if (keepEnv) {
+        next = {
+          ...next,
+          telegram: {
+            ...next.telegram,
+            enabled: true,
+          },
+        };
+      } else {
         token = String(
           guardCancel(
             await text({
@@ -368,7 +376,15 @@ export async function setupProviders(
         }),
         runtime,
       );
-      if (!keepEnv) {
+      if (keepEnv) {
+        next = {
+          ...next,
+          discord: {
+            ...next.discord,
+            enabled: true,
+          },
+        };
+      } else {
         token = String(
           guardCancel(
             await text({

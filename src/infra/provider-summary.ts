@@ -35,8 +35,11 @@ export async function buildProviderSummary(
   if (!telegramEnabled) {
     lines.push(chalk.cyan("Telegram: disabled"));
   } else {
-    const { token: telegramToken } = resolveTelegramToken(effective);
-    const telegramConfigured = Boolean(telegramToken);
+    const { token: telegramToken } = effective.telegram
+      ? resolveTelegramToken(effective)
+      : { token: "" };
+    const telegramConfigured =
+      Boolean(effective.telegram) && Boolean(telegramToken);
     lines.push(
       telegramConfigured
         ? chalk.green("Telegram: configured")
@@ -48,11 +51,16 @@ export async function buildProviderSummary(
   if (!signalEnabled) {
     lines.push(chalk.cyan("Signal: disabled"));
   } else {
-    const signalConfigured = Boolean(
-      effective.signal?.httpUrl ||
-        effective.signal?.cliPath ||
-        effective.signal?.account,
-    );
+    const signalConfigured =
+      Boolean(effective.signal) &&
+      Boolean(
+        effective.signal?.account?.trim() ||
+          effective.signal?.httpUrl?.trim() ||
+          effective.signal?.cliPath?.trim() ||
+          effective.signal?.httpHost?.trim() ||
+          typeof effective.signal?.httpPort === "number" ||
+          typeof effective.signal?.autoStart === "boolean",
+      );
     lines.push(
       signalConfigured
         ? chalk.green("Signal: configured")

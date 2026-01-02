@@ -43,6 +43,8 @@ type NodesRpcOpts = {
   format?: string;
   maxWidth?: string;
   quality?: string;
+  delayMs?: string;
+  deviceId?: string;
   duration?: string;
   screen?: string;
   fps?: string;
@@ -888,7 +890,9 @@ export function registerNodesCli(program: Command) {
             const name =
               typeof device.name === "string" ? device.name : "Unknown Camera";
             const position =
-              typeof device.position === "string" ? device.position : "unspecified";
+              typeof device.position === "string"
+                ? device.position
+                : "unspecified";
             defaultRuntime.log(`${name} (${position})${id ? ` — ${id}` : ""}`);
           }
         } catch (err) {
@@ -908,7 +912,10 @@ export function registerNodesCli(program: Command) {
       .option("--device-id <id>", "Camera device id (from nodes camera list)")
       .option("--max-width <px>", "Max width in px (optional)")
       .option("--quality <0-1>", "JPEG quality (default 0.9)")
-      .option("--delay-ms <ms>", "Delay before capture in ms (macOS default 2000)")
+      .option(
+        "--delay-ms <ms>",
+        "Delay before capture in ms (macOS default 2000)",
+      )
       .option(
         "--invoke-timeout <ms>",
         "Node invoke timeout in ms (default 20000)",
@@ -940,7 +947,9 @@ export function registerNodesCli(program: Command) {
           const delayMs = opts.delayMs
             ? Number.parseInt(String(opts.delayMs), 10)
             : undefined;
-          const deviceId = opts.deviceId ? String(opts.deviceId).trim() : undefined;
+          const deviceId = opts.deviceId
+            ? String(opts.deviceId).trim()
+            : undefined;
           const timeoutMs = opts.invokeTimeout
             ? Number.parseInt(String(opts.invokeTimeout), 10)
             : undefined;
@@ -1037,20 +1046,22 @@ export function registerNodesCli(program: Command) {
           const timeoutMs = opts.invokeTimeout
             ? Number.parseInt(String(opts.invokeTimeout), 10)
             : undefined;
-          const deviceId = opts.deviceId ? String(opts.deviceId).trim() : undefined;
+          const deviceId = opts.deviceId
+            ? String(opts.deviceId).trim()
+            : undefined;
 
           const invokeParams: Record<string, unknown> = {
             nodeId,
             command: "camera.clip",
-              params: {
-                facing,
-                durationMs: Number.isFinite(durationMs) ? durationMs : undefined,
-                includeAudio,
-                format: "mp4",
-                deviceId: deviceId || undefined,
-              },
-              idempotencyKey: randomIdempotencyKey(),
-            };
+            params: {
+              facing,
+              durationMs: Number.isFinite(durationMs) ? durationMs : undefined,
+              includeAudio,
+              format: "mp4",
+              deviceId: deviceId || undefined,
+            },
+            idempotencyKey: randomIdempotencyKey(),
+          };
           if (typeof timeoutMs === "number" && Number.isFinite(timeoutMs)) {
             invokeParams.timeoutMs = timeoutMs;
           }

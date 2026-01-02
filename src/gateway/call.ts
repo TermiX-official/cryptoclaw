@@ -26,7 +26,7 @@ export async function callGateway<T = unknown>(
   const timeoutMs = opts.timeoutMs ?? 10_000;
   const config = loadConfig();
   const isRemoteMode = config.gateway?.mode === "remote";
-  const remote = isRemoteMode ? config.gateway.remote : undefined;
+  const remote = isRemoteMode ? config.gateway?.remote : undefined;
   const url =
     (typeof opts.url === "string" && opts.url.trim().length > 0
       ? opts.url.trim()

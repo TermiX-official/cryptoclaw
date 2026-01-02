@@ -865,20 +865,6 @@ function createCanvasTool(): AnyAgentTool {
             Number.isFinite(params.quality)
               ? params.quality
               : undefined;
-          const delayMs =
-            typeof params.delayMs === "number" &&
-            Number.isFinite(params.delayMs)
-              ? params.delayMs
-              : undefined;
-          const deviceId =
-            typeof params.deviceId === "string" && params.deviceId.trim()
-              ? params.deviceId.trim()
-              : undefined;
-          const delayMs =
-            typeof params.delayMs === "number" &&
-            Number.isFinite(params.delayMs)
-              ? params.delayMs
-              : undefined;
           const raw = (await invoke("canvas.snapshot", {
             format,
             maxWidth,
@@ -889,8 +875,7 @@ function createCanvasTool(): AnyAgentTool {
             ext: payload.format === "jpeg" ? "jpg" : payload.format,
           });
           await writeBase64ToFile(filePath, payload.base64);
-          const mimeType =
-            imageMimeFromFormat(payload.format) ?? "image/png";
+          const mimeType = imageMimeFromFormat(payload.format) ?? "image/png";
           return await imageResult({
             label: "canvas:snapshot",
             path: filePath,
@@ -1139,6 +1124,15 @@ function createNodesTool(): AnyAgentTool {
             Number.isFinite(params.quality)
               ? params.quality
               : undefined;
+          const delayMs =
+            typeof params.delayMs === "number" &&
+            Number.isFinite(params.delayMs)
+              ? params.delayMs
+              : undefined;
+          const deviceId =
+            typeof params.deviceId === "string" && params.deviceId.trim()
+              ? params.deviceId.trim()
+              : undefined;
 
           const content: AgentToolResult<unknown>["content"] = [];
           const details: Array<Record<string, unknown>> = [];
@@ -1158,10 +1152,23 @@ function createNodesTool(): AnyAgentTool {
               idempotencyKey: crypto.randomUUID(),
             })) as { payload?: unknown };
             const payload = parseCameraSnapPayload(raw?.payload);
+            const normalizedFormat = payload.format.toLowerCase();
+            if (
+              normalizedFormat !== "jpg" &&
+              normalizedFormat !== "jpeg" &&
+              normalizedFormat !== "png"
+            ) {
+              throw new Error(
+                `unsupported camera.snap format: ${payload.format}`,
+              );
+            }
+
+            const isJpeg =
+              normalizedFormat === "jpg" || normalizedFormat === "jpeg";
             const filePath = cameraTempPath({
               kind: "snap",
               facing,
-              ext: payload.format === "jpeg" ? "jpg" : payload.format,
+              ext: isJpeg ? "jpg" : "png",
             });
             await writeBase64ToFile(filePath, payload.base64);
             content.push({ type: "text", text: `MEDIA:${filePath}` });
@@ -1169,7 +1176,8 @@ function createNodesTool(): AnyAgentTool {
               type: "image",
               data: payload.base64,
               mimeType:
-                imageMimeFromFormat(payload.format) ?? "image/png",
+                imageMimeFromFormat(payload.format) ??
+                (isJpeg ? "image/jpeg" : "image/png"),
             });
             details.push({
               facing,

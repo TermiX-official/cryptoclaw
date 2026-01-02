@@ -40,14 +40,16 @@ Interactive (preferred in tmux):
 
 ## Codex CLI
 
-⚠️ **Use gpt-5.2-codex with medium reasoning!**
+⚠️ **Use gpt-5.2-codex — choose reasoning effort yourself:**
+- `medium` — most tasks
+- `high` — complex/architectural tasks
 
 **One-shot with tmux (recommended):**
 ```bash
 # IMPORTANT: Use bash workdir param to start in the target folder!
 # This way Codex "wakes up in a little box" - only sees relevant files
 
-# Start Codex in target directory
+# Start Codex in target directory (choose medium or high based on task complexity)
 bash workdir:~/project/folder command:"tmux new -d -s codex-task 'codex exec --model gpt-5.2-codex -c reasoning_effort=\"medium\" -s workspace-write \"Your task\"'"
 
 # Monitor progress

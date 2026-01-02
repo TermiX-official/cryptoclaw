@@ -81,7 +81,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const allowFrom =
     opts.allowFrom ?? dmConfig?.allowFrom ?? cfg.discord?.allowFrom;
   const guildAllowFrom =
-    opts.guildAllowFrom ?? guildConfig?.allowFrom ?? cfg.discord?.guildAllowFrom;
+    opts.guildAllowFrom ??
+    guildConfig?.allowFrom ??
+    cfg.discord?.guildAllowFrom;
   const guildChannels = guildConfig?.channels;
   const requireMention =
     opts.requireMention ??
@@ -126,10 +128,8 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       if (!message.author) return;
 
       const channelType = message.channel.type;
-      const isGroupDm = channelType === ChannelType.GroupDM;
       const isDirectMessage = channelType === ChannelType.DM;
       const isGuildMessage = Boolean(message.guild);
-      if (isGroupDm) return;
       if (isDirectMessage && !dmEnabled) return;
       const botId = client.user?.id;
       const wasMentioned =
@@ -249,9 +249,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
       const fromLabel = isDirectMessage
         ? buildDirectLabel(message)
-        : isGroupDm
-          ? buildGroupDmLabel(message)
-          : buildGuildLabel(message);
+        : buildGuildLabel(message);
       const groupSubject = (() => {
         if (isDirectMessage) return undefined;
         const channelName =
@@ -414,13 +412,6 @@ function inferPlaceholder(attachment: import("discord.js").Attachment): string {
 function buildDirectLabel(message: import("discord.js").Message) {
   const username = message.author.tag;
   return `${username} id:${message.author.id}`;
-}
-
-function buildGroupDmLabel(message: import("discord.js").Message) {
-  const channelName =
-    "name" in message.channel ? message.channel.name : undefined;
-  const name = channelName ? ` ${channelName}` : "";
-  return `Group DM${name} id:${message.channelId}`;
 }
 
 function buildGuildLabel(message: import("discord.js").Message) {

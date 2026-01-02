@@ -23,6 +23,7 @@
 - iMessage: add imsg JSON-RPC integration (stdio), chat_id routing, and group chat support.
 - Chat UI: add recent-session dropdown switcher (main first) in macOS/iOS/Android + Control UI.
 - Discord: allow agent-triggered reactions via `clawdis_discord` when enabled, and surface message ids in context.
+- Skills: add Trello skill for board/list/card management (thanks @clawd).
 - Tests: add a Z.AI live test gate for smoke validation when keys are present.
 - macOS Debug: add app log verbosity and rolling file log toggle for swift-log-backed app logs.
 - CLI: add onboarding wizard (gateway + workspace + skills) with daemon installers and Anthropic/Minimax setup paths.

@@ -193,7 +193,10 @@ export function extractReplyToTag(
     hasTag = true;
   }
 
-  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  cleaned = cleaned
+    .replace(/[ \t]+/g, " ")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .trim();
   return { cleaned, replyToId, hasTag };
 }
 

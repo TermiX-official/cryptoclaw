@@ -151,6 +151,7 @@ export async function applyHookMappings(
       }
     }
 
+    if (!base.action) return { ok: true, action: null, skipped: true };
     const merged = mergeAction(base.action, override, mapping.action);
     if (!merged.ok) return merged;
     return merged;

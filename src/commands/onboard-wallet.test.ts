@@ -122,8 +122,12 @@ describe("setupWallet", () => {
         /CRYPTOCLAW_WALLET_PRIVATE_KEY/,
       );
     } finally {
-      if (origKey !== undefined) process.env.CRYPTOCLAW_WALLET_PRIVATE_KEY = origKey;
-      if (origPass !== undefined) process.env.CRYPTOCLAW_WALLET_PASSPHRASE = origPass;
+      if (origKey !== undefined) {
+        process.env.CRYPTOCLAW_WALLET_PRIVATE_KEY = origKey;
+      }
+      if (origPass !== undefined) {
+        process.env.CRYPTOCLAW_WALLET_PASSPHRASE = origPass;
+      }
     }
   });
 });

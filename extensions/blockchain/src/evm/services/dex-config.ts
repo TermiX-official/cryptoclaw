@@ -139,7 +139,9 @@ export function getDexConfig(chainId: number): ChainDexConfig {
 export function getWrappedNativeAddress(chainId: number): `0x${string}` {
   const config = getDexConfig(chainId);
   const addr = config.v3?.wrappedNative ?? config.v2?.wrappedNative;
-  if (!addr) throw new Error(`No wrapped native token for chain ${chainId}`);
+  if (!addr) {
+    throw new Error(`No wrapped native token for chain ${chainId}`);
+  }
   return addr;
 }
 

@@ -8,7 +8,6 @@ import {
   getWrappedNativeAddress,
   isNativeToken,
   type ChainDexConfig,
-  FEE_TIER_LABELS,
 } from "./dex-config.js";
 import { resolveAddress } from "./ens.js";
 
@@ -59,8 +58,8 @@ async function fetchTokenInfo(tokenAddress: string, chainId: number): Promise<To
   const client = getPublicClient(chainId);
   const address = await resolveAddress(tokenAddress, chainId);
   const [symbol, decimals] = await Promise.all([
-    client.readContract({ address, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-    client.readContract({ address, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
+    client.readContract({ address, abi: ERC20_ABI, functionName: "symbol" }),
+    client.readContract({ address, abi: ERC20_ABI, functionName: "decimals" }),
   ]);
   return { address, symbol, decimals };
 }
@@ -75,7 +74,9 @@ async function getV2Quote(
   config: ChainDexConfig,
 ): Promise<{ amountOut: bigint; path: Address[] } | null> {
   const v2 = config.v2;
-  if (!v2) return null;
+  if (!v2) {
+    return null;
+  }
 
   const client = getPublicClient(chainId);
   const wrappedNative = getWrappedNativeAddress(chainId);
@@ -102,7 +103,7 @@ async function getV2Quote(
         functionName: "getAmountsOut",
         args: [amountInRaw, path],
       })) as bigint[];
-      const amountOut = amounts[amounts.length - 1]!;
+      const amountOut = amounts[amounts.length - 1];
       if (amountOut > 0n) {
         return { amountOut, path };
       }
@@ -124,12 +125,14 @@ async function getV3Quote(
   config: ChainDexConfig,
 ): Promise<{ amountOut: bigint } | null> {
   const v3 = config.v3;
-  if (!v3) return null;
+  if (!v3) {
+    return null;
+  }
 
   const client = getPublicClient(chainId);
   try {
     const result = await client.simulateContract({
-      address: v3.quoterAddress as Address,
+      address: v3.quoterAddress,
       abi: UNISWAP_V3_QUOTER_V2_ABI,
       functionName: "quoteExactInputSingle",
       args: [
@@ -233,7 +236,9 @@ export async function getSwapQuote(
     // If no result on default tier, try other common tiers
     if (!v3Result && !opts.feeTier) {
       for (const tier of [500, 3000, 10000, 100]) {
-        if (tier === feeTier) continue;
+        if (tier === feeTier) {
+          continue;
+        }
         const altResult = await getV3Quote(
           tokenInAddr,
           tokenOutAddr,
@@ -266,7 +271,7 @@ export async function getSwapQuote(
 
   // Pick the best quote (highest output)
   candidates.sort((a, b) => (b.amountOut > a.amountOut ? 1 : -1));
-  const best = candidates[0]!;
+  const best = candidates[0];
 
   const amountOutFormatted = formatUnits(best.amountOut, outInfo.decimals);
   const amountOutMin = formatUnits(
@@ -457,12 +462,12 @@ async function ensureAllowance(
   const walletClient = getWalletClient(chainId, privateKey);
   const owner = walletClient.account!.address;
 
-  const allowance = (await client.readContract({
+  const allowance = await client.readContract({
     address: tokenAddress,
     abi: ERC20_ABI,
     functionName: "allowance",
     args: [owner, spenderAddress],
-  })) as bigint;
+  });
 
   if (allowance < requiredAmount) {
     await walletClient.writeContract({
@@ -512,12 +517,12 @@ export async function checkRouterAllowance(
       abi: ERC20_ABI,
       functionName: "allowance",
       args: [owner, routerAddress as Address],
-    }) as Promise<bigint>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "decimals",
-    }) as Promise<number>,
+    }),
   ]);
 
   return {

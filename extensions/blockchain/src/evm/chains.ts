@@ -110,10 +110,14 @@ export function getSupportedNetworks(): Array<{
   }> = [];
 
   for (const [name, chainId] of networkNameMap) {
-    if (seen.has(chainId)) continue;
+    if (seen.has(chainId)) {
+      continue;
+    }
     seen.add(chainId);
     const chain = chainMap.get(chainId);
-    if (!chain) continue;
+    if (!chain) {
+      continue;
+    }
     results.push({
       name,
       chainId,
@@ -129,14 +133,18 @@ export let DEFAULT_CHAIN_ID: number = bsc.id;
 
 /** Override the default chain ID. Throws if the chain is not in `chainMap`. */
 export function setDefaultChainId(id: number): void {
-  if (!chainMap.has(id)) throw new Error(`Unsupported chain ID: ${id}`);
+  if (!chainMap.has(id)) {
+    throw new Error(`Unsupported chain ID: ${id}`);
+  }
   DEFAULT_CHAIN_ID = id;
 }
 
 /** Human-readable name for the current default chain (reverse-lookup from networkNameMap). */
 export function getDefaultChainName(): string {
   for (const [name, id] of networkNameMap) {
-    if (id === DEFAULT_CHAIN_ID) return name.toUpperCase();
+    if (id === DEFAULT_CHAIN_ID) {
+      return name.toUpperCase();
+    }
   }
   return String(DEFAULT_CHAIN_ID);
 }

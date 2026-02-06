@@ -216,7 +216,9 @@ export function registerSwapTools(api: OpenClawPluginApi, walletManager: WalletM
     async execute(params: { tokenAddress: string; network?: string; version?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = walletManager.getActiveAddress();
-      if (!address) throw new Error("No active wallet");
+      if (!address) {
+        throw new Error("No active wallet");
+      }
 
       const result = await checkRouterAllowance(
         address,

@@ -46,22 +46,22 @@ export async function getERC20Balance(
       abi: ERC20_ABI,
       functionName: "balanceOf",
       args: [address],
-    }) as Promise<bigint>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "decimals",
-    }) as Promise<number>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "symbol",
-    }) as Promise<string>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "name",
-    }) as Promise<string>,
+    }),
   ]);
 
   return {

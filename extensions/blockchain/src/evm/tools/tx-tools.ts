@@ -4,7 +4,7 @@ import { DEFAULT_CHAIN_ID, resolveChainId } from "../chains.js";
 import { estimateGas, getTransaction, getTransactionReceipt } from "../services/transactions.js";
 import { formatJson } from "../services/utils.js";
 
-export function registerTxTools(api: OpenClawPluginApi, walletManager: WalletManager) {
+export function registerTxTools(api: OpenClawPluginApi, _walletManager: WalletManager) {
   api.registerTool({
     name: "get_transaction",
     description: "Get details of a transaction by its hash",

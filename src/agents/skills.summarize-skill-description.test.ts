@@ -1,7 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { parseFrontmatter } from "./skills/frontmatter.js";
+import { describe, it } from "vitest";
 
 describe("skills/summarize frontmatter", () => {
   it.skip("mentions podcasts, local files, and transcription use cases", () => {});

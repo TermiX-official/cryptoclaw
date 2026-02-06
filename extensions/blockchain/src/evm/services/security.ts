@@ -43,13 +43,19 @@ export interface AddressSecurityResult {
 
 function classifyRisk(flags: string[]): "critical" | "high" | "medium" | "none" {
   for (const f of flags) {
-    if (CRITICAL_FLAGS.has(f)) return "critical";
+    if (CRITICAL_FLAGS.has(f)) {
+      return "critical";
+    }
   }
   for (const f of flags) {
-    if (HIGH_FLAGS.has(f)) return "high";
+    if (HIGH_FLAGS.has(f)) {
+      return "high";
+    }
   }
   for (const f of flags) {
-    if (MEDIUM_FLAGS.has(f)) return "medium";
+    if (MEDIUM_FLAGS.has(f)) {
+      return "medium";
+    }
   }
   return "none";
 }
@@ -68,19 +74,27 @@ export async function checkAddressSecurity(
     const url = `${GOPLUS_BASE}/address_security/${address.toLowerCase()}?chain_id=${chainId}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
 
-    if (!res.ok) return clean;
+    if (!res.ok) {
+      return clean;
+    }
 
     const json = (await res.json()) as { code?: number; result?: Record<string, string> };
-    if (json.code !== 1 || !json.result) return clean;
+    if (json.code !== 1 || !json.result) {
+      return clean;
+    }
 
     const raw = json.result;
     const flags: string[] = [];
 
     for (const [key, value] of Object.entries(raw)) {
-      if (value === "1") flags.push(key);
+      if (value === "1") {
+        flags.push(key);
+      }
     }
 
-    if (flags.length === 0) return { ...clean, raw };
+    if (flags.length === 0) {
+      return { ...clean, raw };
+    }
 
     const riskLevel = classifyRisk(flags);
     return {

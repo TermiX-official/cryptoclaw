@@ -202,7 +202,9 @@ export async function setupSkills(
 
     for (const skillKey of toSetup.filter((k) => k !== "__skip__")) {
       const skill = needsKey.find((s) => s.skillKey === skillKey);
-      if (!skill?.primaryEnv) continue;
+      if (!skill?.primaryEnv) {
+        continue;
+      }
       const apiKey = String(
         await prompter.text({
           message: `Enter ${skill.primaryEnv}`,

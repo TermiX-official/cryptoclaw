@@ -50,8 +50,12 @@ export function isErc8004Supported(chainId: number): boolean {
 
 /** Get the Identity Registry address for a chain. */
 export function getIdentityRegistryAddress(chainId: number): `0x${string}` {
-  if (MAINNET_SET.has(chainId)) return MAINNET_IDENTITY_REGISTRY;
-  if (TESTNET_SET.has(chainId)) return TESTNET_IDENTITY_REGISTRY;
+  if (MAINNET_SET.has(chainId)) {
+    return MAINNET_IDENTITY_REGISTRY;
+  }
+  if (TESTNET_SET.has(chainId)) {
+    return TESTNET_IDENTITY_REGISTRY;
+  }
   throw new Error(
     `ERC-8004 not supported on chain ${chainId}. Supported mainnet: ${ERC8004_MAINNET_CHAINS.join(", ")}; testnet: ${ERC8004_TESTNET_CHAINS.join(", ")}`,
   );
@@ -59,8 +63,12 @@ export function getIdentityRegistryAddress(chainId: number): `0x${string}` {
 
 /** Get the Reputation Registry address for a chain. */
 export function getReputationRegistryAddress(chainId: number): `0x${string}` {
-  if (MAINNET_SET.has(chainId)) return MAINNET_REPUTATION_REGISTRY;
-  if (TESTNET_SET.has(chainId)) return TESTNET_REPUTATION_REGISTRY;
+  if (MAINNET_SET.has(chainId)) {
+    return MAINNET_REPUTATION_REGISTRY;
+  }
+  if (TESTNET_SET.has(chainId)) {
+    return TESTNET_REPUTATION_REGISTRY;
+  }
   throw new Error(
     `ERC-8004 not supported on chain ${chainId}. Supported mainnet: ${ERC8004_MAINNET_CHAINS.join(", ")}; testnet: ${ERC8004_TESTNET_CHAINS.join(", ")}`,
   );

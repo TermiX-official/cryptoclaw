@@ -24,7 +24,9 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
     async execute(params: { address?: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = params.address ?? walletManager.getActiveAddress();
-      if (!address) throw new Error("No address provided and no active wallet");
+      if (!address) {
+        throw new Error("No address provided and no active wallet");
+      }
       const result = await getNativeBalance(address, chainId);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     },
@@ -48,7 +50,9 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
     async execute(params: { address?: string; tokenAddress: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = params.address ?? walletManager.getActiveAddress();
-      if (!address) throw new Error("No address provided and no active wallet");
+      if (!address) {
+        throw new Error("No address provided and no active wallet");
+      }
       const result = await getERC20Balance(address, params.tokenAddress, chainId);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     },

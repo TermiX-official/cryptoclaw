@@ -1,6 +1,4 @@
 import {
-  type Account,
-  type Chain,
   type PublicClient,
   type WalletClient,
   createPublicClient,
@@ -15,7 +13,9 @@ const publicClients = new Map<number, PublicClient>();
 /** Get or create a cached public client for the given chain. */
 export function getPublicClient(chainId: number): PublicClient {
   const existing = publicClients.get(chainId);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
   const chain = getChain(chainId);
   const rpcUrl = getRpcUrl(chainId);

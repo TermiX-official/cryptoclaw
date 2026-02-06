@@ -1,4 +1,4 @@
-import { type Hash, formatEther, formatUnits, parseEther, parseUnits } from "viem";
+import { type Hash, parseEther, parseUnits } from "viem";
 import { ERC20_ABI } from "./abi/erc20.js";
 import { ERC721_ABI } from "./abi/erc721.js";
 import { ERC1155_ABI } from "./abi/erc1155.js";
@@ -58,17 +58,17 @@ export async function transferERC20(
       address: token,
       abi: ERC20_ABI,
       functionName: "decimals",
-    }) as Promise<number>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "symbol",
-    }) as Promise<string>,
+    }),
     client.readContract({
       address: token,
       abi: ERC20_ABI,
       functionName: "name",
-    }) as Promise<string>,
+    }),
   ]);
 
   const value = parseUnits(amount, decimals);
@@ -104,11 +104,11 @@ export async function approveERC20(
   const spender = await resolveAddress(spenderAddressOrEns, chainId);
   const token = await resolveAddress(tokenAddress, chainId);
 
-  const decimals = (await client.readContract({
+  const decimals = await client.readContract({
     address: token,
     abi: ERC20_ABI,
     functionName: "decimals",
-  })) as number;
+  });
 
   const value = parseUnits(amount, decimals);
 

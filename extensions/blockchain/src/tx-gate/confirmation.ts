@@ -30,25 +30,25 @@ export function formatConfirmationPrompt(
 ): string {
   switch (toolName) {
     case "transfer_native_token":
-      return `Transfer ${params.amount} native tokens to ${params.to} on ${params.network ?? "default network"}`;
+      return `Transfer ${String(params.amount)} native tokens to ${String(params.to)} on ${String(params.network) || "default network"}`;
     case "transfer_erc20":
-      return `Transfer ${params.amount} of token ${params.tokenAddress} to ${params.to} on ${params.network ?? "default network"}`;
+      return `Transfer ${String(params.amount)} of token ${String(params.tokenAddress)} to ${String(params.to)} on ${String(params.network) || "default network"}`;
     case "approve_token_spending":
-      return `Approve ${params.spender} to spend ${params.amount} of token ${params.tokenAddress}`;
+      return `Approve ${String(params.spender)} to spend ${String(params.amount)} of token ${String(params.tokenAddress)}`;
     case "transfer_nft":
-      return `Transfer NFT #${params.tokenId} from ${params.nftAddress} to ${params.to}`;
+      return `Transfer NFT #${String(params.tokenId)} from ${String(params.nftAddress)} to ${String(params.to)}`;
     case "transfer_erc1155":
-      return `Transfer ${params.amount} of token #${params.tokenId} from ${params.tokenAddress} to ${params.to}`;
+      return `Transfer ${String(params.amount)} of token #${String(params.tokenId)} from ${String(params.tokenAddress)} to ${String(params.to)}`;
     case "write_contract":
-      return `Call ${params.functionName}() on contract ${params.contractAddress}`;
+      return `Call ${String(params.functionName)}() on contract ${String(params.contractAddress)}`;
     case "swap_execute":
-      return `Swap ${params.amountIn} ${params.tokenIn === "native" ? "native token" : params.tokenIn} → ${params.tokenOut === "native" ? "native token" : params.tokenOut} on ${params.network ?? "bsc"}`;
+      return `Swap ${String(params.amountIn)} ${params.tokenIn === "native" ? "native token" : String(params.tokenIn)} → ${params.tokenOut === "native" ? "native token" : String(params.tokenOut)} on ${String(params.network) || "bsc"}`;
     case "wallet_delete":
-      return `Delete wallet "${params.label}"`;
+      return `Delete wallet "${String(params.label)}"`;
     case "agent_register":
-      return `Register agent identity on ${params.network ?? "bsc"} with URI: ${params.agentURI}`;
+      return `Register agent identity on ${String(params.network) || "bsc"} with URI: ${String(params.agentURI)}`;
     case "agent_set_wallet":
-      return `Set agent #${params.agentId ?? "stored"} wallet to ${params.walletAddress} on ${params.network ?? "bsc"}`;
+      return `Set agent #${String(params.agentId) || "stored"} wallet to ${String(params.walletAddress)} on ${String(params.network) || "bsc"}`;
     default:
       return `Execute ${toolName} with params: ${JSON.stringify(params)}`;
   }

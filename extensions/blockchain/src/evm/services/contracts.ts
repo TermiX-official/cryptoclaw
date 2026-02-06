@@ -1,4 +1,4 @@
-import type { Abi, Address, Hash } from "viem";
+import type { Abi, Hash } from "viem";
 import { getPublicClient, getWalletClient } from "./clients.js";
 import { resolveAddress } from "./ens.js";
 

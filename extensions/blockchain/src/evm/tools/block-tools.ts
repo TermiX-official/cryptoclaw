@@ -1,11 +1,6 @@
 import type { OpenClawPluginApi } from "cryptoclaw/plugin-sdk";
 import { DEFAULT_CHAIN_ID, resolveChainId } from "../chains.js";
-import {
-  getBlockByHash,
-  getBlockByNumber,
-  getBlockNumber,
-  getLatestBlock,
-} from "../services/blocks.js";
+import { getBlockByHash, getBlockByNumber, getLatestBlock } from "../services/blocks.js";
 import { formatJson } from "../services/utils.js";
 
 export function registerBlockTools(api: OpenClawPluginApi) {

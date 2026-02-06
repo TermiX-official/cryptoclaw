@@ -1,5 +1,5 @@
 import type { OpenClawPluginApi } from "cryptoclaw/plugin-sdk";
-import { DEFAULT_CHAIN_ID, getSupportedNetworks, resolveChainId } from "../chains.js";
+import { getSupportedNetworks, resolveChainId } from "../chains.js";
 import { getPublicClient } from "../services/clients.js";
 
 export function registerNetworkTools(api: OpenClawPluginApi) {

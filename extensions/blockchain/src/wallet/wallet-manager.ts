@@ -160,7 +160,9 @@ export class WalletManager {
   /** Get the active wallet's address (no decryption needed). */
   getActiveAddress(): string | null {
     const meta = this.readMeta();
-    if (!meta.activeWalletId) return null;
+    if (!meta.activeWalletId) {
+      return null;
+    }
     const wallet = meta.wallets.find((w) => w.id === meta.activeWalletId);
     return wallet?.address ?? null;
   }

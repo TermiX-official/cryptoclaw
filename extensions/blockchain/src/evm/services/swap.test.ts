@@ -36,7 +36,7 @@ describe("swap", () => {
         simulateContract: vi.fn().mockRejectedValue(new Error("No V3 pool")),
         chain: { name: "BNB Smart Chain", nativeCurrency: { symbol: "BNB" } },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { getSwapQuote } = await import("./swap.js");
       const quote = await getSwapQuote(USDC, "native", "1", CHAIN_BSC, {
@@ -64,7 +64,7 @@ describe("swap", () => {
         }),
         chain: { name: "BNB Smart Chain", nativeCurrency: { symbol: "BNB" } },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { getSwapQuote } = await import("./swap.js");
       const quote = await getSwapQuote(USDC, "native", "1", CHAIN_BSC, {
@@ -87,7 +87,7 @@ describe("swap", () => {
         simulateContract: vi.fn().mockRejectedValue(new Error("No pool")),
         chain: { name: "BNB Smart Chain", nativeCurrency: { symbol: "BNB" } },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { getSwapQuote } = await import("./swap.js");
       const quote = await getSwapQuote(USDC, "native", "1", CHAIN_BSC, {
@@ -112,7 +112,7 @@ describe("swap", () => {
         simulateContract: vi.fn().mockRejectedValue(new Error("No pool")),
         chain: { name: "BNB Smart Chain", nativeCurrency: { symbol: "BNB" } },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { getSwapQuote } = await import("./swap.js");
       const quote = await getSwapQuote(USDC, "native", "1", CHAIN_BSC, {
@@ -136,7 +136,7 @@ describe("swap", () => {
         simulateContract: vi.fn().mockRejectedValue(new Error("No pool")),
         chain: { name: "BNB Smart Chain", nativeCurrency: { symbol: "BNB" } },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { getSwapQuote } = await import("./swap.js");
       await expect(
@@ -186,7 +186,7 @@ describe("swap", () => {
           .mockResolvedValueOnce(18), // decimals
         chain: { name: "BNB Smart Chain" },
       };
-      vi.mocked(getPublicClient).mockReturnValue(mockClient as any);
+      vi.mocked(getPublicClient).mockReturnValue(mockClient as unknown);
 
       const { checkRouterAllowance } = await import("./swap.js");
       const result = await checkRouterAllowance(

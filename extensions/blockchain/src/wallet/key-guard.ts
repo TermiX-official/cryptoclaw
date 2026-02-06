@@ -28,7 +28,7 @@ const REDACTED_MNEMONIC = "[REDACTED_SEED_PHRASE]";
 export function sanitizeSecrets(text: string): string {
   let result = text;
   result = result.replace(PRIVATE_KEY_RE, REDACTED);
-  result = result.replace(BARE_HEX_KEY_RE, (match) => {
+  result = result.replace(BARE_HEX_KEY_RE, (_match) => {
     // Avoid false positives: only redact if it doesn't look like a tx hash or address
     // Transaction hashes are 64 hex chars but are typically prefixed by context like "txHash"
     // We redact standalone 64-char hex to be safe

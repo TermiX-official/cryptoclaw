@@ -28,14 +28,14 @@ export async function getERC20TokenInfo(
   }
 
   const [name, symbol, decimals, totalSupply] = await Promise.all([
-    client.readContract({ address, abi: ERC20_ABI, functionName: "name" }) as Promise<string>,
-    client.readContract({ address, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-    client.readContract({ address, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
+    client.readContract({ address, abi: ERC20_ABI, functionName: "name" }),
+    client.readContract({ address, abi: ERC20_ABI, functionName: "symbol" }),
+    client.readContract({ address, abi: ERC20_ABI, functionName: "decimals" }),
     client.readContract({
       address,
       abi: ERC20_ABI,
       functionName: "totalSupply",
-    }) as Promise<bigint>,
+    }),
   ]);
 
   return {
@@ -66,14 +66,14 @@ export async function getERC721TokenMetadata(
   const address = await resolveAddress(nftAddress, chainId);
 
   const [name, symbol, tokenURI, owner] = await Promise.all([
-    client.readContract({ address, abi: ERC721_ABI, functionName: "name" }) as Promise<string>,
-    client.readContract({ address, abi: ERC721_ABI, functionName: "symbol" }) as Promise<string>,
+    client.readContract({ address, abi: ERC721_ABI, functionName: "name" }),
+    client.readContract({ address, abi: ERC721_ABI, functionName: "symbol" }),
     client
       .readContract({ address, abi: ERC721_ABI, functionName: "tokenURI", args: [tokenId] })
-      .catch(() => undefined) as Promise<string | undefined>,
+      .catch(() => undefined),
     client
       .readContract({ address, abi: ERC721_ABI, functionName: "ownerOf", args: [tokenId] })
-      .catch(() => undefined) as Promise<string | undefined>,
+      .catch(() => undefined),
   ]);
 
   return {
@@ -105,10 +105,8 @@ export async function getERC1155TokenMetadata(
   const [uri, name] = await Promise.all([
     client
       .readContract({ address, abi: ERC1155_ABI, functionName: "uri", args: [tokenId] })
-      .catch(() => undefined) as Promise<string | undefined>,
-    client
-      .readContract({ address, abi: ERC1155_ABI, functionName: "name" })
-      .catch(() => undefined) as Promise<string | undefined>,
+      .catch(() => undefined),
+    client.readContract({ address, abi: ERC1155_ABI, functionName: "name" }).catch(() => undefined),
   ]);
 
   return {

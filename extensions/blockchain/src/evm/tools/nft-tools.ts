@@ -2,7 +2,7 @@ import type { OpenClawPluginApi } from "cryptoclaw/plugin-sdk";
 import type { WalletManager } from "../../wallet/wallet-manager.js";
 import { resolveActivePrivateKey } from "../../wallet/active-wallet.js";
 import { DEFAULT_CHAIN_ID, resolveChainId } from "../chains.js";
-import { getERC721TokenMetadata, getERC1155TokenMetadata } from "../services/tokens.js";
+import { getERC721TokenMetadata } from "../services/tokens.js";
 import { transferERC721, transferERC1155 } from "../services/transfer.js";
 
 export function registerNftTools(api: OpenClawPluginApi, walletManager: WalletManager) {

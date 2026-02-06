@@ -28,10 +28,10 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     const spendingTracker = new SpendingTracker(stateDir);
 
     // Read plugin config for spending limits
-    const pluginConfig = (api.pluginConfig ?? {}) as Record<string, unknown>;
-    const spendingLimits = {
+    const pluginConfig = api.pluginConfig ?? {};
+    const _spendingLimits = {
       ...DEFAULT_SPENDING_LIMITS,
-      ...((pluginConfig.spendingLimits as Record<string, unknown>) ?? {}),
+      ...(pluginConfig.spendingLimits as Record<string, unknown>),
     };
 
     // Apply configured default chain (if any)
@@ -69,17 +69,18 @@ const blockchainPlugin: OpenClawPluginDefinition = {
       if (!TRANSFER_TOOLS.has(event.toolName) || !event.params.to) {
         return;
       }
+      const toAddress = event.params.to as string;
       const chainId = resolveChainId((event.params.network as string) ?? "bsc");
-      const result = await checkAddressSecurity(event.params.to as string, chainId);
+      const result = await checkAddressSecurity(toAddress, chainId);
       if (result.riskLevel === "critical" || result.riskLevel === "high") {
         return {
           block: true,
-          blockReason: `Security Alert: Recipient ${event.params.to} flagged as ${result.riskLevel} risk by GoPlus. Flags: ${result.flags.join(", ")}. Transaction blocked for your protection.`,
+          blockReason: `Security Alert: Recipient ${toAddress} flagged as ${result.riskLevel} risk by GoPlus. Flags: ${result.flags.join(", ")}. Transaction blocked for your protection.`,
         };
       }
       if (result.flags.length > 0) {
         api.logger.warn(
-          `[security] Address ${event.params.to} has medium-risk flags: ${result.flags.join(", ")}`,
+          `[security] Address ${toAddress} has medium-risk flags: ${result.flags.join(", ")}`,
         );
       }
       return undefined;
@@ -129,7 +130,9 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     // Catches any private key that the agent might include in its response
     // before it reaches Discord, Telegram, WhatsApp, etc.
     api.on("message_sending", (event) => {
-      if (!event.content) return undefined;
+      if (!event.content) {
+        return undefined;
+      }
       const sanitized = sanitizeSecrets(event.content);
       if (sanitized !== event.content) {
         api.logger.warn("[key-guard] Blocked private key leak in outbound message");
@@ -151,8 +154,10 @@ const blockchainPlugin: OpenClawPluginDefinition = {
             const { password } = (await import("@clack/prompts").then((m) =>
               m.password({ message: "Enter a passphrase to encrypt your wallet:" }),
             )) as { password: string };
-            if (!password) return;
-            const w = await walletManager.createWallet(opts.label, password as string);
+            if (!password) {
+              return;
+            }
+            const w = await walletManager.createWallet(opts.label, password);
             console.log(`Wallet created: ${w.label} (${w.address})`);
           });
 
@@ -164,12 +169,10 @@ const blockchainPlugin: OpenClawPluginDefinition = {
             const prompts = await import("@clack/prompts");
             const key = await prompts.password({ message: "Enter private key (0x...):" });
             const pass = await prompts.password({ message: "Enter passphrase:" });
-            if (!key || !pass) return;
-            const w = await walletManager.importWallet(
-              key as `0x${string}`,
-              opts.label,
-              pass as string,
-            );
+            if (!key || !pass) {
+              return;
+            }
+            const w = await walletManager.importWallet(key as `0x${string}`, opts.label, pass);
             console.log(`Wallet imported: ${w.label} (${w.address})`);
           });
 
@@ -203,8 +206,10 @@ const blockchainPlugin: OpenClawPluginDefinition = {
             const { password } = (await import("@clack/prompts").then((m) =>
               m.password({ message: "Enter passphrase to confirm:" }),
             )) as { password: string };
-            if (!password) return;
-            await walletManager.deleteWallet(idOrLabel, password as string);
+            if (!password) {
+              return;
+            }
+            await walletManager.deleteWallet(idOrLabel, password);
             console.log(`Wallet "${idOrLabel}" deleted.`);
           });
 
@@ -215,8 +220,10 @@ const blockchainPlugin: OpenClawPluginDefinition = {
             const { password } = (await import("@clack/prompts").then((m) =>
               m.password({ message: "Enter passphrase:" }),
             )) as { password: string };
-            if (!password) return;
-            const key = await walletManager.exportWallet(idOrLabel, password as string);
+            if (!password) {
+              return;
+            }
+            const key = await walletManager.exportWallet(idOrLabel, password);
             console.log(`Private key: ${key}`);
             console.log("WARNING: Store this key securely. Do not share it.");
           });

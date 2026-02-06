@@ -5,7 +5,7 @@
  * and reputation lookups via the Trustless Agents standard.
  */
 
-import { type Address, type Hash, decodeEventLog, formatUnits, zeroAddress } from "viem";
+import { type Hash, decodeEventLog, formatUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { ERC8004_IDENTITY_REGISTRY_ABI } from "./abi/erc8004-identity.js";
 import { ERC8004_REPUTATION_REGISTRY_ABI } from "./abi/erc8004-reputation.js";
@@ -105,19 +105,19 @@ export async function getAgentIdentity(agentId: bigint, chainId: number): Promis
       abi: ERC8004_IDENTITY_REGISTRY_ABI,
       functionName: "ownerOf",
       args: [agentId],
-    }) as Promise<Address>,
+    }),
     client.readContract({
       address: registryAddress,
       abi: ERC8004_IDENTITY_REGISTRY_ABI,
       functionName: "tokenURI",
       args: [agentId],
-    }) as Promise<string>,
+    }),
     client.readContract({
       address: registryAddress,
       abi: ERC8004_IDENTITY_REGISTRY_ABI,
       functionName: "getAgentWallet",
       args: [agentId],
-    }) as Promise<Address>,
+    }),
   ]);
 
   return {

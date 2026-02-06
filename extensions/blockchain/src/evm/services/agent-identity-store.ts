@@ -16,7 +16,9 @@ const IDENTITY_FILENAME = "agent-identity.json";
 /** Read the persisted agent identity from disk. */
 export function readAgentIdentity(stateDir: string): AgentIdentityConfig | null {
   const filePath = path.join(stateDir, IDENTITY_FILENAME);
-  if (!fs.existsSync(filePath)) return null;
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(raw) as AgentIdentityConfig;

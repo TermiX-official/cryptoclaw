@@ -6,7 +6,7 @@ import { getPublicClient } from "./clients.js";
  * Resolve an ENS name to an address, or validate a raw address.
  * ENS resolution requires Ethereum mainnet (chain 1).
  */
-export async function resolveAddress(addressOrEns: string, chainId = 1): Promise<Address> {
+export async function resolveAddress(addressOrEns: string, _chainId = 1): Promise<Address> {
   const trimmed = addressOrEns.trim();
 
   if (isAddress(trimmed)) {

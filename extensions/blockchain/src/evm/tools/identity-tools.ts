@@ -277,7 +277,9 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       const address = walletManager.getActiveAddress();
-      if (!address) throw new Error("No active wallet");
+      if (!address) {
+        throw new Error("No active wallet");
+      }
 
       const ids = await listRegisteredAgents(address as `0x${string}`, chainId);
 

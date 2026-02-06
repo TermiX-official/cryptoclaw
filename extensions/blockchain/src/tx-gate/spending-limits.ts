@@ -43,7 +43,9 @@ export class SpendingTracker {
 
   /** Get total USD spent today. */
   getDailyTotal(): number {
-    if (!fs.existsSync(this.logPath)) return 0;
+    if (!fs.existsSync(this.logPath)) {
+      return 0;
+    }
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -52,7 +54,9 @@ export class SpendingTracker {
     const lines = fs.readFileSync(this.logPath, "utf8").trim().split("\n");
     let total = 0;
     for (const line of lines) {
-      if (!line) continue;
+      if (!line) {
+        continue;
+      }
       try {
         const entry = JSON.parse(line) as SpendingLogEntry;
         if (new Date(entry.timestamp).getTime() >= todayMs) {

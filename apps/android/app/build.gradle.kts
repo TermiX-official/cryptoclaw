@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-  namespace = "ai.cryptoclaw.android"
+  namespace = "ai.openclaw.android"
   compileSdk = 36
 
   sourceSets {

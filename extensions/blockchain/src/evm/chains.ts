@@ -125,7 +125,7 @@ export function getSupportedNetworks(): Array<{
 }
 
 /** Default network (BSC unless overridden via config). */
-export let DEFAULT_CHAIN_ID = bsc.id;
+export let DEFAULT_CHAIN_ID: number = bsc.id;
 
 /** Override the default chain ID. Throws if the chain is not in `chainMap`. */
 export function setDefaultChainId(id: number): void {

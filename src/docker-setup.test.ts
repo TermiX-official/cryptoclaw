@@ -52,7 +52,7 @@ describe("docker-setup.sh", () => {
     await writeFile(dockerfilePath, "FROM scratch\n");
     await writeFile(
       composePath,
-      "services:\n  openclaw-gateway:\n    image: noop\n  openclaw-cli:\n    image: noop\n",
+      "services:\n  cryptoclaw-gateway:\n    image: noop\n  cryptoclaw-cli:\n    image: noop\n",
     );
     await writeDockerStub(binDir, logPath);
 
@@ -102,7 +102,7 @@ describe("docker-setup.sh", () => {
     await writeFile(dockerfilePath, "FROM scratch\n");
     await writeFile(
       composePath,
-      "services:\n  openclaw-gateway:\n    image: noop\n  openclaw-cli:\n    image: noop\n",
+      "services:\n  cryptoclaw-gateway:\n    image: noop\n  cryptoclaw-cli:\n    image: noop\n",
     );
     await writeDockerStub(binDir, logPath);
 

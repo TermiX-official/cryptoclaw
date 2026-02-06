@@ -33,7 +33,7 @@ export function resolveShellFromEnv(env: NodeJS.ProcessEnv = process.env): Compl
 function sanitizeCompletionBasename(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "openclaw";
+    return "cryptoclaw";
   }
   return trimmed.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
@@ -53,7 +53,7 @@ export function resolveCompletionCachePath(shell: CompletionShell, binName: stri
 /** Check if the completion cache file exists for the given shell. */
 export async function completionCacheExists(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "cryptoclaw",
 ): Promise<boolean> {
   const cachePath = resolveCompletionCachePath(shell, binName);
   return pathExists(cachePath);
@@ -107,7 +107,7 @@ function formatCompletionSourceLine(
 }
 
 function isCompletionProfileHeader(line: string): boolean {
-  return line.trim() === "# OpenClaw Completion";
+  return line.trim() === "# CryptoClaw Completion";
 }
 
 function isCompletionProfileLine(line: string, binName: string, cachePath: string | null): boolean {
@@ -122,7 +122,7 @@ function isCompletionProfileLine(line: string, binName: string, cachePath: strin
 
 /** Check if a line uses the slow dynamic completion pattern (source <(...)) */
 function isSlowDynamicCompletionLine(line: string, binName: string): boolean {
-  // Matches patterns like: source <(openclaw completion --shell zsh)
+  // Matches patterns like: source <(cryptoclaw completion --shell zsh)
   return (
     line.includes(`<(${binName} completion`) ||
     (line.includes(`${binName} completion`) && line.includes("| source"))
@@ -154,7 +154,7 @@ function updateCompletionProfile(
   }
 
   const trimmed = filtered.join("\n").trimEnd();
-  const block = `# OpenClaw Completion\n${sourceLine}`;
+  const block = `# CryptoClaw Completion\n${sourceLine}`;
   const next = trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
   return { next, changed: next !== content, hadExisting };
 }
@@ -184,7 +184,7 @@ function getShellProfilePath(shell: CompletionShell): string {
 
 export async function isCompletionInstalled(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "cryptoclaw",
 ): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
@@ -202,11 +202,11 @@ export async function isCompletionInstalled(
 
 /**
  * Check if the profile uses the slow dynamic completion pattern.
- * Returns true if profile has `source <(openclaw completion ...)` instead of cached file.
+ * Returns true if profile has `source <(cryptoclaw completion ...)` instead of cached file.
  */
 export async function usesSlowDynamicCompletion(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "cryptoclaw",
 ): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
@@ -281,7 +281,7 @@ export function registerCompletionCli(program: Command) {
     });
 }
 
-export async function installCompletion(shell: string, yes: boolean, binName = "openclaw") {
+export async function installCompletion(shell: string, yes: boolean, binName = "cryptoclaw") {
   const home = process.env.HOME || os.homedir();
   let profilePath = "";
   let sourceLine = "";
@@ -584,7 +584,7 @@ function generateFishCompletion(program: Command): string {
     } // Only push if not root, or consistent root handling
 
     // Fish uses 'seen_subcommand_from' to determine context.
-    // For root: complete -c openclaw -n "__fish_use_subcommand" -a "subcmd" -d "desc"
+    // For root: complete -c cryptoclaw -n "__fish_use_subcommand" -a "subcmd" -d "desc"
 
     // Root logic
     if (parents.length === 0) {

@@ -119,10 +119,10 @@ const UPDATE_QUIPS = [
 ];
 
 const MAX_LOG_CHARS = 8000;
-const DEFAULT_PACKAGE_NAME = "openclaw";
+const DEFAULT_PACKAGE_NAME = "cryptoclaw";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 const CLI_NAME = resolveCliName();
-const CRYPTOCLAW_REPO_URL = "https://github.com/openclaw/openclaw.git";
+const CRYPTOCLAW_REPO_URL = "https://github.com/TermiX-official/cryptoclaw.git";
 const DEFAULT_GIT_DIR = path.join(os.homedir(), ".cryptoclaw");
 
 function normalizeTag(value?: string | null): string | null {
@@ -133,8 +133,8 @@ function normalizeTag(value?: string | null): string | null {
   if (!trimmed) {
     return null;
   }
-  if (trimmed.startsWith("openclaw@")) {
-    return trimmed.slice("openclaw@".length);
+  if (trimmed.startsWith("cryptoclaw@")) {
+    return trimmed.slice("cryptoclaw@".length);
   }
   if (trimmed.startsWith(`${DEFAULT_PACKAGE_NAME}@`)) {
     return trimmed.slice(`${DEFAULT_PACKAGE_NAME}@`.length);
@@ -209,7 +209,7 @@ async function pathExists(targetPath: string): Promise<boolean> {
 }
 
 async function tryWriteCompletionCache(root: string, jsonMode: boolean): Promise<void> {
-  const binPath = path.join(root, "openclaw.mjs");
+  const binPath = path.join(root, "cryptoclaw.mjs");
   if (!(await pathExists(binPath))) {
     return;
   }
@@ -381,7 +381,7 @@ async function ensureGitCheckout(params: {
     const empty = await isEmptyDir(params.dir);
     if (!empty) {
       throw new Error(
-        `CRYPTOCLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set CRYPTOCLAW_GIT_DIR to an empty folder or an openclaw checkout.`,
+        `CRYPTOCLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set CRYPTOCLAW_GIT_DIR to an empty folder or a cryptoclaw checkout.`,
       );
     }
     return await runUpdateStep({
@@ -805,7 +805,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   const showProgress = !opts.json && process.stdout.isTTY;
 
   if (!opts.json) {
-    defaultRuntime.log(theme.heading("Updating OpenClaw..."));
+    defaultRuntime.log(theme.heading("Updating CryptoClaw..."));
     defaultRuntime.log("");
   }
 
@@ -949,12 +949,12 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     if (result.reason === "not-git-install") {
       defaultRuntime.log(
         theme.warn(
-          `Skipped: this OpenClaw install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("cryptoclaw doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("cryptoclaw gateway restart"), CLI_NAME)}\`.`,
+          `Skipped: this CryptoClaw install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("cryptoclaw doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("cryptoclaw gateway restart"), CLI_NAME)}\`.`,
         ),
       );
       defaultRuntime.log(
         theme.muted(
-          `Examples: \`${replaceCliName("npm i -g openclaw@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g openclaw@latest", CLI_NAME)}\``,
+          `Examples: \`${replaceCliName("npm i -g cryptoclaw@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g cryptoclaw@latest", CLI_NAME)}\``,
         ),
       );
     }
@@ -1208,7 +1208,7 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
         const empty = await isEmptyDir(gitDir);
         if (!empty) {
           defaultRuntime.error(
-            `CRYPTOCLAW_GIT_DIR points at a non-git directory: ${gitDir}. Set CRYPTOCLAW_GIT_DIR to an empty folder or an openclaw checkout.`,
+            `CRYPTOCLAW_GIT_DIR points at a non-git directory: ${gitDir}. Set CRYPTOCLAW_GIT_DIR to an empty folder or a cryptoclaw checkout.`,
           );
           defaultRuntime.exit(1);
           return;
@@ -1253,7 +1253,7 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
 export function registerUpdateCli(program: Command) {
   const update = program
     .command("update")
-    .description("Update OpenClaw to the latest version")
+    .description("Update CryptoClaw to the latest version")
     .option("--json", "Output result as JSON", false)
     .option("--no-restart", "Skip restarting the gateway service after a successful update")
     .option("--channel <stable|beta|dev>", "Persist update channel (git + npm)")

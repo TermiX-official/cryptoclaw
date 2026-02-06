@@ -108,7 +108,7 @@ export async function ensureSandboxBrowser(params: {
       name: containerName,
       cfg: params.cfg.docker,
       scopeKey: params.scopeKey,
-      labels: { "openclaw.sandboxBrowser": "1" },
+      labels: { "cryptoclaw.sandboxBrowser": "1" },
     });
     const mainMountSuffix =
       params.cfg.workspaceAccess === "ro" && params.workspaceDir === params.agentWorkspaceDir

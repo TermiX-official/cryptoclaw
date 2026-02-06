@@ -89,7 +89,7 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
 
 function resolveProfileStateDir(profile: string, homedir: () => string): string {
   const suffix = profile.toLowerCase() === "default" ? "" : `-${profile}`;
-  return path.join(homedir(), `.openclaw${suffix}`);
+  return path.join(homedir(), `.cryptoclaw${suffix}`);
 }
 
 export function applyCliProfileEnv(params: {
@@ -113,7 +113,7 @@ export function applyCliProfileEnv(params: {
   }
 
   if (!env.CRYPTOCLAW_CONFIG_PATH?.trim()) {
-    env.CRYPTOCLAW_CONFIG_PATH = path.join(stateDir, "openclaw.json");
+    env.CRYPTOCLAW_CONFIG_PATH = path.join(stateDir, "cryptoclaw.json");
   }
 
   if (profile === "dev" && !env.CRYPTOCLAW_GATEWAY_PORT?.trim()) {

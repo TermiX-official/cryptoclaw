@@ -45,7 +45,7 @@ function safeServiceName(name: string) {
 
 function prettifyInstanceName(name: string) {
   const normalized = name.trim().replace(/\s+/g, " ");
-  return normalized.replace(/\s+\(OpenClaw\)\s*$/i, "").trim() || normalized;
+  return normalized.replace(/\s+\((?:OpenClaw|CryptoClaw)\)\s*$/i, "").trim() || normalized;
 }
 
 type BonjourService = {
@@ -106,7 +106,7 @@ export async function startGatewayBonjourAdvertiser(
   const instanceName =
     typeof opts.instanceName === "string" && opts.instanceName.trim()
       ? opts.instanceName.trim()
-      : `${hostname} (OpenClaw)`;
+      : `${hostname} (CryptoClaw)`;
   const displayName = prettifyInstanceName(instanceName);
 
   const txtBase: Record<string, string> = {

@@ -16,10 +16,10 @@ export function formatBonjourInstanceName(displayName: string) {
   if (!trimmed) {
     return "CryptoClaw";
   }
-  if (/openclaw/i.test(trimmed)) {
+  if (/cryptoclaw|openclaw/i.test(trimmed)) {
     return trimmed;
   }
-  return `${trimmed} (OpenClaw)`;
+  return `${trimmed} (CryptoClaw)`;
 }
 
 export function resolveBonjourCliPath(opts: ResolveBonjourCliPathOptions = {}): string | undefined {

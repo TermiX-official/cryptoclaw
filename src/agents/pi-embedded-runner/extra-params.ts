@@ -103,7 +103,7 @@ function createStreamFnWithExtraParams(
 
 /**
  * Create a streamFn wrapper that adds OpenRouter app attribution headers.
- * These headers allow OpenClaw to appear on OpenRouter's leaderboard.
+ * These headers allow CryptoClaw to appear on OpenRouter's leaderboard.
  */
 function createOpenRouterHeadersWrapper(baseStreamFn: StreamFn | undefined): StreamFn {
   const underlying = baseStreamFn ?? streamSimple;

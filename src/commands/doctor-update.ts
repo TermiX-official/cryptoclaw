@@ -45,7 +45,7 @@ export async function maybeOfferUpdateBeforeDoctor(params: {
   const git = await detectOpenClawGitCheckout(params.root);
   if (git === "git") {
     const shouldUpdate = await params.confirm({
-      message: "Update OpenClaw from git before running doctor?",
+      message: "Update CryptoClaw from git before running doctor?",
       initialValue: true,
     });
     if (!shouldUpdate) {

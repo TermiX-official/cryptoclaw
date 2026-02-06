@@ -92,7 +92,7 @@ export function assertSupportedRuntime(
       `Detected: ${runtimeLabel} (exec: ${execLabel}).`,
       `PATH searched: ${details.pathEnv}`,
       "Install Node: https://nodejs.org/en/download",
-      "Upgrade Node and re-run openclaw.",
+      "Upgrade Node and re-run cryptoclaw.",
     ].join("\n"),
   );
   runtime.exit(1);

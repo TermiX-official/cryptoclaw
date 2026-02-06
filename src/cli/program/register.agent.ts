@@ -159,13 +159,16 @@ ${formatHelpExamples([
     'cryptoclaw agents set-identity --agent main --name "CryptoClaw" --emoji "🦞"',
     "Set name + emoji.",
   ],
-  ["cryptoclaw agents set-identity --agent main --avatar avatars/openclaw.png", "Set avatar path."],
   [
-    "cryptoclaw agents set-identity --workspace ~/.openclaw/workspace --from-identity",
+    "cryptoclaw agents set-identity --agent main --avatar avatars/cryptoclaw.png",
+    "Set avatar path.",
+  ],
+  [
+    "cryptoclaw agents set-identity --workspace ~/.cryptoclaw/workspace --from-identity",
     "Load from IDENTITY.md.",
   ],
   [
-    "cryptoclaw agents set-identity --identity-file ~/.openclaw/workspace/IDENTITY.md --agent main",
+    "cryptoclaw agents set-identity --identity-file ~/.cryptoclaw/workspace/IDENTITY.md --agent main",
     "Use a specific IDENTITY.md.",
   ],
 ])}

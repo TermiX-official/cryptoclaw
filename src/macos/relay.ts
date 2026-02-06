@@ -66,7 +66,7 @@ async function main() {
   installUnhandledRejectionHandler();
 
   process.on("uncaughtException", (error) => {
-    console.error("[openclaw] Uncaught exception:", formatUncaughtError(error));
+    console.error("[cryptoclaw] Uncaught exception:", formatUncaughtError(error));
     process.exit(1);
   });
 
@@ -75,7 +75,7 @@ async function main() {
 
 void main().catch((err) => {
   console.error(
-    "[openclaw] Relay failed:",
+    "[cryptoclaw] Relay failed:",
     err instanceof Error ? (err.stack ?? err.message) : err,
   );
   process.exit(1);

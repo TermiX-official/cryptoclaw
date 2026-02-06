@@ -53,7 +53,7 @@ export function resolveGatewayWindowsTaskName(profile?: string): string {
   if (!normalized) {
     return GATEWAY_WINDOWS_TASK_NAME;
   }
-  return `OpenClaw Gateway (${normalized})`;
+  return `CryptoClaw Gateway (${normalized})`;
 }
 
 export function formatGatewayServiceDescription(params?: {
@@ -72,7 +72,7 @@ export function formatGatewayServiceDescription(params?: {
   if (parts.length === 0) {
     return "CryptoClaw Gateway";
   }
-  return `OpenClaw Gateway (${parts.join(", ")})`;
+  return `CryptoClaw Gateway (${parts.join(", ")})`;
 }
 
 export function resolveNodeLaunchAgentLabel(): string {
@@ -90,7 +90,7 @@ export function resolveNodeWindowsTaskName(): string {
 export function formatNodeServiceDescription(params?: { version?: string }): string {
   const version = params?.version?.trim();
   if (!version) {
-    return "OpenClaw Node Host";
+    return "CryptoClaw Node Host";
   }
-  return `OpenClaw Node Host (v${version})`;
+  return `CryptoClaw Node Host (v${version})`;
 }

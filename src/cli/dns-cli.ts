@@ -154,7 +154,7 @@ export function registerDnsCli(program: Command) {
         }).trimEnd(),
       );
       defaultRuntime.log("");
-      defaultRuntime.log(theme.heading("Recommended ~/.openclaw/openclaw.json:"));
+      defaultRuntime.log(theme.heading("Recommended ~/.cryptoclaw/cryptoclaw.json:"));
       defaultRuntime.log(
         JSON.stringify(
           {
@@ -232,7 +232,7 @@ export function registerDnsCli(program: Command) {
         const serial = `${y}${m}${d}01`;
 
         const zoneLines = [
-          `; created by openclaw dns setup (will be overwritten by the gateway when wide-area discovery is enabled)`,
+          `; created by cryptoclaw dns setup (will be overwritten by the gateway when wide-area discovery is enabled)`,
           `$ORIGIN ${wideAreaDomain}`,
           `$TTL 60`,
           `@ IN SOA ns1 hostmaster ${serial} 7200 3600 1209600 60`,
@@ -255,7 +255,7 @@ export function registerDnsCli(program: Command) {
         defaultRuntime.log("");
         defaultRuntime.log(
           theme.muted(
-            "Note: enable discovery.wideArea.enabled in ~/.openclaw/openclaw.json on the gateway and restart the gateway so it writes the DNS-SD zone.",
+            "Note: enable discovery.wideArea.enabled in ~/.cryptoclaw/cryptoclaw.json on the gateway and restart the gateway so it writes the DNS-SD zone.",
           ),
         );
       }

@@ -1183,7 +1183,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         title: `Plugin "${pluginName}" has extension entry path traversal`,
         detail: `Found extension entries that escape the plugin directory:\n${escapedEntries.map((entry) => `  - ${entry}`).join("\n")}`,
         remediation:
-          "Update the plugin manifest so all openclaw.extensions entries stay inside the plugin directory.",
+          "Update the plugin manifest so all cryptoclaw.extensions entries stay inside the plugin directory.",
       });
     }
 

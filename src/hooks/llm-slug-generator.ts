@@ -28,7 +28,7 @@ export async function generateSlugViaLLM(params: {
     const agentDir = resolveAgentDir(params.cfg, agentId);
 
     // Create a temporary session file for this one-off LLM call
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-slug-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-slug-"));
     tempSessionFile = path.join(tempDir, "session.jsonl");
 
     const prompt = `Based on this conversation, generate a short 1-2 word filename slug (lowercase, hyphen-separated, no file extension).

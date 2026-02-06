@@ -101,7 +101,7 @@ function tokenToRegex(token: string): string {
 }
 
 /**
- * Cleanup suspended OpenClaw CLI processes that have accumulated.
+ * Cleanup suspended CryptoClaw CLI processes that have accumulated.
  * Only cleans up if there are more than the threshold (default: 10).
  */
 export async function cleanupSuspendedCliProcesses(
@@ -484,7 +484,7 @@ export function appendImagePathsToPrompt(prompt: string, paths: string[]): strin
 export async function writeCliImages(
   images: ImageContent[],
 ): Promise<{ paths: string[]; cleanup: () => Promise<void> }> {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cli-images-"));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-cli-images-"));
   const paths: string[] = [];
   for (let i = 0; i < images.length; i += 1) {
     const image = images[i];

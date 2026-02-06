@@ -152,7 +152,7 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readT
     "## Documentation",
     `CryptoClaw docs: ${docsPath}`,
     "Mirror: https://docs.cryptoclaw.ai",
-    "Source: https://github.com/openclaw/openclaw",
+    "Source: https://github.com/cryptoclaw/cryptoclaw",
     "Community: https://discord.com/invite/clawd",
     "Find new skills: https://clawhub.com",
     "For CryptoClaw behavior, commands, config, or architecture: consult local docs first.",

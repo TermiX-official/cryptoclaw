@@ -154,6 +154,42 @@ export function registerWalletTools(api: OpenClawPluginApi, walletManager: Walle
     },
   });
 
+  api.registerTool({
+    name: "wallet_unlock",
+    description:
+      "Unlock the active wallet by providing the passphrase. " +
+      "Call this when a transaction fails with 'Passphrase required to unlock wallet'. " +
+      "Ask the user for their passphrase in conversation, then call this tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        passphrase: {
+          type: "string",
+          description: "The wallet encryption passphrase",
+        },
+      },
+      required: ["passphrase"],
+    },
+    async execute(params: { passphrase: string }) {
+      try {
+        await walletManager.getActivePrivateKey(params.passphrase);
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Wallet unlocked successfully. You can now proceed with the transaction.",
+            },
+          ],
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return {
+          content: [{ type: "text", text: `Failed to unlock wallet: ${msg}` }],
+        };
+      }
+    },
+  });
+
   // wallet_export is NOT registered as an agent tool.
   // Users must use `cryptoclaw wallet export <label>` in the terminal.
   // This is the most critical security boundary — private keys must NEVER enter agent context.

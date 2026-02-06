@@ -254,6 +254,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
           '- Token transfer ("send USDT to 0x...") → call transfer_erc20',
           '- Swap ("swap BNB for USDT") → call swap_execute',
           "- Address security check → call check_address_security",
+          "- Wallet locked → ask user for passphrase, call wallet_unlock, then retry",
           "All outbound transfers are auto security-checked against GoPlus before execution.",
           "Do NOT hallucinate balances — always call the tool.",
         );

@@ -181,24 +181,37 @@ export async function setupSkills(
     }
   }
 
-  for (const skill of missing) {
-    if (!skill.primaryEnv || skill.missing.env.length === 0) {
-      continue;
-    }
-    const wantsKey = await prompter.confirm({
-      message: `Set ${skill.primaryEnv} for ${skill.name}?`,
-      initialValue: false,
+  // --- API key setup ---
+  const needsKey = missing.filter((s) => s.primaryEnv && s.missing.env.length > 0);
+  if (needsKey.length > 0) {
+    const toSetup = await prompter.multiselect({
+      message: "Set up API keys (required to enable these skills)",
+      options: [
+        {
+          value: "__skip__",
+          label: "Skip for now",
+          hint: `Add keys later via ${formatCliCommand("cryptoclaw configure")}`,
+        },
+        ...needsKey.map((skill) => ({
+          value: skill.skillKey,
+          label: `${skill.emoji ?? "🔑"} ${skill.name}`,
+          hint: skill.primaryEnv,
+        })),
+      ],
     });
-    if (!wantsKey) {
-      continue;
+
+    for (const skillKey of toSetup.filter((k) => k !== "__skip__")) {
+      const skill = needsKey.find((s) => s.skillKey === skillKey);
+      if (!skill?.primaryEnv) continue;
+      const apiKey = String(
+        await prompter.text({
+          message: `Enter ${skill.primaryEnv}`,
+          placeholder: `Paste your ${skill.name} API key`,
+          validate: (value) => (value?.trim() ? undefined : "Required"),
+        }),
+      );
+      next = upsertSkillEntry(next, skill.skillKey, { apiKey: apiKey.trim() });
     }
-    const apiKey = String(
-      await prompter.text({
-        message: `Enter ${skill.primaryEnv}`,
-        validate: (value) => (value?.trim() ? undefined : "Required"),
-      }),
-    );
-    next = upsertSkillEntry(next, skill.skillKey, { apiKey: apiKey.trim() });
   }
 
   return next;

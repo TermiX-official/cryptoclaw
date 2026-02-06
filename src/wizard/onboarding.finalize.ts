@@ -47,6 +47,7 @@ type FinalizeOnboardingOptions = {
   settings: GatewayWizardSettings;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
+  walletAddress?: string;
 };
 
 export async function finalizeOnboardingWizard(
@@ -220,8 +221,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.openclaw.ai/gateway/health",
-          "https://docs.openclaw.ai/gateway/troubleshooting",
+          "https://docs.cryptoclaw.ai/gateway/health",
+          "https://docs.cryptoclaw.ai/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -238,12 +239,7 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    [
-      "Add nodes for extra features:",
-      "- macOS app (system + notifications)",
-      "- iOS app (camera/canvas)",
-      "- Android app (camera/canvas)",
-    ].join("\n"),
+    "Add macOS, iOS, or Android nodes for camera, canvas, and notifications.",
     "Optional apps",
   );
 
@@ -278,7 +274,7 @@ export async function finalizeOnboardingWizard(
       `Web UI: ${dashboardUrl}`,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.openclaw.ai/web/control-ui",
+      "Docs: https://docs.cryptoclaw.ai/web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -293,26 +289,19 @@ export async function finalizeOnboardingWizard(
 
   if (!opts.skipUi && gatewayProbe.ok) {
     if (hasBootstrap) {
-      await prompter.note(
-        [
-          "This is the defining action that makes your agent you.",
-          "Please take your time.",
-          "The more you tell it, the better the experience will be.",
-          'We will send: "Wake up, my friend!"',
-        ].join("\n"),
-        "Start TUI (best option!)",
-      );
+      await prompter.note("Send your first message to your crypto AI agent.", "Start TUI");
     }
 
     await prompter.note(
       [
-        "Gateway token: shared auth for the Gateway + Control UI.",
-        "Stored in: ~/.openclaw/openclaw.json (gateway.auth.token) or OPENCLAW_GATEWAY_TOKEN.",
-        `View token: ${formatCliCommand("openclaw config get gateway.auth.token")}`,
-        `Generate token: ${formatCliCommand("openclaw doctor --generate-gateway-token")}`,
-        "Web UI stores a copy in this browser's localStorage (openclaw.control.settings.v1).",
-        `Open the dashboard anytime: ${formatCliCommand("openclaw dashboard --no-open")}`,
-        "Paste the token into Control UI settings if prompted.",
+        ...(settings.authMode === "token" && settings.gatewayToken
+          ? [`Gateway token (save this!): ${settings.gatewayToken}`]
+          : ["Gateway token: shared auth for the Gateway + Control UI."]),
+        "Stored in: ~/.cryptoclaw/cryptoclaw.json (gateway.auth.token) or CRYPTOCLAW_GATEWAY_TOKEN.",
+        `View token: ${formatCliCommand("cryptoclaw config get gateway.auth.token")}`,
+        `Generate token: ${formatCliCommand("cryptoclaw doctor --generate-gateway-token")}`,
+        "The Web UI auto-reads the token from the Gateway — no copy-paste needed.",
+        `Open the dashboard anytime: ${formatCliCommand("cryptoclaw dashboard --no-open")}`,
       ].join("\n"),
       "Token",
     );
@@ -358,8 +347,8 @@ export async function finalizeOnboardingWizard(
         [
           `Dashboard link: ${dashboardUrl}`,
           controlUiOpened
-            ? "Opened in your browser. Keep that tab to control OpenClaw."
-            : "Copy/paste this URL in a browser on this machine to control OpenClaw.",
+            ? "Opened in your browser. Keep that tab to control CryptoClaw."
+            : "Copy/paste this URL in a browser on this machine to control CryptoClaw.",
           controlUiOpenHint,
         ]
           .filter(Boolean)
@@ -368,7 +357,7 @@ export async function finalizeOnboardingWizard(
       );
     } else {
       await prompter.note(
-        `When you're ready: ${formatCliCommand("openclaw dashboard --no-open")}`,
+        `When you're ready: ${formatCliCommand("cryptoclaw dashboard --no-open")}`,
         "Later",
       );
     }
@@ -377,15 +366,7 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    [
-      "Back up your agent workspace.",
-      "Docs: https://docs.openclaw.ai/concepts/agent-workspace",
-    ].join("\n"),
-    "Workspace backup",
-  );
-
-  await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.openclaw.ai/security",
+    "Running agents on your computer is risky — harden your setup: https://docs.cryptoclaw.ai/security",
     "Security",
   );
 
@@ -460,8 +441,8 @@ export async function finalizeOnboardingWizard(
       [
         `Dashboard link: ${dashboardUrl}`,
         controlUiOpened
-          ? "Opened in your browser. Keep that tab to control OpenClaw."
-          : "Copy/paste this URL in a browser on this machine to control OpenClaw.",
+          ? "Opened in your browser. Keep that tab to control CryptoClaw."
+          : "Copy/paste this URL in a browser on this machine to control CryptoClaw.",
         controlUiOpenHint,
       ]
         .filter(Boolean)
@@ -473,42 +454,20 @@ export async function finalizeOnboardingWizard(
   const webSearchKey = (nextConfig.tools?.web?.search?.apiKey ?? "").trim();
   const webSearchEnv = (process.env.BRAVE_API_KEY ?? "").trim();
   const hasWebSearchKey = Boolean(webSearchKey || webSearchEnv);
-  await prompter.note(
-    hasWebSearchKey
-      ? [
-          "Web search is enabled, so your agent can look things up online when needed.",
-          "",
-          webSearchKey
-            ? "API key: stored in config (tools.web.search.apiKey)."
-            : "API key: provided via BRAVE_API_KEY env var (Gateway environment).",
-          "Docs: https://docs.openclaw.ai/tools/web",
-        ].join("\n")
-      : [
-          "If you want your agent to be able to search the web, you’ll need an API key.",
-          "",
-          "OpenClaw uses Brave Search for the `web_search` tool. Without a Brave Search API key, web search won’t work.",
-          "",
-          "Set it up interactively:",
-          `- Run: ${formatCliCommand("openclaw configure --section web")}`,
-          "- Enable web_search and paste your Brave Search API key",
-          "",
-          "Alternative: set BRAVE_API_KEY in the Gateway environment (no config changes).",
-          "Docs: https://docs.openclaw.ai/tools/web",
-        ].join("\n"),
-    "Web search (optional)",
-  );
+  if (!hasWebSearchKey) {
+    await prompter.note(
+      `Web search requires a Brave API key. Run ${formatCliCommand("cryptoclaw configure --section web")} or set BRAVE_API_KEY.`,
+      "Web search (optional)",
+    );
+  }
 
-  await prompter.note(
-    'What now: https://openclaw.ai/showcase ("What People Are Building").',
-    "What now",
-  );
-
+  const walletSuffix = options.walletAddress ? ` Wallet: ${options.walletAddress}` : "";
   await prompter.outro(
     controlUiOpened
-      ? "Onboarding complete. Dashboard opened; keep that tab to control OpenClaw."
+      ? `Setup complete. Dashboard opened; keep that tab to control CryptoClaw.${walletSuffix}`
       : seededInBackground
-        ? "Onboarding complete. Web UI seeded in the background; open it anytime with the dashboard link above."
-        : "Onboarding complete. Use the dashboard link above to control OpenClaw.",
+        ? `Setup complete. Web UI seeded in the background; open it anytime with the dashboard link above.${walletSuffix}`
+        : `Setup complete. Use the dashboard link above to control CryptoClaw.${walletSuffix}`,
   );
 
   return { launchedTui };

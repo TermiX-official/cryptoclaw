@@ -22,17 +22,17 @@ describe("loader", () => {
     await fs.mkdir(tmpDir, { recursive: true });
 
     // Disable bundled hooks during tests by setting env var to non-existent directory
-    originalBundledDir = process.env.OPENCLAW_BUNDLED_HOOKS_DIR;
-    process.env.OPENCLAW_BUNDLED_HOOKS_DIR = "/nonexistent/bundled/hooks";
+    originalBundledDir = process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR;
+    process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR = "/nonexistent/bundled/hooks";
   });
 
   afterEach(async () => {
     clearInternalHooks();
     // Restore original env var
     if (originalBundledDir === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_HOOKS_DIR;
+      delete process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_HOOKS_DIR = originalBundledDir;
+      process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR = originalBundledDir;
     }
     // Clean up temp directory
     try {

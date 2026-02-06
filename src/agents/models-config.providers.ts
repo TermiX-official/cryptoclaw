@@ -548,7 +548,7 @@ export async function resolveImplicitCopilotProvider(params: {
   // GitHub token (not the exchanged Copilot token), and (3) matches existing
   // patterns for OAuth-like providers in pi-coding-agent.
   // Note: we deliberately do not write pi-coding-agent's `auth.json` here.
-  // OpenClaw uses its own auth store and exchanges tokens at runtime.
+  // CryptoClaw uses its own auth store and exchanges tokens at runtime.
   // `models list` uses OpenClaw's auth heuristics for availability.
 
   // We intentionally do NOT define custom models for Copilot in models.json.

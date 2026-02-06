@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/discord",
+  "name": "@cryptoclaw/discord",
   "version": "2026.2.4",
   "description": "OpenClaw Discord channel plugin",
   "type": "module",
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "cryptoclaw": "workspace:*"
   },
-  "openclaw": {
+  "cryptoclaw": {
     "extensions": [
       "./index.ts"
     ]

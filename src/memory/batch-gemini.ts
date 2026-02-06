@@ -34,7 +34,7 @@ export type GeminiBatchOutputLine = {
 };
 
 const GEMINI_BATCH_MAX_REQUESTS = 50000;
-const debugEmbeddings = isTruthyEnvValue(process.env.OPENCLAW_DEBUG_MEMORY_EMBEDDINGS);
+const debugEmbeddings = isTruthyEnvValue(process.env.CRYPTOCLAW_DEBUG_MEMORY_EMBEDDINGS);
 const log = createSubsystemLogger("memory/embeddings");
 
 const debugLog = (message: string, meta?: Record<string, unknown>) => {

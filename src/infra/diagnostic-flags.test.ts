@@ -8,7 +8,7 @@ describe("diagnostic flags", () => {
       diagnostics: { flags: ["telegram.http", "cache.*"] },
     } as OpenClawConfig;
     const env = {
-      OPENCLAW_DIAGNOSTICS: "foo,bar",
+      CRYPTOCLAW_DIAGNOSTICS: "foo,bar",
     } as NodeJS.ProcessEnv;
 
     const flags = resolveDiagnosticFlags(cfg, env);
@@ -19,12 +19,12 @@ describe("diagnostic flags", () => {
   });
 
   it("treats env true as wildcard", () => {
-    const env = { OPENCLAW_DIAGNOSTICS: "1" } as NodeJS.ProcessEnv;
+    const env = { CRYPTOCLAW_DIAGNOSTICS: "1" } as NodeJS.ProcessEnv;
     expect(isDiagnosticFlagEnabled("anything.here", undefined, env)).toBe(true);
   });
 
   it("treats env false as disabled", () => {
-    const env = { OPENCLAW_DIAGNOSTICS: "0" } as NodeJS.ProcessEnv;
+    const env = { CRYPTOCLAW_DIAGNOSTICS: "0" } as NodeJS.ProcessEnv;
     expect(isDiagnosticFlagEnabled("telegram.http", undefined, env)).toBe(false);
   });
 });

@@ -21,24 +21,24 @@ describe("hooks install (e2e)", () => {
     workspaceDir = path.join(baseDir, "workspace");
     await fs.mkdir(workspaceDir, { recursive: true });
 
-    prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    prevBundledDir = process.env.OPENCLAW_BUNDLED_HOOKS_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.join(baseDir, "state");
-    process.env.OPENCLAW_BUNDLED_HOOKS_DIR = path.join(baseDir, "bundled-none");
+    prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
+    prevBundledDir = process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR;
+    process.env.CRYPTOCLAW_STATE_DIR = path.join(baseDir, "state");
+    process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR = path.join(baseDir, "bundled-none");
     vi.resetModules();
   });
 
   afterEach(async () => {
     if (prevStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.CRYPTOCLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = prevStateDir;
+      process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
     }
 
     if (prevBundledDir === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_HOOKS_DIR;
+      delete process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_HOOKS_DIR = prevBundledDir;
+      process.env.CRYPTOCLAW_BUNDLED_HOOKS_DIR = prevBundledDir;
     }
 
     vi.resetModules();

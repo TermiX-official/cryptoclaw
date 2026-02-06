@@ -83,7 +83,12 @@ function isGatewayArgv(args: string[]): boolean {
   }
 
   const exe = normalized[0] ?? "";
-  return exe.endsWith("/openclaw") || exe === "openclaw";
+  return (
+    exe.endsWith("/cryptoclaw") ||
+    exe === "cryptoclaw" ||
+    exe.endsWith("/openclaw") ||
+    exe === "openclaw"
+  );
 }
 
 function readLinuxCmdline(pid: number): string[] | null {
@@ -179,7 +184,7 @@ export async function acquireGatewayLock(
   const env = opts.env ?? process.env;
   const allowInTests = opts.allowInTests === true;
   if (
-    env.OPENCLAW_ALLOW_MULTI_GATEWAY === "1" ||
+    env.CRYPTOCLAW_ALLOW_MULTI_GATEWAY === "1" ||
     (!allowInTests && (env.VITEST || env.NODE_ENV === "test"))
   ) {
     return null;

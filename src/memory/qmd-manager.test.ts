@@ -50,7 +50,7 @@ describe("QmdMemoryManager", () => {
     await fs.mkdir(workspaceDir, { recursive: true });
     stateDir = path.join(tmpRoot, "state");
     await fs.mkdir(stateDir, { recursive: true });
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.CRYPTOCLAW_STATE_DIR = stateDir;
     cfg = {
       agents: {
         list: [{ id: agentId, default: true, workspace: workspaceDir }],
@@ -67,7 +67,7 @@ describe("QmdMemoryManager", () => {
   });
 
   afterEach(async () => {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.CRYPTOCLAW_STATE_DIR;
     await fs.rm(tmpRoot, { recursive: true, force: true });
   });
 

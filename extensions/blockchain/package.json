@@ -1,0 +1,16 @@
+{
+  "name": "@cryptoclaw/blockchain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "viem": "^2.27.2"
+  },
+  "devDependencies": {
+    "cryptoclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "cryptoclaw": "*"
+  }
+}

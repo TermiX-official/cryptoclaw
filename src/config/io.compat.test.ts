@@ -39,21 +39,21 @@ describe("config io paths", () => {
     });
   });
 
-  it("defaults to ~/.openclaw/openclaw.json when config is missing", async () => {
+  it("defaults to ~/.cryptoclaw/cryptoclaw.json when config is missing", async () => {
     await withTempHome(async (home) => {
       const io = createConfigIO({
         env: {} as NodeJS.ProcessEnv,
         homedir: () => home,
       });
-      expect(io.configPath).toBe(path.join(home, ".openclaw", "openclaw.json"));
+      expect(io.configPath).toBe(path.join(home, ".cryptoclaw", "cryptoclaw.json"));
     });
   });
 
-  it("honors explicit OPENCLAW_CONFIG_PATH override", async () => {
+  it("honors explicit CRYPTOCLAW_CONFIG_PATH override", async () => {
     await withTempHome(async (home) => {
       const customPath = await writeConfig(home, ".openclaw", 20002, "custom.json");
       const io = createConfigIO({
-        env: { OPENCLAW_CONFIG_PATH: customPath } as NodeJS.ProcessEnv,
+        env: { CRYPTOCLAW_CONFIG_PATH: customPath } as NodeJS.ProcessEnv,
         homedir: () => home,
       });
       expect(io.configPath).toBe(customPath);

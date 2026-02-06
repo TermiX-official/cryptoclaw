@@ -81,7 +81,7 @@ describe("buildWorkspaceSkillStatus", () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
     const bundledDir = path.join(workspaceDir, ".bundled");
     const bundledSkillDir = path.join(bundledDir, "peekaboo");
-    const originalBundled = process.env.OPENCLAW_BUNDLED_SKILLS_DIR;
+    const originalBundled = process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR;
 
     await writeSkill({
       dir: bundledSkillDir,
@@ -91,7 +91,7 @@ describe("buildWorkspaceSkillStatus", () => {
     });
 
     try {
-      process.env.OPENCLAW_BUNDLED_SKILLS_DIR = bundledDir;
+      process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR = bundledDir;
       const report = buildWorkspaceSkillStatus(workspaceDir, {
         managedSkillsDir: path.join(workspaceDir, ".managed"),
         config: { skills: { allowBundled: ["other-skill"] } },
@@ -103,9 +103,9 @@ describe("buildWorkspaceSkillStatus", () => {
       expect(skill?.eligible).toBe(false);
     } finally {
       if (originalBundled === undefined) {
-        delete process.env.OPENCLAW_BUNDLED_SKILLS_DIR;
+        delete process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR;
       } else {
-        process.env.OPENCLAW_BUNDLED_SKILLS_DIR = originalBundled;
+        process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR = originalBundled;
       }
     }
   });

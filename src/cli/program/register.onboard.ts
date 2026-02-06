@@ -44,7 +44,7 @@ export function registerOnboardCommand(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs.openclaw.ai/cli/onboard")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs.cryptoclaw.ai/cli/onboard")}\n`,
     )
     .option("--workspace <dir>", "Agent workspace directory (default: ~/.openclaw/workspace)")
     .option("--reset", "Reset config + credentials + sessions + workspace before running wizard")
@@ -105,6 +105,10 @@ export function registerOnboardCommand(program: Command) {
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
     .option("--node-manager <name>", "Node manager for skills: npm|pnpm|bun")
+    .option("--wallet-create", "Create a new wallet during onboarding")
+    .option("--wallet-import", "Import an existing wallet during onboarding")
+    .option("--wallet-label <name>", "Label for the new wallet")
+    .option("--skip-wallet", "Skip wallet setup")
     .option("--json", "Output JSON summary", false)
     .action(async (opts, command) => {
       await runCommandWithRuntime(defaultRuntime, async () => {
@@ -163,6 +167,10 @@ export function registerOnboardCommand(program: Command) {
             skipUi: Boolean(opts.skipUi),
             nodeManager: opts.nodeManager as NodeManagerChoice | undefined,
             json: Boolean(opts.json),
+            walletCreate: Boolean(opts.walletCreate),
+            walletImport: Boolean(opts.walletImport),
+            walletLabel: opts.walletLabel as string | undefined,
+            skipWallet: Boolean(opts.skipWallet),
           },
           defaultRuntime,
         );

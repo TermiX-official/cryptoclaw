@@ -1,0 +1,17 @@
+{
+  "id": "blockchain",
+  "name": "Blockchain",
+  "description": "EVM blockchain tools: wallet management, token transfers, DEX swaps, NFTs, smart contracts, ERC-8004 agent identity, and multi-chain operations",
+  "entry": "index.ts",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+      "defaultChain": {
+        "type": "string",
+        "description": "Default EVM network name or chain ID",
+        "default": "bsc"
+      }
+    }
+  }
+}

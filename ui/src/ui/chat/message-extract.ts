@@ -9,6 +9,8 @@ const ENVELOPE_CHANNELS = [
   "Slack",
   "Discord",
   "iMessage",
+  "Nostr",
+  // Legacy channel names kept for backward compat with old chat logs
   "Teams",
   "Matrix",
   "Zalo",

@@ -327,7 +327,10 @@ export function discoverOpenClawPlugins(params: {
   }
   if (workspaceDir) {
     const workspaceRoot = resolveUserPath(workspaceDir);
-    const workspaceExtDirs = [path.join(workspaceRoot, ".openclaw", "extensions")];
+    const workspaceExtDirs = [
+      path.join(workspaceRoot, ".cryptoclaw", "extensions"),
+      path.join(workspaceRoot, ".openclaw", "extensions"),
+    ];
     for (const dir of workspaceExtDirs) {
       discoverInDirectory({
         dir,

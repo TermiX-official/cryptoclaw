@@ -1,5 +1,5 @@
 import type { SeverityNumber } from "@opentelemetry/api-logs";
-import type { DiagnosticEventPayload, OpenClawPluginService } from "openclaw/plugin-sdk";
+import type { DiagnosticEventPayload, OpenClawPluginService } from "cryptoclaw/plugin-sdk";
 import { metrics, trace, SpanStatusCode } from "@opentelemetry/api";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
@@ -10,7 +10,7 @@ import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import { onDiagnosticEvent, registerLogTransport } from "openclaw/plugin-sdk";
+import { onDiagnosticEvent, registerLogTransport } from "cryptoclaw/plugin-sdk";
 
 const DEFAULT_SERVICE_NAME = "openclaw";
 

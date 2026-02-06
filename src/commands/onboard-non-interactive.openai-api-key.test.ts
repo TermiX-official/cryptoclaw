@@ -8,27 +8,27 @@ describe("onboard (non-interactive): OpenAI API key", () => {
   it("stores OPENAI_API_KEY and configures the OpenAI default model", async () => {
     const prev = {
       home: process.env.HOME,
-      stateDir: process.env.OPENCLAW_STATE_DIR,
-      configPath: process.env.OPENCLAW_CONFIG_PATH,
-      skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
-      skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
-      skipCron: process.env.OPENCLAW_SKIP_CRON,
-      skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
-      token: process.env.OPENCLAW_GATEWAY_TOKEN,
-      password: process.env.OPENCLAW_GATEWAY_PASSWORD,
+      stateDir: process.env.CRYPTOCLAW_STATE_DIR,
+      configPath: process.env.CRYPTOCLAW_CONFIG_PATH,
+      skipChannels: process.env.CRYPTOCLAW_SKIP_CHANNELS,
+      skipGmail: process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER,
+      skipCron: process.env.CRYPTOCLAW_SKIP_CRON,
+      skipCanvas: process.env.CRYPTOCLAW_SKIP_CANVAS_HOST,
+      token: process.env.CRYPTOCLAW_GATEWAY_TOKEN,
+      password: process.env.CRYPTOCLAW_GATEWAY_PASSWORD,
     };
 
-    process.env.OPENCLAW_SKIP_CHANNELS = "1";
-    process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-    process.env.OPENCLAW_SKIP_CRON = "1";
-    process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+    process.env.CRYPTOCLAW_SKIP_CHANNELS = "1";
+    process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER = "1";
+    process.env.CRYPTOCLAW_SKIP_CRON = "1";
+    process.env.CRYPTOCLAW_SKIP_CANVAS_HOST = "1";
+    delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+    delete process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
 
     const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-onboard-openai-"));
     process.env.HOME = tempHome;
-    process.env.OPENCLAW_STATE_DIR = tempHome;
-    process.env.OPENCLAW_CONFIG_PATH = path.join(tempHome, "openclaw.json");
+    process.env.CRYPTOCLAW_STATE_DIR = tempHome;
+    process.env.CRYPTOCLAW_CONFIG_PATH = path.join(tempHome, "openclaw.json");
     vi.resetModules();
 
     const runtime = {
@@ -64,14 +64,14 @@ describe("onboard (non-interactive): OpenAI API key", () => {
     } finally {
       await fs.rm(tempHome, { recursive: true, force: true });
       process.env.HOME = prev.home;
-      process.env.OPENCLAW_STATE_DIR = prev.stateDir;
-      process.env.OPENCLAW_CONFIG_PATH = prev.configPath;
-      process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
-      process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
-      process.env.OPENCLAW_GATEWAY_TOKEN = prev.token;
-      process.env.OPENCLAW_GATEWAY_PASSWORD = prev.password;
+      process.env.CRYPTOCLAW_STATE_DIR = prev.stateDir;
+      process.env.CRYPTOCLAW_CONFIG_PATH = prev.configPath;
+      process.env.CRYPTOCLAW_SKIP_CHANNELS = prev.skipChannels;
+      process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
+      process.env.CRYPTOCLAW_SKIP_CRON = prev.skipCron;
+      process.env.CRYPTOCLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
+      process.env.CRYPTOCLAW_GATEWAY_TOKEN = prev.token;
+      process.env.CRYPTOCLAW_GATEWAY_PASSWORD = prev.password;
     }
   }, 60_000);
 });

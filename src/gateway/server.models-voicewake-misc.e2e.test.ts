@@ -92,12 +92,12 @@ const emptyRegistry = createRegistry([]);
 describe("gateway server models + voicewake", () => {
   const setTempHome = (homeDir: string) => {
     const prevHome = process.env.HOME;
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const prevUserProfile = process.env.USERPROFILE;
     const prevHomeDrive = process.env.HOMEDRIVE;
     const prevHomePath = process.env.HOMEPATH;
     process.env.HOME = homeDir;
-    process.env.OPENCLAW_STATE_DIR = path.join(homeDir, ".openclaw");
+    process.env.CRYPTOCLAW_STATE_DIR = path.join(homeDir, ".openclaw");
     process.env.USERPROFILE = homeDir;
     if (process.platform === "win32") {
       const parsed = path.parse(homeDir);
@@ -111,9 +111,9 @@ describe("gateway server models + voicewake", () => {
         process.env.HOME = prevHome;
       }
       if (prevStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
       if (prevUserProfile === undefined) {
         delete process.env.USERPROFILE;
@@ -314,14 +314,14 @@ describe("gateway server models + voicewake", () => {
 
 describe("gateway server misc", () => {
   test("hello-ok advertises the gateway port for canvas host", async () => {
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    const prevCanvasPort = process.env.OPENCLAW_CANVAS_HOST_PORT;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "secret";
+    const prevToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+    const prevCanvasPort = process.env.CRYPTOCLAW_CANVAS_HOST_PORT;
+    process.env.CRYPTOCLAW_GATEWAY_TOKEN = "secret";
     testTailnetIPv4.value = "100.64.0.1";
     testState.gatewayBind = "lan";
     const canvasPort = await getFreePort();
     testState.canvasHostPort = canvasPort;
-    process.env.OPENCLAW_CANVAS_HOST_PORT = String(canvasPort);
+    process.env.CRYPTOCLAW_CANVAS_HOST_PORT = String(canvasPort);
 
     const testPort = await getFreePort();
     const canvasHostUrl = resolveCanvasHostUrl({
@@ -331,14 +331,14 @@ describe("gateway server misc", () => {
     });
     expect(canvasHostUrl).toBe(`http://100.64.0.1:${canvasPort}`);
     if (prevToken === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
     } else {
-      process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+      process.env.CRYPTOCLAW_GATEWAY_TOKEN = prevToken;
     }
     if (prevCanvasPort === undefined) {
-      delete process.env.OPENCLAW_CANVAS_HOST_PORT;
+      delete process.env.CRYPTOCLAW_CANVAS_HOST_PORT;
     } else {
-      process.env.OPENCLAW_CANVAS_HOST_PORT = prevCanvasPort;
+      process.env.CRYPTOCLAW_CANVAS_HOST_PORT = prevCanvasPort;
     }
   });
 
@@ -374,9 +374,9 @@ describe("gateway server misc", () => {
   });
 
   test("auto-enables configured channel plugins on startup", async () => {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.CRYPTOCLAW_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("Missing OPENCLAW_CONFIG_PATH");
+      throw new Error("Missing CRYPTOCLAW_CONFIG_PATH");
     }
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.writeFile(

@@ -147,7 +147,7 @@ export function formatHooksList(report: HookStatusReport, opts: HooksListOptions
 
   if (hooks.length === 0) {
     const message = opts.eligible
-      ? `No eligible hooks found. Run \`${formatCliCommand("openclaw hooks list")}\` to see all hooks.`
+      ? `No eligible hooks found. Run \`${formatCliCommand("cryptoclaw hooks list")}\` to see all hooks.`
       : "No hooks found.";
     return message;
   }
@@ -203,7 +203,7 @@ export function formatHookInfo(
     if (opts.json) {
       return JSON.stringify({ error: "not found", hook: hookName }, null, 2);
     }
-    return `Hook "${hookName}" not found. Run \`${formatCliCommand("openclaw hooks list")}\` to see available hooks.`;
+    return `Hook "${hookName}" not found. Run \`${formatCliCommand("cryptoclaw hooks list")}\` to see available hooks.`;
   }
 
   if (opts.json) {
@@ -441,7 +441,7 @@ export function registerHooksCli(program: Command): void {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.openclaw.ai/cli/hooks")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.cryptoclaw.ai/cli/hooks")}\n`,
     );
 
   hooks

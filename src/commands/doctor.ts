@@ -68,7 +68,7 @@ export async function doctorCommand(
 ) {
   const prompter = createDoctorPrompter({ runtime, options });
   printWizardHeader(runtime);
-  intro("OpenClaw doctor");
+  intro("CryptoClaw doctor");
 
   const root = await resolveOpenClawPackageRoot({
     moduleUrl: import.meta.url,
@@ -101,11 +101,11 @@ export async function doctorCommand(
   if (!cfg.gateway?.mode) {
     const lines = [
       "gateway.mode is unset; gateway start will be blocked.",
-      `Fix: run ${formatCliCommand("openclaw configure")} and set Gateway mode (local/remote).`,
-      `Or set directly: ${formatCliCommand("openclaw config set gateway.mode local")}`,
+      `Fix: run ${formatCliCommand("cryptoclaw configure")} and set Gateway mode (local/remote).`,
+      `Or set directly: ${formatCliCommand("cryptoclaw config set gateway.mode local")}`,
     ];
     if (!fs.existsSync(configPath)) {
-      lines.push(`Missing config: run ${formatCliCommand("openclaw setup")} first.`);
+      lines.push(`Missing config: run ${formatCliCommand("cryptoclaw setup")} first.`);
     }
     note(lines.join("\n"), "Gateway");
   }
@@ -289,7 +289,7 @@ export async function doctorCommand(
       runtime.log(`Backup: ${shortenHomePath(backupPath)}`);
     }
   } else {
-    runtime.log(`Run "${formatCliCommand("openclaw doctor --fix")}" to apply changes.`);
+    runtime.log(`Run "${formatCliCommand("cryptoclaw doctor --fix")}" to apply changes.`);
   }
 
   if (options.workspaceSuggestions !== false) {

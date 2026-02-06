@@ -29,7 +29,7 @@ const execFileAsync = promisify(execFile);
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
 ): string[] {
-  const profile = env.OPENCLAW_PROFILE;
+  const profile = env.CRYPTOCLAW_PROFILE;
   switch (process.platform) {
     case "darwin": {
       const label = resolveGatewayLaunchAgentLabel(profile);
@@ -114,7 +114,7 @@ function isOpenClawGatewayTaskName(name: string): boolean {
     return false;
   }
   const defaultName = resolveGatewayWindowsTaskName().toLowerCase();
-  return normalized === defaultName || normalized.startsWith("openclaw gateway");
+  return normalized === defaultName || normalized.startsWith("cryptoclaw gateway");
 }
 
 function tryExtractPlistLabel(contents: string): string | null {

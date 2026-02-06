@@ -35,9 +35,9 @@ describe("installHooksFromArchive", () => {
     zip.file(
       "package/package.json",
       JSON.stringify({
-        name: "@openclaw/zip-hooks",
+        name: "@cryptoclaw/zip-hooks",
         version: "0.0.1",
-        openclaw: { hooks: ["./hooks/zip-hook"] },
+        cryptoclaw: { hooks: ["./hooks/zip-hook"] },
       }),
     );
     zip.file(
@@ -46,7 +46,7 @@ describe("installHooksFromArchive", () => {
         "---",
         "name: zip-hook",
         "description: Zip hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"cryptoclaw":{"events":["command:new"]}}',
         "---",
         "",
         "# Zip Hook",
@@ -80,9 +80,9 @@ describe("installHooksFromArchive", () => {
     fs.writeFileSync(
       path.join(pkgDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/tar-hooks",
+        name: "@cryptoclaw/tar-hooks",
         version: "0.0.1",
-        openclaw: { hooks: ["./hooks/tar-hook"] },
+        cryptoclaw: { hooks: ["./hooks/tar-hook"] },
       }),
       "utf-8",
     );
@@ -92,7 +92,7 @@ describe("installHooksFromArchive", () => {
         "---",
         "name: tar-hook",
         "description: Tar hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"cryptoclaw":{"events":["command:new"]}}',
         "---",
         "",
         "# Tar Hook",
@@ -131,7 +131,7 @@ describe("installHooksFromArchive", () => {
       JSON.stringify({
         name: "@evil/..",
         version: "0.0.1",
-        openclaw: { hooks: ["./hooks/evil-hook"] },
+        cryptoclaw: { hooks: ["./hooks/evil-hook"] },
       }),
       "utf-8",
     );
@@ -141,7 +141,7 @@ describe("installHooksFromArchive", () => {
         "---",
         "name: evil-hook",
         "description: Evil hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"cryptoclaw":{"events":["command:new"]}}',
         "---",
         "",
         "# Evil Hook",
@@ -178,7 +178,7 @@ describe("installHooksFromArchive", () => {
       JSON.stringify({
         name: "@evil/.",
         version: "0.0.1",
-        openclaw: { hooks: ["./hooks/reserved-hook"] },
+        cryptoclaw: { hooks: ["./hooks/reserved-hook"] },
       }),
       "utf-8",
     );
@@ -188,7 +188,7 @@ describe("installHooksFromArchive", () => {
         "---",
         "name: reserved-hook",
         "description: Reserved hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"cryptoclaw":{"events":["command:new"]}}',
         "---",
         "",
         "# Reserved Hook",
@@ -226,7 +226,7 @@ describe("installHooksFromPath", () => {
         "---",
         "name: my-hook",
         "description: My hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"cryptoclaw":{"events":["command:new"]}}',
         "---",
         "",
         "# My Hook",

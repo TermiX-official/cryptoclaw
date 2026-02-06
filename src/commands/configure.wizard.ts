@@ -79,7 +79,7 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
         {
           value: "remove",
           label: "Remove channel config",
-          hint: "Delete channel tokens/settings from openclaw.json",
+          hint: "Delete channel tokens/settings from cryptoclaw.json",
         },
       ],
       initialValue: "configure",
@@ -100,7 +100,7 @@ async function promptWebToolsConfig(
     [
       "Web search lets your agent look things up online using the `web_search` tool.",
       "It requires a Brave Search API key (you can store it in the config or set BRAVE_API_KEY in the Gateway environment).",
-      "Docs: https://docs.openclaw.ai/tools/web",
+      "Docs: https://docs.cryptoclaw.ai/tools/web",
     ].join("\n"),
     "Web search",
   );
@@ -136,7 +136,7 @@ async function promptWebToolsConfig(
         [
           "No key stored yet, so web_search will stay unavailable.",
           "Store a key here or set BRAVE_API_KEY in the Gateway environment.",
-          "Docs: https://docs.openclaw.ai/tools/web",
+          "Docs: https://docs.cryptoclaw.ai/tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -175,7 +175,7 @@ export async function runConfigureWizard(
 ) {
   try {
     printWizardHeader(runtime);
-    intro(opts.command === "update" ? "OpenClaw update wizard" : "OpenClaw configure");
+    intro(opts.command === "update" ? "CryptoClaw update wizard" : "CryptoClaw configure");
     const prompter = createClackPrompter();
 
     const snapshot = await readConfigFileSnapshot();
@@ -189,14 +189,14 @@ export async function runConfigureWizard(
           [
             ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
             "",
-            "Docs: https://docs.openclaw.ai/gateway/configuration",
+            "Docs: https://docs.cryptoclaw.ai/gateway/configuration",
           ].join("\n"),
           "Config issues",
         );
       }
       if (!snapshot.valid) {
         outro(
-          `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run configure.`,
+          `Config invalid. Run \`${formatCliCommand("cryptoclaw doctor")}\` to repair it, then re-run configure.`,
         );
         runtime.exit(1);
         return;
@@ -206,8 +206,8 @@ export async function runConfigureWizard(
     const localUrl = "ws://127.0.0.1:18789";
     const localProbe = await probeGatewayReachable({
       url: localUrl,
-      token: baseConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN,
-      password: baseConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD,
+      token: baseConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN,
+      password: baseConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD,
     });
     const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
     const remoteProbe = remoteUrl
@@ -274,7 +274,7 @@ export async function runConfigureWizard(
     let gatewayToken: string | undefined =
       nextConfig.gateway?.auth?.token ??
       baseConfig.gateway?.auth?.token ??
-      process.env.OPENCLAW_GATEWAY_TOKEN;
+      process.env.CRYPTOCLAW_GATEWAY_TOKEN;
 
     const persistConfig = async () => {
       nextConfig = applyWizardMetadata(nextConfig, {
@@ -377,9 +377,9 @@ export async function runConfigureWizard(
         const remoteUrl = nextConfig.gateway?.remote?.url?.trim();
         const wsUrl =
           nextConfig.gateway?.mode === "remote" && remoteUrl ? remoteUrl : localLinks.wsUrl;
-        const token = nextConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN;
+        const token = nextConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN;
         const password =
-          nextConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD;
+          nextConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
         await waitForGatewayReachable({
           url: wsUrl,
           token,
@@ -393,8 +393,8 @@ export async function runConfigureWizard(
           note(
             [
               "Docs:",
-              "https://docs.openclaw.ai/gateway/health",
-              "https://docs.openclaw.ai/gateway/troubleshooting",
+              "https://docs.cryptoclaw.ai/gateway/health",
+              "https://docs.cryptoclaw.ai/gateway/troubleshooting",
             ].join("\n"),
             "Health check help",
           );
@@ -504,9 +504,9 @@ export async function runConfigureWizard(
           const remoteUrl = nextConfig.gateway?.remote?.url?.trim();
           const wsUrl =
             nextConfig.gateway?.mode === "remote" && remoteUrl ? remoteUrl : localLinks.wsUrl;
-          const token = nextConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN;
+          const token = nextConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN;
           const password =
-            nextConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD;
+            nextConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
           await waitForGatewayReachable({
             url: wsUrl,
             token,
@@ -520,8 +520,8 @@ export async function runConfigureWizard(
             note(
               [
                 "Docs:",
-                "https://docs.openclaw.ai/gateway/health",
-                "https://docs.openclaw.ai/gateway/troubleshooting",
+                "https://docs.cryptoclaw.ai/gateway/health",
+                "https://docs.cryptoclaw.ai/gateway/troubleshooting",
               ].join("\n"),
               "Health check help",
             );
@@ -553,9 +553,11 @@ export async function runConfigureWizard(
       basePath: nextConfig.gateway?.controlUi?.basePath,
     });
     // Try both new and old passwords since gateway may still have old config.
-    const newPassword = nextConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD;
-    const oldPassword = baseConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD;
-    const token = nextConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN;
+    const newPassword =
+      nextConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
+    const oldPassword =
+      baseConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
+    const token = nextConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN;
 
     let gatewayProbe = await probeGatewayReachable({
       url: links.wsUrl,
@@ -579,7 +581,7 @@ export async function runConfigureWizard(
         `Web UI: ${links.httpUrl}`,
         `Gateway WS: ${links.wsUrl}`,
         gatewayStatusLine,
-        "Docs: https://docs.openclaw.ai/web/control-ui",
+        "Docs: https://docs.cryptoclaw.ai/web/control-ui",
       ].join("\n"),
       "Control UI",
     );

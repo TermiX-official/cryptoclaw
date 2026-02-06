@@ -28,7 +28,7 @@ const resolveShellFromPath = (name: string) => {
 };
 const defaultShell = isWin
   ? undefined
-  : process.env.OPENCLAW_TEST_SHELL || resolveShellFromPath("bash") || process.env.SHELL || "sh";
+  : process.env.CRYPTOCLAW_TEST_SHELL || resolveShellFromPath("bash") || process.env.SHELL || "sh";
 // PowerShell: Start-Sleep for delays, ; for command separation, $null for null device
 const shortDelayCmd = isWin ? "Start-Sleep -Milliseconds 50" : "sleep 0.05";
 const yieldDelayCmd = isWin ? "Start-Sleep -Milliseconds 200" : "sleep 0.2";
@@ -347,11 +347,11 @@ describe("buildDockerExecArgs", () => {
     });
 
     const commandArg = args[args.length - 1];
-    expect(args).toContain("OPENCLAW_PREPEND_PATH=/custom/bin:/usr/local/bin:/usr/bin");
-    expect(commandArg).toContain('export PATH="${OPENCLAW_PREPEND_PATH}:$PATH"');
+    expect(args).toContain("CRYPTOCLAW_PREPEND_PATH=/custom/bin:/usr/local/bin:/usr/bin");
+    expect(commandArg).toContain('export PATH="${CRYPTOCLAW_PREPEND_PATH}:$PATH"');
     expect(commandArg).toContain("echo hello");
     expect(commandArg).toBe(
-      'export PATH="${OPENCLAW_PREPEND_PATH}:$PATH"; unset OPENCLAW_PREPEND_PATH; echo hello',
+      'export PATH="${CRYPTOCLAW_PREPEND_PATH}:$PATH"; unset CRYPTOCLAW_PREPEND_PATH; echo hello',
     );
   });
 
@@ -368,9 +368,9 @@ describe("buildDockerExecArgs", () => {
     });
 
     const commandArg = args[args.length - 1];
-    expect(args).toContain(`OPENCLAW_PREPEND_PATH=${injectedPath}`);
+    expect(args).toContain(`CRYPTOCLAW_PREPEND_PATH=${injectedPath}`);
     expect(commandArg).not.toContain(injectedPath);
-    expect(commandArg).toContain("OPENCLAW_PREPEND_PATH");
+    expect(commandArg).toContain("CRYPTOCLAW_PREPEND_PATH");
   });
 
   it("does not add PATH export when PATH is not in env", () => {

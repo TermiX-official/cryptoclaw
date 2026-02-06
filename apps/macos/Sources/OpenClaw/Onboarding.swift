@@ -7,7 +7,7 @@ import Observation
 import SwiftUI
 
 enum UIStrings {
-    static let welcomeTitle = "Welcome to OpenClaw"
+    static let welcomeTitle = "Welcome to CryptoClaw"
 }
 
 @MainActor

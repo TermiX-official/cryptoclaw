@@ -239,7 +239,7 @@ export function registerCompletionCli(program: Command) {
     .option("-i, --install", "Install completion script to shell profile")
     .option(
       "--write-state",
-      "Write completion scripts to $OPENCLAW_STATE_DIR/completions (no stdout)",
+      "Write completion scripts to $CRYPTOCLAW_STATE_DIR/completions (no stdout)",
     )
     .option("-y, --yes", "Skip confirmation (non-interactive)", false)
     .action(async (options) => {
@@ -618,7 +618,7 @@ function generateFishCompletion(program: Command): string {
       // Actually, a robust fish completion often requires defining a function to check current line.
       // For simplicity, we'll assume standard fish helper __fish_seen_subcommand_from.
 
-      // To properly scope to 'openclaw gateway' and not 'openclaw other gateway', we need to check the sequence.
+      // To properly scope to 'cryptoclaw gateway' and not 'cryptoclaw other gateway', we need to check the sequence.
       // A simplified approach:
 
       // Subcommands

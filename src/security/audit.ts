@@ -376,7 +376,7 @@ function collectBrowserControlFindings(cfg: OpenClawConfig): SecurityAuditFindin
       severity: "warn",
       title: "Browser control config looks invalid",
       detail: String(err),
-      remediation: `Fix browser.cdpUrl in ${resolveConfigPath()} and re-run "${formatCliCommand("openclaw security audit --deep")}".`,
+      remediation: `Fix browser.cdpUrl in ${resolveConfigPath()} and re-run "${formatCliCommand("cryptoclaw security audit --deep")}".`,
     });
     return findings;
   }
@@ -873,10 +873,10 @@ async function maybeProbeGateway(params: {
         ? typeof remote?.token === "string" && remote.token.trim()
           ? remote.token.trim()
           : undefined
-        : process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+        : process.env.CRYPTOCLAW_GATEWAY_TOKEN?.trim() ||
           (typeof authToken === "string" && authToken.trim() ? authToken.trim() : undefined);
     const password =
-      process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+      process.env.CRYPTOCLAW_GATEWAY_PASSWORD?.trim() ||
       (mode === "remote"
         ? typeof remote?.password === "string" && remote.password.trim()
           ? remote.password.trim()
@@ -983,7 +983,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
       severity: "warn",
       title: "Gateway probe failed (deep)",
       detail: deep.gateway.error ?? "gateway unreachable",
-      remediation: `Run "${formatCliCommand("openclaw status --all")}" to debug connectivity/auth, then re-run "${formatCliCommand("openclaw security audit --deep")}".`,
+      remediation: `Run "${formatCliCommand("cryptoclaw status --all")}" to debug connectivity/auth, then re-run "${formatCliCommand("cryptoclaw security audit --deep")}".`,
     });
   }
 

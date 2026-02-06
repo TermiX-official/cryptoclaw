@@ -43,7 +43,7 @@ describe("agents helpers", () => {
     const work = summaries.find((summary) => summary.id === "work");
 
     expect(main).toBeTruthy();
-    expect(main?.workspace).toBe(path.join(os.homedir(), ".openclaw", "workspace-main"));
+    expect(main?.workspace).toBe(path.join(os.homedir(), ".cryptoclaw", "workspace-main"));
     expect(main?.bindings).toBe(1);
     expect(main?.model).toBe("anthropic/claude");
     expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);

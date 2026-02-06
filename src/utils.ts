@@ -249,11 +249,11 @@ export function resolveConfigDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const override = env.CRYPTOCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }
-  const newDir = path.join(homedir(), ".openclaw");
+  const newDir = path.join(homedir(), ".cryptoclaw");
   try {
     const hasNew = fs.existsSync(newDir);
     if (hasNew) {
@@ -334,5 +334,5 @@ export function formatTerminalLink(
   return `\u001b]8;;${safeUrl}\u0007${safeLabel}\u001b]8;;\u0007`;
 }
 
-// Configuration root; can be overridden via OPENCLAW_STATE_DIR.
+// Configuration root; can be overridden via CRYPTOCLAW_STATE_DIR.
 export const CONFIG_DIR = resolveConfigDir();

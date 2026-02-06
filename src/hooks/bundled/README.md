@@ -39,7 +39,7 @@ Swaps injected `SOUL.md` content with `SOUL_EVIL.md` during a purge window or by
 **Events**: `agent:bootstrap`
 **What it does**: Overrides the injected SOUL content before the system prompt is built.
 **Output**: No files written; swaps happen in-memory only.
-**Docs**: https://docs.openclaw.ai/hooks/soul-evil
+**Docs**: https://docs.cryptoclaw.ai/hooks/soul-evil
 
 **Enable**:
 
@@ -82,7 +82,7 @@ session-memory/
 ---
 name: my-hook
 description: "Short description"
-homepage: https://docs.openclaw.ai/hooks#my-hook
+homepage: https://docs.cryptoclaw.ai/hooks#my-hook
 metadata:
   { "openclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
@@ -221,4 +221,4 @@ Test your hooks by:
 
 ## Documentation
 
-Full documentation: https://docs.openclaw.ai/hooks
+Full documentation: https://docs.cryptoclaw.ai/hooks

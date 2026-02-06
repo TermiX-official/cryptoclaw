@@ -102,7 +102,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@openclaw/voice-call",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
@@ -140,7 +140,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@openclaw/voice-call",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
@@ -182,7 +182,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@openclaw/zipper",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
     );
     zip.file("package/dist/index.js", "export {};");
@@ -216,7 +216,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@openclaw/voice-call",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
@@ -234,7 +234,7 @@ describe("installPluginFromArchive", () => {
         JSON.stringify({
           name: "@openclaw/voice-call",
           version: "0.0.2",
-          openclaw: { extensions: ["./dist/index.js"] },
+          cryptoclaw: { extensions: ["./dist/index.js"] },
         }),
         "utf-8",
       );
@@ -278,7 +278,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@evil/..",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
@@ -314,7 +314,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "@evil/.",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        cryptoclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
@@ -367,7 +367,7 @@ describe("installPluginFromArchive", () => {
     if (result.ok) {
       return;
     }
-    expect(result.error).toContain("openclaw.extensions");
+    expect(result.error).toContain("cryptoclaw.extensions");
   });
 
   it("warns when plugin contains dangerous code patterns", async () => {
@@ -380,7 +380,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "dangerous-plugin",
         version: "1.0.0",
-        openclaw: { extensions: ["index.js"] },
+        cryptoclaw: { extensions: ["index.js"] },
       }),
     );
     fs.writeFileSync(
@@ -417,7 +417,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "hidden-entry-plugin",
         version: "1.0.0",
-        openclaw: { extensions: [".hidden/index.js"] },
+        cryptoclaw: { extensions: [".hidden/index.js"] },
       }),
     );
     fs.writeFileSync(
@@ -467,7 +467,7 @@ describe("installPluginFromArchive", () => {
       JSON.stringify({
         name: "scan-fail-plugin",
         version: "1.0.0",
-        openclaw: { extensions: ["index.js"] },
+        cryptoclaw: { extensions: ["index.js"] },
       }),
     );
     fs.writeFileSync(path.join(pluginDir, "index.js"), "export {};");

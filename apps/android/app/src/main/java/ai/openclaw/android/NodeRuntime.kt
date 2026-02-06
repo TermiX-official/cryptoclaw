@@ -506,7 +506,7 @@ class NodeRuntime(context: Context) {
     val version = resolvedVersionName()
     val release = Build.VERSION.RELEASE?.trim().orEmpty()
     val releaseLabel = if (release.isEmpty()) "unknown" else release
-    return "OpenClawAndroid/$version (Android $releaseLabel; SDK ${Build.VERSION.SDK_INT})"
+    return "CryptoClawAndroid/$version (Android $releaseLabel; SDK ${Build.VERSION.SDK_INT})"
   }
 
   private fun buildClientInfo(clientId: String, clientMode: String): GatewayClientInfo {

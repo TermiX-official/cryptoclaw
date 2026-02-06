@@ -194,10 +194,10 @@ async function resolveFilePath(rootReal: string, urlPath: string) {
 }
 
 function isDisabledByEnv() {
-  if (isTruthyEnvValue(process.env.OPENCLAW_SKIP_CANVAS_HOST)) {
+  if (isTruthyEnvValue(process.env.CRYPTOCLAW_SKIP_CANVAS_HOST)) {
     return true;
   }
-  if (isTruthyEnvValue(process.env.OPENCLAW_SKIP_CANVAS_HOST)) {
+  if (isTruthyEnvValue(process.env.CRYPTOCLAW_SKIP_CANVAS_HOST)) {
     return true;
   }
   if (process.env.NODE_ENV === "test") {
@@ -235,7 +235,7 @@ async function prepareCanvasRoot(rootDir: string) {
 }
 
 function resolveDefaultCanvasRoot(): string {
-  const candidates = [path.join(os.homedir(), ".openclaw", "canvas")];
+  const candidates = [path.join(os.homedir(), ".cryptoclaw", "canvas")];
   const existing = candidates.find((dir) => {
     try {
       return fsSync.statSync(dir).isDirectory();

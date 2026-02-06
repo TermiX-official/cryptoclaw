@@ -9,7 +9,7 @@ import {
 
 const ROOT_DIR = path.parse(process.cwd()).root;
 const CONFIG_DIR = path.join(ROOT_DIR, "config");
-const ETC_OPENCLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
+const ETC_CRYPTOCLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
 const SHARED_DIR = path.join(ROOT_DIR, "shared");
 
 const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "openclaw.json");
@@ -19,7 +19,7 @@ function configPath(...parts: string[]) {
 }
 
 function etcOpenClawPath(...parts: string[]) {
-  return path.join(ETC_OPENCLAW_DIR, ...parts);
+  return path.join(ETC_CRYPTOCLAW_DIR, ...parts);
 }
 
 function sharedPath(...parts: string[]) {

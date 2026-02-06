@@ -36,7 +36,7 @@ export type BundledSkillsResolveOptions = {
 export function resolveBundledSkillsDir(
   opts: BundledSkillsResolveOptions = {},
 ): string | undefined {
-  const override = process.env.OPENCLAW_BUNDLED_SKILLS_DIR?.trim();
+  const override = process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR?.trim();
   if (override) {
     return override;
   }

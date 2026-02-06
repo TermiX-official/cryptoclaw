@@ -3,7 +3,7 @@ import path from "node:path";
 import { CHANNEL_IDS } from "../../channels/registry.js";
 import { STATE_DIR } from "../../config/config.js";
 
-export const DEFAULT_SANDBOX_WORKSPACE_ROOT = path.join(os.homedir(), ".openclaw", "sandboxes");
+export const DEFAULT_SANDBOX_WORKSPACE_ROOT = path.join(os.homedir(), ".cryptoclaw", "sandboxes");
 
 export const DEFAULT_SANDBOX_IMAGE = "openclaw-sandbox:bookworm-slim";
 export const DEFAULT_SANDBOX_CONTAINER_PREFIX = "openclaw-sbx-";
@@ -47,7 +47,7 @@ export const DEFAULT_SANDBOX_BROWSER_AUTOSTART_TIMEOUT_MS = 12_000;
 
 export const SANDBOX_AGENT_WORKSPACE_MOUNT = "/agent";
 
-const resolvedSandboxStateDir = STATE_DIR ?? path.join(os.homedir(), ".openclaw");
+const resolvedSandboxStateDir = STATE_DIR ?? path.join(os.homedir(), ".cryptoclaw");
 export const SANDBOX_STATE_DIR = path.join(resolvedSandboxStateDir, "sandbox");
 export const SANDBOX_REGISTRY_PATH = path.join(SANDBOX_STATE_DIR, "containers.json");
 export const SANDBOX_BROWSER_REGISTRY_PATH = path.join(SANDBOX_STATE_DIR, "browsers.json");

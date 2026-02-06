@@ -5,8 +5,8 @@ import type { OpenClawConfig } from "../../config/config.js";
 import { log } from "./logger.js";
 
 const OPENROUTER_APP_HEADERS: Record<string, string> = {
-  "HTTP-Referer": "https://openclaw.ai",
-  "X-Title": "OpenClaw",
+  "HTTP-Referer": "https://cryptoclaw.ai",
+  "X-Title": "CryptoClaw",
 };
 
 /**

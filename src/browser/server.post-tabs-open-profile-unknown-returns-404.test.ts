@@ -206,8 +206,8 @@ describe("browser control server", () => {
 
     testPort = await getFreePort();
     _cdpBaseUrl = `http://127.0.0.1:${testPort + 1}`;
-    prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
-    process.env.OPENCLAW_GATEWAY_PORT = String(testPort - 2);
+    prevGatewayPort = process.env.CRYPTOCLAW_GATEWAY_PORT;
+    process.env.CRYPTOCLAW_GATEWAY_PORT = String(testPort - 2);
 
     // Minimal CDP JSON endpoints used by the server.
     let putNewCalls = 0;
@@ -266,9 +266,9 @@ describe("browser control server", () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     if (prevGatewayPort === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_PORT;
+      delete process.env.CRYPTOCLAW_GATEWAY_PORT;
     } else {
-      process.env.OPENCLAW_GATEWAY_PORT = prevGatewayPort;
+      process.env.CRYPTOCLAW_GATEWAY_PORT = prevGatewayPort;
     }
     const { stopBrowserControlServer } = await import("./server.js");
     await stopBrowserControlServer();
@@ -304,11 +304,11 @@ describe("profile CRUD endpoints", () => {
 
     testPort = await getFreePort();
     _cdpBaseUrl = `http://127.0.0.1:${testPort + 1}`;
-    prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
-    process.env.OPENCLAW_GATEWAY_PORT = String(testPort - 2);
+    prevGatewayPort = process.env.CRYPTOCLAW_GATEWAY_PORT;
+    process.env.CRYPTOCLAW_GATEWAY_PORT = String(testPort - 2);
 
-    prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
-    process.env.OPENCLAW_GATEWAY_PORT = String(testPort - 2);
+    prevGatewayPort = process.env.CRYPTOCLAW_GATEWAY_PORT;
+    process.env.CRYPTOCLAW_GATEWAY_PORT = String(testPort - 2);
 
     vi.stubGlobal(
       "fetch",
@@ -326,9 +326,9 @@ describe("profile CRUD endpoints", () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     if (prevGatewayPort === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_PORT;
+      delete process.env.CRYPTOCLAW_GATEWAY_PORT;
     } else {
-      process.env.OPENCLAW_GATEWAY_PORT = prevGatewayPort;
+      process.env.CRYPTOCLAW_GATEWAY_PORT = prevGatewayPort;
     }
     const { stopBrowserControlServer } = await import("./server.js");
     await stopBrowserControlServer();

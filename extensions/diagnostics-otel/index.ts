@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
+import type { OpenClawPluginApi } from "cryptoclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "cryptoclaw/plugin-sdk";
 import { createDiagnosticsOtelService } from "./src/service.js";
 
 const plugin = {

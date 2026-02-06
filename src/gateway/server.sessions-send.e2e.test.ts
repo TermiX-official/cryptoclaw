@@ -19,25 +19,25 @@ let prevGatewayPort: string | undefined;
 let prevGatewayToken: string | undefined;
 
 beforeAll(async () => {
-  prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
-  prevGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+  prevGatewayPort = process.env.CRYPTOCLAW_GATEWAY_PORT;
+  prevGatewayToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
   gatewayPort = await getFreePort();
-  process.env.OPENCLAW_GATEWAY_PORT = String(gatewayPort);
-  process.env.OPENCLAW_GATEWAY_TOKEN = "test-token";
+  process.env.CRYPTOCLAW_GATEWAY_PORT = String(gatewayPort);
+  process.env.CRYPTOCLAW_GATEWAY_TOKEN = "test-token";
   server = await startGatewayServer(gatewayPort);
 });
 
 afterAll(async () => {
   await server.close();
   if (prevGatewayPort === undefined) {
-    delete process.env.OPENCLAW_GATEWAY_PORT;
+    delete process.env.CRYPTOCLAW_GATEWAY_PORT;
   } else {
-    process.env.OPENCLAW_GATEWAY_PORT = prevGatewayPort;
+    process.env.CRYPTOCLAW_GATEWAY_PORT = prevGatewayPort;
   }
   if (prevGatewayToken === undefined) {
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
   } else {
-    process.env.OPENCLAW_GATEWAY_TOKEN = prevGatewayToken;
+    process.env.CRYPTOCLAW_GATEWAY_TOKEN = prevGatewayToken;
   }
 });
 

@@ -14,23 +14,23 @@ function makeTempDir() {
 }
 
 async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
-  const prev = process.env.OPENCLAW_STATE_DIR;
-  const prevBundled = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+  const prev = process.env.CRYPTOCLAW_STATE_DIR;
+  const prevBundled = process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR;
+  process.env.CRYPTOCLAW_STATE_DIR = stateDir;
+  process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
   vi.resetModules();
   try {
     return await fn();
   } finally {
     if (prev === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.CRYPTOCLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = prev;
+      process.env.CRYPTOCLAW_STATE_DIR = prev;
     }
     if (prevBundled === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+      delete process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = prevBundled;
+      process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR = prevBundled;
     }
     vi.resetModules();
   }
@@ -55,7 +55,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.mkdirSync(globalExt, { recursive: true });
     fs.writeFileSync(path.join(globalExt, "alpha.ts"), "export default function () {}", "utf-8");
 
-    const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
+    const workspaceExt = path.join(workspaceDir, ".cryptoclaw", "extensions");
     fs.mkdirSync(workspaceExt, { recursive: true });
     fs.writeFileSync(path.join(workspaceExt, "beta.ts"), "export default function () {}", "utf-8");
 
@@ -78,7 +78,7 @@ describe("discoverOpenClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "pack",
-        openclaw: { extensions: ["./src/one.ts", "./src/two.ts"] },
+        cryptoclaw: { extensions: ["./src/one.ts", "./src/two.ts"] },
       }),
       "utf-8",
     );
@@ -112,7 +112,7 @@ describe("discoverOpenClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "@openclaw/voice-call",
-        openclaw: { extensions: ["./src/index.ts"] },
+        cryptoclaw: { extensions: ["./src/index.ts"] },
       }),
       "utf-8",
     );
@@ -140,7 +140,7 @@ describe("discoverOpenClawPlugins", () => {
       path.join(packDir, "package.json"),
       JSON.stringify({
         name: "@openclaw/demo-plugin-dir",
-        openclaw: { extensions: ["./index.js"] },
+        cryptoclaw: { extensions: ["./index.js"] },
       }),
       "utf-8",
     );

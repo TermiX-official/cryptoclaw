@@ -110,7 +110,7 @@ describe("resolveGatewayWindowsTaskName", () => {
   it("returns default task name when no profile is set", () => {
     const result = resolveGatewayWindowsTaskName();
     expect(result).toBe(GATEWAY_WINDOWS_TASK_NAME);
-    expect(result).toBe("OpenClaw Gateway");
+    expect(result).toBe("CryptoClaw Gateway");
   });
 
   it("returns default task name when profile is undefined", () => {
@@ -175,7 +175,7 @@ describe("resolveGatewayProfileSuffix", () => {
 
 describe("formatGatewayServiceDescription", () => {
   it("returns default description when no profile/version", () => {
-    expect(formatGatewayServiceDescription()).toBe("OpenClaw Gateway");
+    expect(formatGatewayServiceDescription()).toBe("CryptoClaw Gateway");
   });
 
   it("includes profile when set", () => {

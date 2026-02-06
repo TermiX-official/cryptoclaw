@@ -30,7 +30,7 @@ describe("update-startup", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-17T10:00:00Z"));
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-check-"));
-    process.env.OPENCLAW_STATE_DIR = tempDir;
+    process.env.CRYPTOCLAW_STATE_DIR = tempDir;
     delete process.env.VITEST;
     process.env.NODE_ENV = "test";
   });

@@ -5,13 +5,13 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>OpenClaw</string>
+    <string>CryptoClaw</string>
     <key>CFBundleIdentifier</key>
-    <string>ai.openclaw.mac</string>
+    <string>ai.cryptoclaw.mac</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>OpenClaw</string>
+    <string>CryptoClaw</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -19,15 +19,15 @@
     <key>CFBundleVersion</key>
     <string>202602020</string>
     <key>CFBundleIconFile</key>
-    <string>OpenClaw</string>
+    <string>CryptoClaw</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>ai.openclaw.mac.deeplink</string>
+            <string>ai.cryptoclaw.mac.deeplink</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>openclaw</string>
+                <string>cryptoclaw</string>
             </array>
         </dict>
     </array>
@@ -36,29 +36,29 @@
     <key>LSUIElement</key>
     <true/>
 
-    <key>OpenClawBuildTimestamp</key>
+    <key>CryptoClawBuildTimestamp</key>
     <string></string>
-    <key>OpenClawGitCommit</key>
+    <key>CryptoClawGitCommit</key>
     <string></string>
 
     <key>NSUserNotificationUsageDescription</key>
-    <string>OpenClaw needs notification permission to show alerts for agent actions.</string>
+    <string>CryptoClaw needs notification permission to show alerts for agent actions.</string>
     <key>NSScreenCaptureDescription</key>
-    <string>OpenClaw captures the screen when the agent needs screenshots for context.</string>
+    <string>CryptoClaw captures the screen when the agent needs screenshots for context.</string>
     <key>NSCameraUsageDescription</key>
-    <string>OpenClaw can capture photos or short video clips when requested by the agent.</string>
+    <string>CryptoClaw can capture photos or short video clips when requested by the agent.</string>
 	<key>NSLocationUsageDescription</key>
-	<string>OpenClaw can share your location when requested by the agent.</string>
+	<string>CryptoClaw can share your location when requested by the agent.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>OpenClaw can share your location when requested by the agent.</string>
+	<string>CryptoClaw can share your location when requested by the agent.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>OpenClaw can share your location when requested by the agent.</string>
+	<string>CryptoClaw can share your location when requested by the agent.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>OpenClaw needs the mic for Voice Wake tests and agent audio capture.</string>
+	<string>CryptoClaw needs the mic for Voice Wake tests and agent audio capture.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>OpenClaw uses speech recognition to detect your Voice Wake trigger phrase.</string>
+    <string>CryptoClaw uses speech recognition to detect your Voice Wake trigger phrase.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>OpenClaw needs Automation (AppleScript) permission to drive Terminal and other apps for agent actions.</string>
+    <string>CryptoClaw needs Automation (AppleScript) permission to drive Terminal and other apps for agent actions.</string>
 
     <key>NSAppTransportSecurity</key>
     <dict>

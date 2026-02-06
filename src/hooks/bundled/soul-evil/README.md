@@ -2,7 +2,7 @@
 
 Small persona swap hook for OpenClaw.
 
-Docs: https://docs.openclaw.ai/hooks/soul-evil
+Docs: https://docs.cryptoclaw.ai/hooks/soul-evil
 
 ## Setup
 

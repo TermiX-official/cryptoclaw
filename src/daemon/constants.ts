@@ -1,12 +1,12 @@
 // Default service labels (canonical + legacy compatibility)
 export const GATEWAY_LAUNCH_AGENT_LABEL = "ai.openclaw.gateway";
 export const GATEWAY_SYSTEMD_SERVICE_NAME = "openclaw-gateway";
-export const GATEWAY_WINDOWS_TASK_NAME = "OpenClaw Gateway";
+export const GATEWAY_WINDOWS_TASK_NAME = "CryptoClaw Gateway";
 export const GATEWAY_SERVICE_MARKER = "openclaw";
 export const GATEWAY_SERVICE_KIND = "gateway";
 export const NODE_LAUNCH_AGENT_LABEL = "ai.openclaw.node";
 export const NODE_SYSTEMD_SERVICE_NAME = "openclaw-node";
-export const NODE_WINDOWS_TASK_NAME = "OpenClaw Node";
+export const NODE_WINDOWS_TASK_NAME = "CryptoClaw Node";
 export const NODE_SERVICE_MARKER = "openclaw";
 export const NODE_SERVICE_KIND = "node";
 export const NODE_WINDOWS_TASK_SCRIPT_NAME = "node.cmd";
@@ -70,7 +70,7 @@ export function formatGatewayServiceDescription(params?: {
     parts.push(`v${version}`);
   }
   if (parts.length === 0) {
-    return "OpenClaw Gateway";
+    return "CryptoClaw Gateway";
   }
   return `OpenClaw Gateway (${parts.join(", ")})`;
 }

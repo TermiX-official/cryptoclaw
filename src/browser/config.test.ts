@@ -24,9 +24,9 @@ describe("browser config", () => {
     expect(resolved.remoteCdpHandshakeTimeoutMs).toBe(3000);
   });
 
-  it("derives default ports from OPENCLAW_GATEWAY_PORT when unset", () => {
-    const prev = process.env.OPENCLAW_GATEWAY_PORT;
-    process.env.OPENCLAW_GATEWAY_PORT = "19001";
+  it("derives default ports from CRYPTOCLAW_GATEWAY_PORT when unset", () => {
+    const prev = process.env.CRYPTOCLAW_GATEWAY_PORT;
+    process.env.CRYPTOCLAW_GATEWAY_PORT = "19001";
     try {
       const resolved = resolveBrowserConfig(undefined);
       expect(resolved.controlPort).toBe(19003);
@@ -40,16 +40,16 @@ describe("browser config", () => {
       expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:19012");
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PORT;
+        delete process.env.CRYPTOCLAW_GATEWAY_PORT;
       } else {
-        process.env.OPENCLAW_GATEWAY_PORT = prev;
+        process.env.CRYPTOCLAW_GATEWAY_PORT = prev;
       }
     }
   });
 
   it("derives default ports from gateway.port when env is unset", () => {
-    const prev = process.env.OPENCLAW_GATEWAY_PORT;
-    delete process.env.OPENCLAW_GATEWAY_PORT;
+    const prev = process.env.CRYPTOCLAW_GATEWAY_PORT;
+    delete process.env.CRYPTOCLAW_GATEWAY_PORT;
     try {
       const resolved = resolveBrowserConfig(undefined, { gateway: { port: 19011 } });
       expect(resolved.controlPort).toBe(19013);
@@ -63,9 +63,9 @@ describe("browser config", () => {
       expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:19022");
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PORT;
+        delete process.env.CRYPTOCLAW_GATEWAY_PORT;
       } else {
-        process.env.OPENCLAW_GATEWAY_PORT = prev;
+        process.env.CRYPTOCLAW_GATEWAY_PORT = prev;
       }
     }
   });

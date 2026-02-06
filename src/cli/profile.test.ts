@@ -62,84 +62,84 @@ describe("applyCliProfileEnv", () => {
       homedir: () => "/home/peter",
     });
     const expectedStateDir = path.join("/home/peter", ".openclaw-dev");
-    expect(env.OPENCLAW_PROFILE).toBe("dev");
-    expect(env.OPENCLAW_STATE_DIR).toBe(expectedStateDir);
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "openclaw.json"));
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("19001");
+    expect(env.CRYPTOCLAW_PROFILE).toBe("dev");
+    expect(env.CRYPTOCLAW_STATE_DIR).toBe(expectedStateDir);
+    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "openclaw.json"));
+    expect(env.CRYPTOCLAW_GATEWAY_PORT).toBe("19001");
   });
 
   it("does not override explicit env values", () => {
     const env: Record<string, string | undefined> = {
-      OPENCLAW_STATE_DIR: "/custom",
-      OPENCLAW_GATEWAY_PORT: "19099",
+      CRYPTOCLAW_STATE_DIR: "/custom",
+      CRYPTOCLAW_GATEWAY_PORT: "19099",
     };
     applyCliProfileEnv({
       profile: "dev",
       env,
       homedir: () => "/home/peter",
     });
-    expect(env.OPENCLAW_STATE_DIR).toBe("/custom");
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("19099");
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(path.join("/custom", "openclaw.json"));
+    expect(env.CRYPTOCLAW_STATE_DIR).toBe("/custom");
+    expect(env.CRYPTOCLAW_GATEWAY_PORT).toBe("19099");
+    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join("/custom", "openclaw.json"));
   });
 });
 
 describe("formatCliCommand", () => {
   it("returns command unchanged when no profile is set", () => {
-    expect(formatCliCommand("openclaw doctor --fix", {})).toBe("openclaw doctor --fix");
+    expect(formatCliCommand("cryptoclaw doctor --fix", {})).toBe("cryptoclaw doctor --fix");
   });
 
   it("returns command unchanged when profile is default", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "default" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("cryptoclaw doctor --fix", { CRYPTOCLAW_PROFILE: "default" })).toBe(
+      "cryptoclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is Default (case-insensitive)", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "Default" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("cryptoclaw doctor --fix", { CRYPTOCLAW_PROFILE: "Default" })).toBe(
+      "cryptoclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is invalid", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "bad profile" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("cryptoclaw doctor --fix", { CRYPTOCLAW_PROFILE: "bad profile" })).toBe(
+      "cryptoclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when --profile is already present", () => {
     expect(
-      formatCliCommand("openclaw --profile work doctor --fix", { OPENCLAW_PROFILE: "work" }),
-    ).toBe("openclaw --profile work doctor --fix");
+      formatCliCommand("cryptoclaw --profile work doctor --fix", { CRYPTOCLAW_PROFILE: "work" }),
+    ).toBe("cryptoclaw --profile work doctor --fix");
   });
 
   it("returns command unchanged when --dev is already present", () => {
-    expect(formatCliCommand("openclaw --dev doctor", { OPENCLAW_PROFILE: "dev" })).toBe(
-      "openclaw --dev doctor",
+    expect(formatCliCommand("cryptoclaw --dev doctor", { CRYPTOCLAW_PROFILE: "dev" })).toBe(
+      "cryptoclaw --dev doctor",
     );
   });
 
   it("inserts --profile flag when profile is set", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "work" })).toBe(
-      "openclaw --profile work doctor --fix",
+    expect(formatCliCommand("cryptoclaw doctor --fix", { CRYPTOCLAW_PROFILE: "work" })).toBe(
+      "cryptoclaw --profile work doctor --fix",
     );
   });
 
   it("trims whitespace from profile", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "  jbopenclaw  " })).toBe(
-      "openclaw --profile jbopenclaw doctor --fix",
-    );
+    expect(
+      formatCliCommand("cryptoclaw doctor --fix", { CRYPTOCLAW_PROFILE: "  jbopenclaw  " }),
+    ).toBe("cryptoclaw --profile jbopenclaw doctor --fix");
   });
 
   it("handles command with no args after openclaw", () => {
-    expect(formatCliCommand("openclaw", { OPENCLAW_PROFILE: "test" })).toBe(
-      "openclaw --profile test",
+    expect(formatCliCommand("cryptoclaw", { CRYPTOCLAW_PROFILE: "test" })).toBe(
+      "cryptoclaw --profile test",
     );
   });
 
   it("handles pnpm wrapper", () => {
-    expect(formatCliCommand("pnpm openclaw doctor", { OPENCLAW_PROFILE: "work" })).toBe(
-      "pnpm openclaw --profile work doctor",
+    expect(formatCliCommand("pnpm cryptoclaw doctor", { CRYPTOCLAW_PROFILE: "work" })).toBe(
+      "pnpm cryptoclaw --profile work doctor",
     );
   });
 });

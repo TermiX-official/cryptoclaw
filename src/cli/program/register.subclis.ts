@@ -13,7 +13,7 @@ type SubCliEntry = {
 };
 
 const shouldRegisterPrimaryOnly = (argv: string[]) => {
-  if (isTruthyEnvValue(process.env.OPENCLAW_DISABLE_LAZY_SUBCOMMANDS)) {
+  if (isTruthyEnvValue(process.env.CRYPTOCLAW_DISABLE_LAZY_SUBCOMMANDS)) {
     return false;
   }
   if (hasHelpOrVersion(argv)) {
@@ -23,7 +23,7 @@ const shouldRegisterPrimaryOnly = (argv: string[]) => {
 };
 
 const shouldEagerRegisterSubcommands = (_argv: string[]) => {
-  return isTruthyEnvValue(process.env.OPENCLAW_DISABLE_LAZY_SUBCOMMANDS);
+  return isTruthyEnvValue(process.env.CRYPTOCLAW_DISABLE_LAZY_SUBCOMMANDS);
 };
 
 const loadConfig = async (): Promise<OpenClawConfig> => {

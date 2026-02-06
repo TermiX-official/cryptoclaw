@@ -115,7 +115,7 @@ describe("gateway config.patch", () => {
     }>(ws, (o) => o.type === "res" && o.id === get2Id);
     expect(get2Res.ok).toBe(true);
     expect(get2Res.payload?.config?.gateway?.mode).toBe("local");
-    expect(get2Res.payload?.config?.channels?.telegram?.botToken).toBe("__OPENCLAW_REDACTED__");
+    expect(get2Res.payload?.config?.channels?.telegram?.botToken).toBe("__CRYPTOCLAW_REDACTED__");
 
     const storedRaw = await fs.readFile(CONFIG_PATH, "utf-8");
     const stored = JSON.parse(storedRaw) as {
@@ -166,7 +166,7 @@ describe("gateway config.patch", () => {
     expect(typeof baseHash).toBe("string");
     const rawRedacted = getRes.payload?.raw;
     expect(typeof rawRedacted).toBe("string");
-    expect(rawRedacted).toContain("__OPENCLAW_REDACTED__");
+    expect(rawRedacted).toContain("__CRYPTOCLAW_REDACTED__");
 
     const set2Id = "req-set-sentinel-2";
     ws.send(

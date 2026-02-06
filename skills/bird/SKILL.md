@@ -4,7 +4,7 @@ description: X/Twitter CLI for reading, searching, posting, and engagement via c
 homepage: https://bird.fast
 metadata:
   {
-    "openclaw":
+    "cryptoclaw":
       {
         "emoji": "🐦",
         "requires": { "bins": ["bird"] },

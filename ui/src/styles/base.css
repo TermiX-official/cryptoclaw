@@ -241,7 +241,7 @@ html.theme-transition::view-transition-new(theme) {
   }
 }
 
-openclaw-app {
+cryptoclaw-app {
   display: block;
   position: relative;
   z-index: 1;

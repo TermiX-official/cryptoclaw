@@ -6,6 +6,10 @@ metadata: { "cryptoclaw": { "emoji": "🛡️", "always": true } }
 
 # GoPlus Security API
 
+## Quick Access
+
+The `check_address_security` tool provides instant address risk assessment. All transfers are also auto-checked before execution.
+
 Assess token contracts, wallet addresses, and approvals for security risks using the free GoPlus API.
 
 ## Base URL

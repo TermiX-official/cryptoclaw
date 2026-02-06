@@ -1,10 +1,12 @@
 import type { OpenClawPluginApi, OpenClawPluginDefinition } from "cryptoclaw/plugin-sdk";
 import { getDefaultChainName, resolveChainId, setDefaultChainId } from "./src/evm/chains.js";
+import { checkAddressSecurity } from "./src/evm/services/security.js";
 import { registerBlockTools } from "./src/evm/tools/block-tools.js";
 import { registerContractTools } from "./src/evm/tools/contract-tools.js";
 import { registerIdentityTools } from "./src/evm/tools/identity-tools.js";
 import { registerNetworkTools } from "./src/evm/tools/network-tools.js";
 import { registerNftTools } from "./src/evm/tools/nft-tools.js";
+import { registerSecurityTools } from "./src/evm/tools/security-tools.js";
 import { registerSwapTools } from "./src/evm/tools/swap-tools.js";
 import { registerTokenTools } from "./src/evm/tools/token-tools.js";
 import { registerTxTools } from "./src/evm/tools/tx-tools.js";
@@ -52,6 +54,36 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     registerNetworkTools(api);
     registerSwapTools(api, walletManager);
     registerIdentityTools(api, walletManager);
+    registerSecurityTools(api);
+
+    // --- Transfer tools that should trigger auto security check ---
+    const TRANSFER_TOOLS = new Set([
+      "transfer_native_token",
+      "transfer_erc20",
+      "transfer_nft",
+      "transfer_erc1155",
+    ]);
+
+    // --- Auto security check before transfers ---
+    api.on("before_tool_call", async (event) => {
+      if (!TRANSFER_TOOLS.has(event.toolName) || !event.params.to) {
+        return;
+      }
+      const chainId = resolveChainId((event.params.network as string) ?? "bsc");
+      const result = await checkAddressSecurity(event.params.to as string, chainId);
+      if (result.riskLevel === "critical" || result.riskLevel === "high") {
+        return {
+          block: true,
+          blockReason: `Security Alert: Recipient ${event.params.to} flagged as ${result.riskLevel} risk by GoPlus. Flags: ${result.flags.join(", ")}. Transaction blocked for your protection.`,
+        };
+      }
+      if (result.flags.length > 0) {
+        api.logger.warn(
+          `[security] Address ${event.params.to} has medium-risk flags: ${result.flags.join(", ")}`,
+        );
+      }
+      return undefined;
+    });
 
     // --- Transaction confirmation hook ---
     api.on("before_tool_call", async (event) => {
@@ -196,14 +228,41 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     api.on("before_agent_start", () => {
       const activeAddress = walletManager.getActiveAddress();
       const { wallets } = walletManager.listWallets();
-      const walletContext = activeAddress
-        ? `Active wallet: ${activeAddress} (${wallets.length} total wallets)`
-        : "No wallets configured. Suggest creating one with wallet_create.";
+
+      const walletLines: string[] = [];
+      if (activeAddress) {
+        walletLines.push(
+          "[Blockchain — Your Wallet]",
+          `Your active wallet address: ${activeAddress}`,
+          `Total wallets: ${wallets.length}`,
+          `Default network: ${getDefaultChainName()}`,
+          "",
+          "This is YOUR wallet. You own and operate it.",
+          '- Address questions ("what\'s my/your address") → respond with the address above',
+          '- Balance questions ("how much BNB/ETH do I have") → call get_native_balance',
+          '- Token balance ("my USDT balance") → call get_erc20_balance with the token address',
+          "- Full portfolio → call get_native_balance + get_erc20_balance across chains",
+          "- Wallet list → call wallet_list",
+          '- Transfer ("send 0.1 BNB to 0x...") → call transfer_native_token',
+          '- Token transfer ("send USDT to 0x...") → call transfer_erc20',
+          '- Swap ("swap BNB for USDT") → call swap_execute',
+          "- Address security check → call check_address_security",
+          "All outbound transfers are auto security-checked against GoPlus before execution.",
+          "Do NOT hallucinate balances — always call the tool.",
+        );
+      } else {
+        walletLines.push(
+          "[Blockchain — No Wallet]",
+          "No wallets configured.",
+          "When asked about wallets, balances, or addresses → suggest creating one with wallet_create or importing via CLI (`cryptoclaw wallet import`).",
+          "Do NOT hallucinate an address or balance.",
+        );
+      }
 
       return {
         prependContext: [
-          `[Blockchain] ${walletContext}`,
-          `Default network: ${getDefaultChainName()}. Supported: ethereum, bsc, polygon, arbitrum, optimism, base, opbnb, iotex (+ testnets).`,
+          walletLines.join("\n"),
+          `Supported networks: ethereum, bsc, polygon, arbitrum, optimism, base, opbnb, iotex (+ testnets).`,
           "Wallet import/export: CLI-only (`cryptoclaw wallet import`, `cryptoclaw wallet export`). Do NOT attempt these as agent tools.",
           "",
           KEY_GUARD_SYSTEM_PROMPT,

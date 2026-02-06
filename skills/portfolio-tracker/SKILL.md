@@ -26,6 +26,17 @@ Aggregate and display the user's cryptocurrency holdings across all configured w
 - `wallet_list` - Get all wallet addresses
 - `get_supported_networks` - List available chains
 
+## Common Questions
+
+User: "我有多少钱?" / "What's my balance?" / "Show my holdings"
+Action: Call `get_native_balance` on the default network first (fastest answer). For a full portfolio, scan native balances across major chains (bsc, ethereum, polygon, arbitrum).
+
+User: "查一下余额" / "Check balance"
+Action: Same as above — start with default network native balance, expand if user wants more detail.
+
+User: "我有什么代币?" / "What tokens do I hold?"
+Action: Call `get_erc20_balance` for major tokens (USDT, USDC, WETH, WBNB) on the active network. Expand to other chains if requested.
+
 ## Example Interactions
 
 User: "What's my portfolio worth?"

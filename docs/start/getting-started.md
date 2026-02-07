@@ -32,12 +32,12 @@ Check your Node version with `node --version` if you are unsure.
     <Tabs>
       <Tab title="macOS/Linux">
         ```bash
-        curl -fsSL https://openclaw.ai/install.sh | bash
+        npm install -g @termix-it/cryptoclaw@latest
         ```
       </Tab>
       <Tab title="Windows (PowerShell)">
         ```powershell
-        iwr -useb https://openclaw.ai/install.ps1 | iex
+        npm install -g @termix-it/cryptoclaw@latest
         ```
       </Tab>
     </Tabs>

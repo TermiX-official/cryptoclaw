@@ -17,7 +17,7 @@ detects existing installs, upgrades in place, and runs `openclaw doctor` when
 needed.
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 Notes:
@@ -25,7 +25,7 @@ Notes:
 - Add `--no-onboard` if you don’t want the onboarding wizard to run again.
 - For **source installs**, use:
   ```bash
-  curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --no-onboard
+  git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
   ```
   The installer will `git pull --rebase` **only** if the repo is clean.
 - For **global installs**, the script uses `npm install -g openclaw@latest` under the hood.

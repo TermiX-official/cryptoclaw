@@ -126,7 +126,7 @@ Moltbot 说起来总是不太顺口。于是，在格林威治时间凌晨 4 点
 - GitHub 更名：`github.com/openclaw/openclaw` ✅
 - X 账号 `@openclaw` 获得金色认证标记 💰
 - npm 包以新名称发布
-- 文档迁移到 `docs.openclaw.ai`
+- 文档迁移到 `github.com/TermiX-official/cryptoclaw`
 - 公告在 90 分钟内获得 20 万以上浏览量
 
 **英雄们：**

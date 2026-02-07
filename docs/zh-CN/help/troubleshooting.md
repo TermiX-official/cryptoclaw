@@ -46,13 +46,13 @@ openclaw status --deep
 以详细模式重新运行安装程序以查看完整跟踪和 npm 输出：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --verbose
+npm install -g @termix-it/cryptoclaw@latest --loglevel verbose
 ```
 
 对于 beta 安装：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --beta --verbose
+npm install -g @termix-it/cryptoclaw@beta --loglevel verbose
 ```
 
 你也可以设置 `OPENCLAW_VERBOSE=1` 代替标志。

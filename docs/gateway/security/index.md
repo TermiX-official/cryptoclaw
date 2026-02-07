@@ -814,7 +814,7 @@ Mario asking for find ~
 
 Found a vulnerability in OpenClaw? Please report responsibly:
 
-1. Email: security@openclaw.ai
+1. Open an issue: https://github.com/TermiX-official/cryptoclaw/issues
 2. Don't post publicly until fixed
 3. We'll credit you (unless you prefer anonymity)
 

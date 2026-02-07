@@ -64,7 +64,7 @@ sudo apt-get install -y git curl jq ca-certificates openssl
 Run the OpenClaw install script:
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ## 4) Setup nginx to proxy OpenClaw to port 8000

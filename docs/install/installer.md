@@ -1,7 +1,7 @@
 ---
 summary: "How the installer scripts work (install.sh + install-cli.sh), flags, and automation"
 read_when:
-  - You want to understand `openclaw.ai/install.sh`
+  - You want to understand the install process
   - You want to automate installs (CI / headless)
   - You want to install from a GitHub checkout
 title: "Installer Internals"
@@ -11,20 +11,20 @@ title: "Installer Internals"
 
 OpenClaw ships two installer scripts (served from `openclaw.ai`):
 
-- `https://openclaw.ai/install.sh` — “recommended” installer (global npm install by default; can also install from a GitHub checkout)
-- `https://openclaw.ai/install-cli.sh` — non-root-friendly CLI installer (installs into a prefix with its own Node)
-- `https://openclaw.ai/install.ps1` — Windows PowerShell installer (npm by default; optional git install)
+- `npm install -g @termix-it/cryptoclaw@latest` — "recommended" installer (global npm install)
+- `npm install -g @termix-it/cryptoclaw@latest` — non-root-friendly CLI installer
+- `npm install -g @termix-it/cryptoclaw@latest` — Windows installer (npm by default; optional git install)
 
 To see the current flags/behavior, run:
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --help
+npm install -g @termix-it/cryptoclaw@latest --help
 ```
 
 Windows (PowerShell) help:
 
 ```powershell
-& ([scriptblock]::Create((iwr -useb https://openclaw.ai/install.ps1))) -?
+npm install -g @termix-it/cryptoclaw@latest --help
 ```
 
 If the installer completes but `openclaw` is not found in a new terminal, it’s usually a Node/npm PATH issue. See: [Install](/install#nodejs--npm-path-sanity).
@@ -46,7 +46,7 @@ What it does (high level):
 If you _want_ `sharp` to link against a globally-installed libvips (or you’re debugging), set:
 
 ```bash
-SHARP_IGNORE_GLOBAL_LIBVIPS=0 curl -fsSL https://openclaw.ai/install.sh | bash
+SHARP_IGNORE_GLOBAL_LIBVIPS=0 npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ### Discoverability / “git install” prompt
@@ -79,7 +79,7 @@ This script installs `openclaw` into a prefix (default: `~/.openclaw`) and also 
 Help:
 
 ```bash
-curl -fsSL https://openclaw.ai/install-cli.sh | bash -s -- --help
+npm install -g @termix-it/cryptoclaw@latest --help
 ```
 
 ## install.ps1 (Windows PowerShell)
@@ -95,15 +95,15 @@ What it does (high level):
 Examples:
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git -GitDir "C:\\openclaw"
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 Environment variables:

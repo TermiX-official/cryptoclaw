@@ -35,7 +35,7 @@ x-i18n:
 5. 在 [Google Cloud Console Chat Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat) 中创建一个 Google Chat 应用：
    - 填写 **Application info**：
      - **App name**：（例如 `OpenClaw`）
-     - **Avatar URL**：（例如 `https://openclaw.ai/logo.png`）
+     - **Avatar URL**：（例如 `https://github.com/TermiX-official/cryptoclaw/raw/main/logo.png`）
      - **Description**：（例如 `Personal AI Assistant`）
    - 启用 **Interactive features**。
    - 在 **Functionality** 下，勾选 **Join spaces and group conversations**。

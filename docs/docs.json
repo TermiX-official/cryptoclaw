@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "OpenClaw",
+  "name": "CryptoClaw",
   "theme": "mint",
   "icons": {
     "library": "lucide"
@@ -19,20 +19,20 @@
   },
   "favicon": "/assets/pixel-lobster.svg",
   "colors": {
-    "primary": "#FF5A36",
-    "dark": "#FF5A36",
-    "light": "#FF8A6B"
+    "primary": "#10B981",
+    "dark": "#10B981",
+    "light": "#34D399"
   },
   "navbar": {
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/openclaw/openclaw",
+        "href": "https://github.com/TermiX-official/cryptoclaw",
         "icon": "github"
       },
       {
         "label": "Releases",
-        "href": "https://github.com/openclaw/openclaw/releases",
+        "href": "https://github.com/TermiX-official/cryptoclaw/releases",
         "icon": "package"
       }
     ]
@@ -769,6 +769,18 @@
     {
       "source": "/platforms/northflank",
       "destination": "/install/northflank"
+    },
+    {
+      "source": "/wallet",
+      "destination": "/blockchain/wallet"
+    },
+    {
+      "source": "/defi",
+      "destination": "/blockchain/defi"
+    },
+    {
+      "source": "/swap",
+      "destination": "/blockchain/swap"
     }
   ],
   "navigation": {
@@ -985,6 +997,35 @@
                   "nodes/voicewake",
                   "nodes/location-command"
                 ]
+              }
+            ]
+          },
+          {
+            "tab": "Blockchain",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": ["blockchain/index"]
+              },
+              {
+                "group": "Wallet",
+                "pages": ["blockchain/wallet", "blockchain/security"]
+              },
+              {
+                "group": "DeFi",
+                "pages": ["blockchain/defi", "blockchain/swap", "blockchain/aave"]
+              },
+              {
+                "group": "Market & Data",
+                "pages": ["blockchain/market-data", "blockchain/portfolio"]
+              },
+              {
+                "group": "Smart Contracts",
+                "pages": ["blockchain/contracts", "blockchain/nft"]
+              },
+              {
+                "group": "Agent Identity",
+                "pages": ["blockchain/agent-identity"]
               }
             ]
           },
@@ -1463,6 +1504,35 @@
                   "zh-CN/nodes/voicewake",
                   "zh-CN/nodes/location-command"
                 ]
+              }
+            ]
+          },
+          {
+            "tab": "区块链",
+            "groups": [
+              {
+                "group": "概览",
+                "pages": ["zh-CN/blockchain/index"]
+              },
+              {
+                "group": "钱包",
+                "pages": ["zh-CN/blockchain/wallet", "zh-CN/blockchain/security"]
+              },
+              {
+                "group": "DeFi",
+                "pages": ["zh-CN/blockchain/defi", "zh-CN/blockchain/swap", "zh-CN/blockchain/aave"]
+              },
+              {
+                "group": "市场与数据",
+                "pages": ["zh-CN/blockchain/market-data", "zh-CN/blockchain/portfolio"]
+              },
+              {
+                "group": "智能合约",
+                "pages": ["zh-CN/blockchain/contracts", "zh-CN/blockchain/nft"]
+              },
+              {
+                "group": "代理身份",
+                "pages": ["zh-CN/blockchain/agent-identity"]
               }
             ]
           },

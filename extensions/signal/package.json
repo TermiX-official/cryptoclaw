@@ -1,7 +1,7 @@
 {
   "name": "@cryptoclaw/signal",
   "version": "2026.2.4",
-  "description": "OpenClaw Signal channel plugin",
+  "description": "CryptoClaw Signal channel plugin",
   "type": "module",
   "devDependencies": {
     "cryptoclaw": "workspace:*"

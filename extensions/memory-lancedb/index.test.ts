@@ -23,7 +23,7 @@ describe("memory plugin e2e", () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-test-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-memory-test-"));
     dbPath = path.join(tmpDir, "lancedb");
   });
 
@@ -165,7 +165,7 @@ describeLive("memory plugin live tests", () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-live-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-memory-live-"));
     dbPath = path.join(tmpDir, "lancedb");
   });
 

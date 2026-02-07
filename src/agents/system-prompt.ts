@@ -151,7 +151,7 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readT
   return [
     "## Documentation",
     `CryptoClaw docs: ${docsPath}`,
-    "Mirror: https://docs.cryptoclaw.ai",
+    "Mirror: https://docs.openclaw.ai",
     "Source: https://github.com/cryptoclaw/cryptoclaw",
     "Community: https://discord.com/invite/clawd",
     "Find new skills: https://clawhub.com",

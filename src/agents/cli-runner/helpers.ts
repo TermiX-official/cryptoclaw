@@ -220,7 +220,7 @@ export function buildSystemPrompt(params: {
     workspaceDir: params.workspaceDir,
     cwd: process.cwd(),
     runtime: {
-      host: "openclaw",
+      host: "cryptoclaw",
       os: `${os.type()} ${os.release()}`,
       arch: os.arch(),
       node: process.version,

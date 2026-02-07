@@ -1,7 +1,7 @@
 {
   "name": "@cryptoclaw/voice-call",
   "version": "2026.2.4",
-  "description": "OpenClaw voice-call plugin",
+  "description": "CryptoClaw voice-call plugin",
   "type": "module",
   "dependencies": {
     "@sinclair/typebox": "0.34.48",

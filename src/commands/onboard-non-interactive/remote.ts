@@ -47,7 +47,7 @@ export async function runNonInteractiveOnboardingRemote(params: {
     runtime.log(`Remote gateway: ${remoteUrl}`);
     runtime.log(`Auth: ${payload.auth}`);
     runtime.log(
-      `Tip: run \`${formatCliCommand("cryptoclaw configure --section web")}\` to store your Brave API key for web_search. Docs: https://docs.cryptoclaw.ai/tools/web`,
+      `Tip: run \`${formatCliCommand("cryptoclaw configure --section web")}\` to store your Brave API key for web_search. Docs: https://docs.openclaw.ai/tools/web`,
     );
   }
 }

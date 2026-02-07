@@ -238,7 +238,7 @@ img.chat-avatar {
 }
 
 .chat-group.user .chat-bubble:hover {
-  background: rgba(255, 77, 77, 0.15);
+  background: rgba(0, 230, 118, 0.15);
 }
 
 /* Streaming animation */

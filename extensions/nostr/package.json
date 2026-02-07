@@ -1,7 +1,7 @@
 {
   "name": "@cryptoclaw/nostr",
   "version": "2026.2.4",
-  "description": "OpenClaw Nostr channel plugin for NIP-04 encrypted DMs",
+  "description": "CryptoClaw Nostr channel plugin for NIP-04 encrypted DMs",
   "type": "module",
   "dependencies": {
     "cryptoclaw": "workspace:*",

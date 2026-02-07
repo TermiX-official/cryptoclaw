@@ -190,8 +190,8 @@ export function formatControlUiSshHint(params: { port: number; basePath?: string
     "Then open:",
     localUrl,
     "Docs:",
-    "https://docs.cryptoclaw.ai/gateway/remote",
-    "https://docs.cryptoclaw.ai/web/control-ui",
+    "https://docs.openclaw.ai/gateway/remote",
+    "https://docs.openclaw.ai/web/control-ui",
   ]
     .filter(Boolean)
     .join("\n");

@@ -1,7 +1,7 @@
 {
   "name": "@cryptoclaw/diagnostics-otel",
   "version": "2026.2.4",
-  "description": "OpenClaw diagnostics OpenTelemetry exporter",
+  "description": "CryptoClaw diagnostics OpenTelemetry exporter",
   "type": "module",
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

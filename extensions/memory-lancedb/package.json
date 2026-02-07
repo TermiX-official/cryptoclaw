@@ -1,7 +1,7 @@
 {
   "name": "@cryptoclaw/memory-lancedb",
   "version": "2026.2.4",
-  "description": "OpenClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
+  "description": "CryptoClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
   "type": "module",
   "dependencies": {
     "@lancedb/lancedb": "^0.23.0",

@@ -1,58 +1,56 @@
 ---
-summary: "OpenClaw is a multi-channel gateway for AI agents that runs on any OS."
+summary: "CryptoClaw is a multi-channel AI assistant with native blockchain capabilities, running on any OS."
 read_when:
-  - Introducing OpenClaw to newcomers
-title: "OpenClaw"
+  - Introducing CryptoClaw to newcomers
+title: "CryptoClaw"
 ---
 
-# OpenClaw 🦞
+# CryptoClaw
 
 <p align="center">
     <img
         src="/assets/openclaw-logo-text-dark.png"
-        alt="OpenClaw"
+        alt="CryptoClaw"
         width="500"
         class="dark:hidden"
     />
     <img
         src="/assets/openclaw-logo-text.png"
-        alt="OpenClaw"
+        alt="CryptoClaw"
         width="500"
         class="hidden dark:block"
     />
 </p>
 
-> _"EXFOLIATE! EXFOLIATE!"_ — A space lobster, probably
-
 <p align="center">
-  <strong>Any OS gateway for AI agents across WhatsApp, Telegram, Discord, iMessage, and more.</strong><br />
-  Send a message, get an agent response from your pocket. Plugins add Mattermost and more.
+  <strong>Multi-channel AI assistant with native blockchain capabilities.</strong><br />
+  Manage wallets, swap tokens, track portfolios, and chat across WhatsApp, Telegram, Discord, and more.
 </p>
 
 <Columns>
   <Card title="Get Started" href="/start/getting-started" icon="rocket">
-    Install OpenClaw and bring up the Gateway in minutes.
+    Install CryptoClaw and bring up the Gateway in minutes.
   </Card>
   <Card title="Run the Wizard" href="/start/wizard" icon="sparkles">
-    Guided setup with `openclaw onboard` and pairing flows.
+    Guided setup with `cryptoclaw onboard` and pairing flows.
   </Card>
-  <Card title="Open the Control UI" href="/web/control-ui" icon="layout-dashboard">
-    Launch the browser dashboard for chat, config, and sessions.
+  <Card title="Blockchain" href="/blockchain" icon="link">
+    Wallet management, DeFi, swaps, and multi-chain support.
   </Card>
 </Columns>
 
-## What is OpenClaw?
+## What is CryptoClaw?
 
-OpenClaw is a **self-hosted gateway** that connects your favorite chat apps — WhatsApp, Telegram, Discord, iMessage, and more — to AI coding agents like Pi. You run a single Gateway process on your own machine (or a server), and it becomes the bridge between your messaging apps and an always-available AI assistant.
+CryptoClaw is a **self-hosted AI assistant** that combines multi-channel messaging with native blockchain capabilities. It connects your chat apps — WhatsApp, Telegram, Discord, iMessage, and more — to an AI agent that can interact with 16+ EVM-compatible chains.
 
-**Who is it for?** Developers and power users who want a personal AI assistant they can message from anywhere — without giving up control of their data or relying on a hosted service.
+**Who is it for?** Crypto-savvy developers and power users who want a personal AI assistant for both daily tasks and on-chain operations — without giving up control of their data or private keys.
 
 **What makes it different?**
 
-- **Self-hosted**: runs on your hardware, your rules
+- **Blockchain-native**: manage wallets, swap tokens, track portfolios, deploy contracts, and more
+- **Self-hosted**: runs on your hardware, your rules — private keys never leave your machine
 - **Multi-channel**: one Gateway serves WhatsApp, Telegram, Discord, and more simultaneously
 - **Agent-native**: built for coding agents with tool use, sessions, memory, and multi-agent routing
-- **Open source**: MIT licensed, community-driven
 
 **What do you need?** Node 22+, an API key (Anthropic recommended), and 5 minutes.
 
@@ -61,14 +59,14 @@ OpenClaw is a **self-hosted gateway** that connects your favorite chat apps — 
 ```mermaid
 flowchart LR
   A["Chat apps + plugins"] --> B["Gateway"]
-  B --> C["Pi agent"]
+  B --> C["AI Agent"]
   B --> D["CLI"]
   B --> E["Web Control UI"]
-  B --> F["macOS app"]
-  B --> G["iOS and Android nodes"]
+  B --> F["Blockchain tools"]
+  B --> G["Mobile nodes"]
 ```
 
-The Gateway is the single source of truth for sessions, routing, and channel connections.
+The Gateway is the single source of truth for sessions, routing, channel connections, and blockchain operations.
 
 ## Key capabilities
 
@@ -76,14 +74,20 @@ The Gateway is the single source of truth for sessions, routing, and channel con
   <Card title="Multi-channel gateway" icon="network">
     WhatsApp, Telegram, Discord, and iMessage with a single Gateway process.
   </Card>
-  <Card title="Plugin channels" icon="plug">
-    Add Mattermost and more with extension packages.
+  <Card title="Wallet management" icon="wallet">
+    Create, import, and manage encrypted wallets across 16+ EVM chains.
   </Card>
-  <Card title="Multi-agent routing" icon="route">
-    Isolated sessions per agent, workspace, or sender.
+  <Card title="Token swap" icon="arrow-left-right">
+    Swap on PancakeSwap and Uniswap with slippage protection.
   </Card>
-  <Card title="Media support" icon="image">
-    Send and receive images, audio, and documents.
+  <Card title="DeFi & portfolio" icon="bar-chart-3">
+    Monitor DeFi positions, track holdings, and discover yields.
+  </Card>
+  <Card title="Smart contracts" icon="file-code">
+    Deploy, call, and verify contracts. Mint and manage NFTs.
+  </Card>
+  <Card title="Transaction security" icon="shield">
+    Confirmation gates, spending limits, and key redaction.
   </Card>
   <Card title="Web Control UI" icon="monitor">
     Browser dashboard for chat, config, sessions, and nodes.
@@ -96,20 +100,20 @@ The Gateway is the single source of truth for sessions, routing, and channel con
 ## Quick start
 
 <Steps>
-  <Step title="Install OpenClaw">
+  <Step title="Install CryptoClaw">
     ```bash
-    npm install -g openclaw@latest
+    npm install -g @termix-it/cryptoclaw
     ```
   </Step>
   <Step title="Onboard and install the service">
     ```bash
-    openclaw onboard --install-daemon
+    cryptoclaw onboard --install-daemon
     ```
   </Step>
   <Step title="Pair WhatsApp and start the Gateway">
     ```bash
-    openclaw channels login
-    openclaw gateway --port 18789
+    cryptoclaw channels login
+    cryptoclaw gateway --port 18789
     ```
   </Step>
 </Steps>
@@ -123,15 +127,11 @@ Open the browser Control UI after the Gateway starts.
 - Local default: http://127.0.0.1:18789/
 - Remote access: [Web surfaces](/web) and [Tailscale](/gateway/tailscale)
 
-<p align="center">
-  <img src="whatsapp-openclaw.jpg" alt="OpenClaw" width="420" />
-</p>
-
 ## Configuration (optional)
 
-Config lives at `~/.openclaw/openclaw.json`.
+Config lives at `~/.cryptoclaw/cryptoclaw.json`.
 
-- If you **do nothing**, OpenClaw uses the bundled Pi binary in RPC mode with per-sender sessions.
+- If you **do nothing**, CryptoClaw uses the bundled agent in RPC mode with per-sender sessions.
 - If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.
 
 Example:
@@ -144,15 +144,15 @@ Example:
       groups: { "*": { requireMention: true } },
     },
   },
-  messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+  messages: { groupChat: { mentionPatterns: ["@cryptoclaw"] } },
 }
 ```
 
 ## Start here
 
 <Columns>
-  <Card title="Docs hubs" href="/start/hubs" icon="book-open">
-    All docs and guides, organized by use case.
+  <Card title="Blockchain" href="/blockchain" icon="link">
+    Wallet management, DeFi, swaps, NFTs, and multi-chain support.
   </Card>
   <Card title="Configuration" href="/gateway/configuration" icon="settings">
     Core Gateway settings, tokens, and provider config.
@@ -175,7 +175,7 @@ Example:
 
 <Columns>
   <Card title="Full feature list" href="/concepts/features" icon="list">
-    Complete channel, routing, and media capabilities.
+    Complete channel, routing, blockchain, and media capabilities.
   </Card>
   <Card title="Multi-agent routing" href="/concepts/multi-agent" icon="route">
     Workspace isolation and per-agent sessions.

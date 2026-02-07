@@ -1,7 +1,7 @@
 ---
 name: session-memory
 description: "Save session context to memory when /new command is issued"
-homepage: https://docs.cryptoclaw.ai/hooks#session-memory
+homepage: https://docs.openclaw.ai/hooks#session-memory
 metadata:
   {
     "openclaw":

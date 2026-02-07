@@ -74,7 +74,7 @@ async function requireRiskAcknowledgement(params: {
       "cryptoclaw security audit --deep",
       "cryptoclaw security audit --fix",
       "",
-      "Must read: https://docs.cryptoclaw.ai/gateway/security",
+      "Must read: https://docs.openclaw.ai/gateway/security",
     ].join("\n"),
     "Security",
   );
@@ -107,7 +107,7 @@ export async function runOnboardingWizard(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.cryptoclaw.ai/gateway/configuration",
+          "Docs: https://docs.openclaw.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );

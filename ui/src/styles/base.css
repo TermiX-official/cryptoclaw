@@ -35,17 +35,17 @@
   --border-strong: #3f3f46;
   --border-hover: #52525b;
   --input: #27272a;
-  --ring: #ff5c5c;
+  --ring: #00e676;
 
-  /* Accent - Punchy signature red */
-  --accent: #ff5c5c;
-  --accent-hover: #ff7070;
-  --accent-muted: #ff5c5c;
-  --accent-subtle: rgba(255, 92, 92, 0.15);
-  --accent-foreground: #fafafa;
-  --accent-glow: rgba(255, 92, 92, 0.25);
-  --primary: #ff5c5c;
-  --primary-foreground: #ffffff;
+  /* Accent - Punchy signature green */
+  --accent: #00e676;
+  --accent-hover: #33eb91;
+  --accent-muted: #00e676;
+  --accent-subtle: rgba(0, 230, 118, 0.15);
+  --accent-foreground: #050810;
+  --accent-glow: rgba(0, 230, 118, 0.25);
+  --primary: #00e676;
+  --primary-foreground: #050810;
 
   /* Secondary - Teal accent for variety */
   --secondary: #1e2028;
@@ -69,7 +69,7 @@
   --info: #3b82f6;
 
   /* Focus - With glow */
-  --focus: rgba(255, 92, 92, 0.25);
+  --focus: rgba(0, 230, 118, 0.25);
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
   --focus-glow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring), 0 0 20px var(--accent-glow);
 
@@ -146,13 +146,13 @@
   --border-hover: #a1a1aa;
   --input: #e4e4e7;
 
-  --accent: #dc2626;
-  --accent-hover: #ef4444;
-  --accent-muted: #dc2626;
-  --accent-subtle: rgba(220, 38, 38, 0.12);
+  --accent: #2e7d32;
+  --accent-hover: #388e3c;
+  --accent-muted: #2e7d32;
+  --accent-subtle: rgba(46, 125, 50, 0.12);
   --accent-foreground: #ffffff;
-  --accent-glow: rgba(220, 38, 38, 0.15);
-  --primary: #dc2626;
+  --accent-glow: rgba(46, 125, 50, 0.15);
+  --primary: #2e7d32;
   --primary-foreground: #ffffff;
 
   --secondary: #f4f4f5;
@@ -174,7 +174,7 @@
   --danger-subtle: rgba(220, 38, 38, 0.1);
   --info: #2563eb;
 
-  --focus: rgba(220, 38, 38, 0.2);
+  --focus: rgba(46, 125, 50, 0.2);
   --focus-glow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring), 0 0 16px var(--accent-glow);
 
   --grid-line: rgba(0, 0, 0, 0.05);
@@ -354,7 +354,7 @@ select {
 @keyframes glow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 rgba(255, 92, 92, 0);
+    box-shadow: 0 0 0 rgba(0, 230, 118, 0);
   }
   50% {
     box-shadow: 0 0 20px var(--accent-glow);

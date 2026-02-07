@@ -115,7 +115,7 @@ extension OnboardingView {
                 verifier: pkce.verifier)
             try OpenClawOAuthStore.saveAnthropicOAuth(creds)
             self.refreshAnthropicOAuthStatus()
-            self.anthropicAuthStatus = "Connected. OpenClaw can now use Claude."
+            self.anthropicAuthStatus = "Connected. CryptoClaw can now use Claude."
         } catch {
             self.anthropicAuthStatus = "OAuth failed: \(error.localizedDescription)"
         }

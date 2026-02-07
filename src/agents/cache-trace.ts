@@ -79,17 +79,19 @@ const writers = new Map<string, CacheTraceWriter>();
 function resolveCacheTraceConfig(params: CacheTraceInit): CacheTraceConfig {
   const env = params.env ?? process.env;
   const config = params.cfg?.diagnostics?.cacheTrace;
-  const envEnabled = parseBooleanValue(env.OPENCLAW_CACHE_TRACE);
+  const envEnabled = parseBooleanValue(env.CRYPTOCLAW_CACHE_TRACE);
   const enabled = envEnabled ?? config?.enabled ?? false;
-  const fileOverride = config?.filePath?.trim() || env.OPENCLAW_CACHE_TRACE_FILE?.trim();
+  const fileOverride = config?.filePath?.trim() || env.CRYPTOCLAW_CACHE_TRACE_FILE?.trim();
   const filePath = fileOverride
     ? resolveUserPath(fileOverride)
     : path.join(resolveStateDir(env), "logs", "cache-trace.jsonl");
 
   const includeMessages =
-    parseBooleanValue(env.OPENCLAW_CACHE_TRACE_MESSAGES) ?? config?.includeMessages;
-  const includePrompt = parseBooleanValue(env.OPENCLAW_CACHE_TRACE_PROMPT) ?? config?.includePrompt;
-  const includeSystem = parseBooleanValue(env.OPENCLAW_CACHE_TRACE_SYSTEM) ?? config?.includeSystem;
+    parseBooleanValue(env.CRYPTOCLAW_CACHE_TRACE_MESSAGES) ?? config?.includeMessages;
+  const includePrompt =
+    parseBooleanValue(env.CRYPTOCLAW_CACHE_TRACE_PROMPT) ?? config?.includePrompt;
+  const includeSystem =
+    parseBooleanValue(env.CRYPTOCLAW_CACHE_TRACE_SYSTEM) ?? config?.includeSystem;
 
   return {
     enabled,

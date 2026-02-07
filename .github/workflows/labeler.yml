@@ -1,10 +1,7 @@
 name: Labeler
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
-  issues:
-    types: [opened]
+  workflow_dispatch: # disabled — depends on upstream GitHub App
 
 permissions: {}
 

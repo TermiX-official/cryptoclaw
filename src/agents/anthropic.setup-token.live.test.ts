@@ -21,11 +21,12 @@ import { normalizeProviderId, parseModelRef } from "./model-selection.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
 import { discoverAuthStorage, discoverModels } from "./pi-model-discovery.js";
 
-const LIVE = isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.OPENCLAW_LIVE_TEST);
-const SETUP_TOKEN_RAW = process.env.OPENCLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
-const SETUP_TOKEN_VALUE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
-const SETUP_TOKEN_PROFILE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
-const SETUP_TOKEN_MODEL = process.env.OPENCLAW_LIVE_SETUP_TOKEN_MODEL?.trim() ?? "";
+const LIVE =
+  isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.CRYPTOCLAW_LIVE_TEST);
+const SETUP_TOKEN_RAW = process.env.CRYPTOCLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
+const SETUP_TOKEN_VALUE = process.env.CRYPTOCLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
+const SETUP_TOKEN_PROFILE = process.env.CRYPTOCLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
+const SETUP_TOKEN_MODEL = process.env.CRYPTOCLAW_LIVE_SETUP_TOKEN_MODEL?.trim() ?? "";
 
 const ENABLED = LIVE && Boolean(SETUP_TOKEN_RAW || SETUP_TOKEN_VALUE || SETUP_TOKEN_PROFILE);
 const describeLive = ENABLED ? describe : describe.skip;
@@ -113,13 +114,13 @@ async function resolveTokenSource(): Promise<TokenSource> {
 
   if (SETUP_TOKEN_RAW && SETUP_TOKEN_RAW !== "1" && SETUP_TOKEN_RAW !== "auto") {
     throw new Error(
-      "OPENCLAW_LIVE_SETUP_TOKEN did not look like a setup-token. Use OPENCLAW_LIVE_SETUP_TOKEN_VALUE for raw tokens.",
+      "CRYPTOCLAW_LIVE_SETUP_TOKEN did not look like a setup-token. Use CRYPTOCLAW_LIVE_SETUP_TOKEN_VALUE for raw tokens.",
     );
   }
 
   if (candidates.length === 0) {
     throw new Error(
-      "No Anthropics setup-token profiles found. Set OPENCLAW_LIVE_SETUP_TOKEN_VALUE or OPENCLAW_LIVE_SETUP_TOKEN_PROFILE.",
+      "No Anthropics setup-token profiles found. Set CRYPTOCLAW_LIVE_SETUP_TOKEN_VALUE or CRYPTOCLAW_LIVE_SETUP_TOKEN_PROFILE.",
     );
   }
   return { agentDir, profileId: pickSetupTokenProfile(candidates) };

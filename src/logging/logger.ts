@@ -10,10 +10,10 @@ import { loggingState } from "./state.js";
 
 // Pin to /tmp so mac Debug UI and docs match; os.tmpdir() can be a per-user
 // randomized path on macOS which made the “Open log” button a no-op.
-export const DEFAULT_LOG_DIR = "/tmp/openclaw";
-export const DEFAULT_LOG_FILE = path.join(DEFAULT_LOG_DIR, "openclaw.log"); // legacy single-file path
+export const DEFAULT_LOG_DIR = "/tmp/cryptoclaw";
+export const DEFAULT_LOG_FILE = path.join(DEFAULT_LOG_DIR, "cryptoclaw.log"); // legacy single-file path
 
-const LOG_PREFIX = "openclaw";
+const LOG_PREFIX = "cryptoclaw";
 const LOG_SUFFIX = ".log";
 const MAX_LOG_AGE_MS = 24 * 60 * 60 * 1000; // 24h
 

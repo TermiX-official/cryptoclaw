@@ -202,7 +202,7 @@ export async function handleOpenAiHttpRequest(
 
   const payload = coerceRequest(body);
   const stream = Boolean(payload.stream);
-  const model = typeof payload.model === "string" ? payload.model : "openclaw";
+  const model = typeof payload.model === "string" ? payload.model : "cryptoclaw";
   const user = typeof payload.user === "string" ? payload.user : undefined;
 
   const agentId = resolveAgentIdForRequest({ req, model });

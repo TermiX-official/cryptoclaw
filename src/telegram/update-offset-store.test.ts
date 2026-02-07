@@ -5,16 +5,16 @@ import { describe, expect, it } from "vitest";
 import { readTelegramUpdateOffset, writeTelegramUpdateOffset } from "./update-offset-store.js";
 
 async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
-  const previous = process.env.OPENCLAW_STATE_DIR;
+  const previous = process.env.CRYPTOCLAW_STATE_DIR;
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-"));
-  process.env.OPENCLAW_STATE_DIR = dir;
+  process.env.CRYPTOCLAW_STATE_DIR = dir;
   try {
     return await fn(dir);
   } finally {
     if (previous === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.CRYPTOCLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previous;
+      process.env.CRYPTOCLAW_STATE_DIR = previous;
     }
     await fs.rm(dir, { recursive: true, force: true });
   }

@@ -79,7 +79,7 @@ describe("createCacheTrace", () => {
         },
       },
       env: {
-        OPENCLAW_CACHE_TRACE: "0",
+        CRYPTOCLAW_CACHE_TRACE: "0",
       },
       writer: {
         filePath: "memory",

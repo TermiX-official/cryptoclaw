@@ -285,7 +285,7 @@ export const buildTelegramMessageContext = async ({
                       `Pairing code: ${code}`,
                       "",
                       "Ask the bot owner to approve with:",
-                      formatCliCommand("openclaw pairing approve telegram <code>"),
+                      formatCliCommand("cryptoclaw pairing approve telegram <code>"),
                     ].join("\n"),
                   ),
               });

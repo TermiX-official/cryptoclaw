@@ -76,7 +76,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     const agentId = resolveAgentIdFromSessionKey(event.sessionKey);
     const workspaceDir = cfg
       ? resolveAgentWorkspaceDir(cfg, agentId)
-      : path.join(os.homedir(), ".openclaw", "workspace");
+      : path.join(os.homedir(), ".cryptoclaw", "workspace");
     const memoryDir = path.join(workspaceDir, "memory");
     await fs.mkdir(memoryDir, { recursive: true });
 

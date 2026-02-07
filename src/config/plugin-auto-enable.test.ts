@@ -60,73 +60,7 @@ describe("applyPluginAutoEnable", () => {
     expect(result.changes).toEqual([]);
   });
 
-  describe("preferOver channel prioritization", () => {
-    it("prefers bluebubbles: skips imessage auto-enable when both are configured", () => {
-      const result = applyPluginAutoEnable({
-        config: {
-          channels: {
-            bluebubbles: { serverUrl: "http://localhost:1234", password: "x" },
-            imessage: { cliPath: "/usr/local/bin/imsg" },
-          },
-        },
-        env: {},
-      });
-
-      expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBe(true);
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBeUndefined();
-      expect(result.changes.join("\n")).toContain("bluebubbles configured, not enabled yet.");
-      expect(result.changes.join("\n")).not.toContain("iMessage configured, not enabled yet.");
-    });
-
-    it("keeps imessage enabled if already explicitly enabled (non-destructive)", () => {
-      const result = applyPluginAutoEnable({
-        config: {
-          channels: {
-            bluebubbles: { serverUrl: "http://localhost:1234", password: "x" },
-            imessage: { cliPath: "/usr/local/bin/imsg" },
-          },
-          plugins: { entries: { imessage: { enabled: true } } },
-        },
-        env: {},
-      });
-
-      expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBe(true);
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
-    });
-
-    it("allows imessage auto-enable when bluebubbles is explicitly disabled", () => {
-      const result = applyPluginAutoEnable({
-        config: {
-          channels: {
-            bluebubbles: { serverUrl: "http://localhost:1234", password: "x" },
-            imessage: { cliPath: "/usr/local/bin/imsg" },
-          },
-          plugins: { entries: { bluebubbles: { enabled: false } } },
-        },
-        env: {},
-      });
-
-      expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBe(false);
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
-      expect(result.changes.join("\n")).toContain("iMessage configured, not enabled yet.");
-    });
-
-    it("allows imessage auto-enable when bluebubbles is in deny list", () => {
-      const result = applyPluginAutoEnable({
-        config: {
-          channels: {
-            bluebubbles: { serverUrl: "http://localhost:1234", password: "x" },
-            imessage: { cliPath: "/usr/local/bin/imsg" },
-          },
-          plugins: { deny: ["bluebubbles"] },
-        },
-        env: {},
-      });
-
-      expect(result.config.plugins?.entries?.bluebubbles?.enabled).toBeUndefined();
-      expect(result.config.plugins?.entries?.imessage?.enabled).toBe(true);
-    });
-
+  describe("imessage auto-enable", () => {
     it("enables imessage normally when only imessage is configured", () => {
       const result = applyPluginAutoEnable({
         config: {

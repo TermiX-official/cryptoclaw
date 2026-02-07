@@ -244,7 +244,7 @@ export function registerExecApprovalsCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "cryptoclawdocs.termix.ai/cli/approvals")}\n`,
     );
 
   const getCmd = approvals
@@ -337,18 +337,18 @@ export function registerExecApprovalsCli(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatExample(
-          'openclaw approvals allowlist add "~/Projects/**/bin/rg"',
+          'cryptoclaw approvals allowlist add "~/Projects/**/bin/rg"',
           "Allowlist a local binary pattern for the main agent.",
         )}\n${formatExample(
-          'openclaw approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"',
+          'cryptoclaw approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"',
           "Allowlist on a specific node/agent.",
         )}\n${formatExample(
-          'openclaw approvals allowlist add --agent "*" "/usr/bin/uname"',
+          'cryptoclaw approvals allowlist add --agent "*" "/usr/bin/uname"',
           "Allowlist for all agents (wildcard).",
         )}\n${formatExample(
-          'openclaw approvals allowlist remove "~/Projects/**/bin/rg"',
+          'cryptoclaw approvals allowlist remove "~/Projects/**/bin/rg"',
           "Remove an allowlist pattern.",
-        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "cryptoclawdocs.termix.ai/cli/approvals")}\n`,
     );
 
   const allowlistAdd = allowlist

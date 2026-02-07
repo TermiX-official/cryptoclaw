@@ -210,6 +210,9 @@ function normalizeAgentLabel(agent: { id: string; name?: string; identity?: { na
   return agent.name?.trim() || agent.identity?.name?.trim() || agent.id;
 }
 
+/** Regex that matches a single emoji (including compound sequences like flags, ZWJ, skin tones). */
+const EMOJI_RE = /\p{Emoji_Presentation}(\u200d\p{Emoji_Presentation}|\ufe0f)*/u;
+
 function isLikelyEmoji(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -234,25 +237,35 @@ function isLikelyEmoji(value: string) {
   return true;
 }
 
+/** Extract the first emoji from a string that may contain trailing text (e.g. "🤖 (or ⚠️ when alarmed)"). */
+function extractLeadingEmoji(value: string): string {
+  const m = EMOJI_RE.exec(value.trim());
+  return m ? m[0] : "";
+}
+
 function resolveAgentEmoji(
   agent: { identity?: { emoji?: string; avatar?: string } },
   agentIdentity?: AgentIdentityResult | null,
 ) {
-  const identityEmoji = agentIdentity?.emoji?.trim();
-  if (identityEmoji && isLikelyEmoji(identityEmoji)) {
-    return identityEmoji;
-  }
-  const agentEmoji = agent.identity?.emoji?.trim();
-  if (agentEmoji && isLikelyEmoji(agentEmoji)) {
-    return agentEmoji;
-  }
-  const identityAvatar = agentIdentity?.avatar?.trim();
-  if (identityAvatar && isLikelyEmoji(identityAvatar)) {
-    return identityAvatar;
-  }
-  const avatar = agent.identity?.avatar?.trim();
-  if (avatar && isLikelyEmoji(avatar)) {
-    return avatar;
+  // Try each candidate, extracting just the leading emoji if the value contains trailing text.
+  for (const raw of [
+    agentIdentity?.emoji,
+    agent.identity?.emoji,
+    agentIdentity?.avatar,
+    agent.identity?.avatar,
+  ]) {
+    const trimmed = raw?.trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (isLikelyEmoji(trimmed)) {
+      return trimmed;
+    }
+    // Value may contain an emoji followed by description text (e.g. "🤖 (or ⚠️ …)")
+    const leading = extractLeadingEmoji(trimmed);
+    if (leading) {
+      return leading;
+    }
   }
   return "";
 }
@@ -575,7 +588,13 @@ export function renderAgents(props: AgentsProps) {
                       @click=${() => props.onSelectAgent(agent.id)}
                     >
                       <div class="agent-avatar">
-                        ${emoji || normalizeAgentLabel(agent).slice(0, 1)}
+                        ${
+                          emoji
+                            ? emoji
+                            : html`
+                                <img src="/favicon.svg" alt="" style="width: 100%; height: 100%; object-fit: contain" />
+                              `
+                        }
                       </div>
                       <div class="agent-info">
                         <div class="agent-title">${normalizeAgentLabel(agent)}</div>
@@ -733,7 +752,13 @@ function renderAgentHeader(
     <section class="card agent-header">
       <div class="agent-header-main">
         <div class="agent-avatar agent-avatar--lg">
-          ${emoji || displayName.slice(0, 1)}
+          ${
+            emoji
+              ? emoji
+              : html`
+                  <img src="/favicon.svg" alt="" style="width: 100%; height: 100%; object-fit: contain" />
+                `
+          }
         </div>
         <div>
           <div class="card-title">${displayName}</div>
@@ -1680,10 +1705,10 @@ type SkillGroup = {
 };
 
 const SKILL_SOURCE_GROUPS: Array<{ id: string; label: string; sources: string[] }> = [
-  { id: "workspace", label: "Workspace Skills", sources: ["openclaw-workspace"] },
-  { id: "built-in", label: "Built-in Skills", sources: ["openclaw-bundled"] },
-  { id: "installed", label: "Installed Skills", sources: ["openclaw-managed"] },
-  { id: "extra", label: "Extra Skills", sources: ["openclaw-extra"] },
+  { id: "workspace", label: "Workspace Skills", sources: ["cryptoclaw-workspace"] },
+  { id: "built-in", label: "Built-in Skills", sources: ["cryptoclaw-bundled"] },
+  { id: "installed", label: "Installed Skills", sources: ["cryptoclaw-managed"] },
+  { id: "extra", label: "Extra Skills", sources: ["cryptoclaw-extra"] },
 ];
 
 function groupSkills(skills: SkillStatusEntry[]): SkillGroup[] {

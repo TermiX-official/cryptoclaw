@@ -390,9 +390,9 @@ describe("security audit", () => {
   });
 
   it("flags Discord native commands without a guild user allowlist", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-discord-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -429,19 +429,19 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
 
   it("does not flag Discord slash commands when dm.allowFrom includes a Discord snowflake id", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(
       path.join(os.tmpdir(), "openclaw-security-audit-discord-allowfrom-snowflake-"),
     );
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -478,17 +478,17 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
 
   it("flags Discord slash commands when access-group enforcement is disabled and no users allowlist exists", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-discord-open-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -526,17 +526,17 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
 
   it("flags Slack slash commands without a channel users allowlist", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-slack-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -568,17 +568,17 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
 
   it("flags Slack slash commands when access-group enforcement is disabled", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-slack-open-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -611,17 +611,17 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
 
   it("flags Telegram group commands without a sender allowlist", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-telegram-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
     await fs.mkdir(path.join(tmp, "credentials"), { recursive: true, mode: 0o700 });
     try {
       const cfg: OpenClawConfig = {
@@ -652,9 +652,9 @@ describe("security audit", () => {
       );
     } finally {
       if (prevStateDir == null) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
     }
   });
@@ -783,8 +783,8 @@ describe("security audit", () => {
   });
 
   it("warns when hooks token reuses the gateway env token", async () => {
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "shared-gateway-token-1234567890";
+    const prevToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+    process.env.CRYPTOCLAW_GATEWAY_TOKEN = "shared-gateway-token-1234567890";
     const cfg: OpenClawConfig = {
       hooks: { enabled: true, token: "shared-gateway-token-1234567890" },
     };
@@ -803,9 +803,9 @@ describe("security audit", () => {
       );
     } finally {
       if (prevToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+        process.env.CRYPTOCLAW_GATEWAY_TOKEN = prevToken;
       }
     }
   });
@@ -997,7 +997,7 @@ describe("security audit", () => {
       path.join(pluginDir, "package.json"),
       JSON.stringify({
         name: "evil-plugin",
-        openclaw: { extensions: [".hidden/index.js"] },
+        cryptoclaw: { extensions: [".hidden/index.js"] },
       }),
     );
     await fs.writeFile(
@@ -1043,7 +1043,7 @@ describe("security audit", () => {
       path.join(pluginDir, "package.json"),
       JSON.stringify({
         name: "evil-plugin",
-        openclaw: { extensions: [".hidden/index.js"] },
+        cryptoclaw: { extensions: [".hidden/index.js"] },
       }),
     );
     await fs.writeFile(
@@ -1102,7 +1102,7 @@ description: test skill
       path.join(pluginDir, "package.json"),
       JSON.stringify({
         name: "escape-plugin",
-        openclaw: { extensions: ["../outside.js"] },
+        cryptoclaw: { extensions: ["../outside.js"] },
       }),
     );
     await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
@@ -1141,7 +1141,7 @@ description: test skill
         path.join(pluginDir, "package.json"),
         JSON.stringify({
           name: "scanfail-plugin",
-          openclaw: { extensions: ["index.js"] },
+          cryptoclaw: { extensions: ["index.js"] },
         }),
       );
       await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
@@ -1179,24 +1179,24 @@ description: test skill
   });
 
   describe("maybeProbeGateway auth selection", () => {
-    const originalEnvToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    const originalEnvPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
+    const originalEnvToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+    const originalEnvPassword = process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
 
     beforeEach(() => {
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
-      delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+      delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+      delete process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
     });
 
     afterEach(() => {
       if (originalEnvToken == null) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = originalEnvToken;
+        process.env.CRYPTOCLAW_GATEWAY_TOKEN = originalEnvToken;
       }
       if (originalEnvPassword == null) {
-        delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+        delete process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
       } else {
-        process.env.OPENCLAW_GATEWAY_PASSWORD = originalEnvPassword;
+        process.env.CRYPTOCLAW_GATEWAY_PASSWORD = originalEnvPassword;
       }
     });
 
@@ -1235,7 +1235,7 @@ description: test skill
     });
 
     it("prefers env token over local config token", async () => {
-      process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+      process.env.CRYPTOCLAW_GATEWAY_TOKEN = "env-token";
       let capturedAuth: { token?: string; password?: string } | undefined;
       const cfg: OpenClawConfig = {
         gateway: {
@@ -1341,7 +1341,7 @@ description: test skill
     });
 
     it("ignores env token when gateway.mode is remote", async () => {
-      process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+      process.env.CRYPTOCLAW_GATEWAY_TOKEN = "env-token";
       let capturedAuth: { token?: string; password?: string } | undefined;
       const cfg: OpenClawConfig = {
         gateway: {
@@ -1417,7 +1417,7 @@ description: test skill
     });
 
     it("prefers env password over remote password", async () => {
-      process.env.OPENCLAW_GATEWAY_PASSWORD = "env-pass";
+      process.env.CRYPTOCLAW_GATEWAY_PASSWORD = "env-pass";
       let capturedAuth: { token?: string; password?: string } | undefined;
       const cfg: OpenClawConfig = {
         gateway: {

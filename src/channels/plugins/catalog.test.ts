@@ -5,27 +5,26 @@ import { describe, expect, it } from "vitest";
 import { getChannelPluginCatalogEntry, listChannelPluginCatalogEntries } from "./catalog.js";
 
 describe("channel plugin catalog", () => {
-  it("includes Microsoft Teams", () => {
-    const entry = getChannelPluginCatalogEntry("msteams");
-    expect(entry?.install.npmSpec).toBe("@openclaw/msteams");
-    expect(entry?.meta.aliases).toContain("teams");
+  it("includes Nostr", () => {
+    const entry = getChannelPluginCatalogEntry("nostr");
+    expect(entry?.install.npmSpec).toBe("@cryptoclaw/nostr");
   });
 
   it("lists plugin catalog entries", () => {
     const ids = listChannelPluginCatalogEntries().map((entry) => entry.id);
-    expect(ids).toContain("msteams");
+    expect(ids).toContain("nostr");
   });
 
   it("includes external catalog entries", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-catalog-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cryptoclaw-catalog-"));
     const catalogPath = path.join(dir, "catalog.json");
     fs.writeFileSync(
       catalogPath,
       JSON.stringify({
         entries: [
           {
-            name: "@openclaw/demo-channel",
-            openclaw: {
+            name: "@cryptoclaw/demo-channel",
+            cryptoclaw: {
               channel: {
                 id: "demo-channel",
                 label: "Demo Channel",
@@ -35,7 +34,7 @@ describe("channel plugin catalog", () => {
                 order: 999,
               },
               install: {
-                npmSpec: "@openclaw/demo-channel",
+                npmSpec: "@cryptoclaw/demo-channel",
               },
             },
           },

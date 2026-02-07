@@ -39,8 +39,8 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
   const commitLabel = commit ?? "unknown";
   const tagline = pickTagline(options);
   const rich = options.richTty ?? isRich();
-  const title = "🦞 OpenClaw";
-  const prefix = "🦞 ";
+  const title = "🔗 CryptoClaw";
+  const prefix = "🔗 ";
   const columns = options.columns ?? process.stdout.columns ?? 120;
   const plainFullLine = `${title} ${version} (${commitLabel}) — ${tagline}`;
   const fitsOnOneLine = visibleWidth(plainFullLine) <= columns;
@@ -65,13 +65,13 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
 }
 
 const LOBSTER_ASCII = [
-  "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
-  "██░▄▄▄░██░▄▄░██░▄▄▄██░▀██░██░▄▄▀██░████░▄▄▀██░███░██",
-  "██░███░██░▀▀░██░▄▄▄██░█░█░██░█████░████░▀▀░██░█░█░██",
-  "██░▀▀▀░██░█████░▀▀▀██░██▄░██░▀▀▄██░▀▀░█░██░██▄▀▄▀▄██",
-  "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
-  "                  🦞 OPENCLAW 🦞                    ",
-  " ",
+  "  ___ _____   _____ _____ ___   ___ _      ___      __",
+  " / __| _ \\ \\ / / _ \\_   _/ _ \\ / __| |    /_\\ \\    / /",
+  "| (__|   /\\ V /|  _/ | || (_) | (__| |__ / _ \\ \\/\\/ / ",
+  " \\___|_|_\\ |_| |_|   |_| \\___/ \\___|____/_/ \\_\\_/\\_/",
+  "",
+  "                  🔗 CRYPTOCLAW 🔗",
+  "",
 ];
 
 export function formatCliBannerArt(options: BannerOptions = {}): string {
@@ -81,25 +81,19 @@ export function formatCliBannerArt(options: BannerOptions = {}): string {
   }
 
   const colorChar = (ch: string) => {
-    if (ch === "█") {
+    if (ch !== " ") {
       return theme.accentBright(ch);
     }
-    if (ch === "░") {
-      return theme.accentDim(ch);
-    }
-    if (ch === "▀") {
-      return theme.accent(ch);
-    }
-    return theme.muted(ch);
+    return ch;
   };
 
   const colored = LOBSTER_ASCII.map((line) => {
-    if (line.includes("OPENCLAW")) {
+    if (line.includes("CRYPTOCLAW")) {
       return (
-        theme.muted("              ") +
-        theme.accent("🦞") +
-        theme.info(" OPENCLAW ") +
-        theme.accent("🦞")
+        theme.muted("                  ") +
+        theme.accent("🔗") +
+        theme.info(" CRYPTOCLAW ") +
+        theme.accent("🔗")
       );
     }
     return splitGraphemes(line).map(colorChar).join("");

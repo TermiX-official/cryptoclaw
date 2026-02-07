@@ -100,4 +100,8 @@ export type OnboardOptions = {
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;
+  walletCreate?: boolean;
+  walletImport?: boolean;
+  walletLabel?: string;
+  skipWallet?: boolean;
 };

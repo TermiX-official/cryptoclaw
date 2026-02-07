@@ -1,0 +1,284 @@
+import type { OpenClawPluginApi, OpenClawPluginDefinition } from "cryptoclaw/plugin-sdk";
+import { getDefaultChainName, resolveChainId, setDefaultChainId } from "./src/evm/chains.js";
+import { checkAddressSecurity } from "./src/evm/services/security.js";
+import { registerBlockTools } from "./src/evm/tools/block-tools.js";
+import { registerContractTools } from "./src/evm/tools/contract-tools.js";
+import { registerIdentityTools } from "./src/evm/tools/identity-tools.js";
+import { registerNetworkTools } from "./src/evm/tools/network-tools.js";
+import { registerNftTools } from "./src/evm/tools/nft-tools.js";
+import { registerSecurityTools } from "./src/evm/tools/security-tools.js";
+import { registerSwapTools } from "./src/evm/tools/swap-tools.js";
+import { registerTokenTools } from "./src/evm/tools/token-tools.js";
+import { registerTxTools } from "./src/evm/tools/tx-tools.js";
+import { registerWalletTools } from "./src/evm/tools/wallet-tools.js";
+import { requiresConfirmation, formatConfirmationPrompt } from "./src/tx-gate/confirmation.js";
+import { SpendingTracker, DEFAULT_SPENDING_LIMITS } from "./src/tx-gate/spending-limits.js";
+import { sanitizeSecrets, KEY_GUARD_SYSTEM_PROMPT } from "./src/wallet/key-guard.js";
+import { WalletManager } from "./src/wallet/wallet-manager.js";
+
+const blockchainPlugin: OpenClawPluginDefinition = {
+  id: "blockchain",
+  name: "Blockchain",
+  description:
+    "EVM blockchain tools: wallet management, token transfers, DEX swaps (Uniswap/PancakeSwap V2+V3), NFTs, smart contracts, ERC-8004 agent identity, and multi-chain operations",
+
+  register(api: OpenClawPluginApi) {
+    const stateDir = api.runtime.state.resolveStateDir();
+    const walletManager = new WalletManager(stateDir);
+    const spendingTracker = new SpendingTracker(stateDir);
+
+    // Read plugin config for spending limits
+    const pluginConfig = api.pluginConfig ?? {};
+    const _spendingLimits = {
+      ...DEFAULT_SPENDING_LIMITS,
+      ...(pluginConfig.spendingLimits as Record<string, unknown>),
+    };
+
+    // Apply configured default chain (if any)
+    const defaultChainStr = pluginConfig.defaultChain as string | undefined;
+    if (defaultChainStr) {
+      try {
+        setDefaultChainId(resolveChainId(defaultChainStr));
+      } catch {
+        api.logger.warn(`[blockchain] Unknown defaultChain "${defaultChainStr}", keeping BSC`);
+      }
+    }
+
+    // --- Register all tools ---
+    registerWalletTools(api, walletManager);
+    registerTokenTools(api, walletManager);
+    registerNftTools(api, walletManager);
+    registerContractTools(api, walletManager);
+    registerBlockTools(api);
+    registerTxTools(api, walletManager);
+    registerNetworkTools(api);
+    registerSwapTools(api, walletManager);
+    registerIdentityTools(api, walletManager);
+    registerSecurityTools(api);
+
+    // --- Transfer tools that should trigger auto security check ---
+    const TRANSFER_TOOLS = new Set([
+      "transfer_native_token",
+      "transfer_erc20",
+      "transfer_nft",
+      "transfer_erc1155",
+    ]);
+
+    // --- Auto security check before transfers ---
+    api.on("before_tool_call", async (event) => {
+      if (!TRANSFER_TOOLS.has(event.toolName) || !event.params.to) {
+        return;
+      }
+      const toAddress = event.params.to as string;
+      const chainId = resolveChainId((event.params.network as string) ?? "bsc");
+      const result = await checkAddressSecurity(toAddress, chainId);
+      if (result.riskLevel === "critical" || result.riskLevel === "high") {
+        return {
+          block: true,
+          blockReason: `Security Alert: Recipient ${toAddress} flagged as ${result.riskLevel} risk by GoPlus. Flags: ${result.flags.join(", ")}. Transaction blocked for your protection.`,
+        };
+      }
+      if (result.flags.length > 0) {
+        api.logger.warn(
+          `[security] Address ${toAddress} has medium-risk flags: ${result.flags.join(", ")}`,
+        );
+      }
+      return undefined;
+    });
+
+    // --- Transaction confirmation hook ---
+    api.on("before_tool_call", async (event) => {
+      if (!requiresConfirmation(event.toolName)) {
+        return;
+      }
+      // The agent's system prompt instructs it to confirm with the user.
+      // This hook provides the formatted summary for the agent to present.
+      const summary = formatConfirmationPrompt(event.toolName, event.params);
+      api.logger.info(`[tx-gate] Pending confirmation: ${summary}`);
+      return undefined;
+    });
+
+    // --- Spending tracking hook ---
+    api.on("after_tool_call", async (event) => {
+      if (!requiresConfirmation(event.toolName) || event.error) {
+        return;
+      }
+      // Log successful state-changing operations
+      spendingTracker.logSpend({
+        timestamp: new Date().toISOString(),
+        toolName: event.toolName,
+        valueUsd: 0, // USD value would require price oracle integration
+        network: (event.params.network as string) ?? "bsc",
+        txHash: (event.result as { txHash?: string })?.txHash,
+      });
+    });
+
+    // --- Layer 3: Sanitize ALL tool results before persisting to session ---
+    // Applies to every tool, not just wallet ones — defense in depth.
+    api.on("tool_result_persist", (event) => {
+      const msg = { ...event.message };
+      if (typeof msg.content === "string") {
+        const sanitized = sanitizeSecrets(msg.content);
+        if (sanitized !== msg.content) {
+          return { message: { ...msg, content: sanitized } };
+        }
+      }
+      return undefined;
+    });
+
+    // --- Layer 4: Sanitize outbound messages to channels ---
+    // Catches any private key that the agent might include in its response
+    // before it reaches Discord, Telegram, WhatsApp, etc.
+    api.on("message_sending", (event) => {
+      if (!event.content) {
+        return undefined;
+      }
+      const sanitized = sanitizeSecrets(event.content);
+      if (sanitized !== event.content) {
+        api.logger.warn("[key-guard] Blocked private key leak in outbound message");
+        return { content: sanitized };
+      }
+      return undefined;
+    });
+
+    // --- CLI commands ---
+    api.registerCli(
+      (ctx) => {
+        const wallet = ctx.program.command("wallet").description("Manage blockchain wallets");
+
+        wallet
+          .command("create")
+          .option("--label <name>", "Wallet label", "Default")
+          .description("Create a new wallet")
+          .action(async (opts: { label: string }) => {
+            const { password } = (await import("@clack/prompts").then((m) =>
+              m.password({ message: "Enter a passphrase to encrypt your wallet:" }),
+            )) as { password: string };
+            if (!password) {
+              return;
+            }
+            const w = await walletManager.createWallet(opts.label, password);
+            console.log(`Wallet created: ${w.label} (${w.address})`);
+          });
+
+        wallet
+          .command("import")
+          .option("--label <name>", "Wallet label", "Imported")
+          .description("Import an existing private key")
+          .action(async (opts: { label: string }) => {
+            const prompts = await import("@clack/prompts");
+            const key = await prompts.password({ message: "Enter private key (0x...):" });
+            const pass = await prompts.password({ message: "Enter passphrase:" });
+            if (!key || !pass) {
+              return;
+            }
+            const w = await walletManager.importWallet(key as `0x${string}`, opts.label, pass);
+            console.log(`Wallet imported: ${w.label} (${w.address})`);
+          });
+
+        wallet
+          .command("list")
+          .description("List all wallets")
+          .action(() => {
+            const { wallets, activeWalletId } = walletManager.listWallets();
+            if (wallets.length === 0) {
+              console.log("No wallets. Create one with: cryptoclaw wallet create");
+              return;
+            }
+            for (const w of wallets) {
+              const active = w.id === activeWalletId ? " [ACTIVE]" : "";
+              console.log(`  ${w.label}: ${w.address}${active}`);
+            }
+          });
+
+        wallet
+          .command("switch <idOrLabel>")
+          .description("Switch the active wallet")
+          .action((idOrLabel: string) => {
+            const w = walletManager.switchWallet(idOrLabel);
+            console.log(`Active wallet: ${w.label} (${w.address})`);
+          });
+
+        wallet
+          .command("delete <idOrLabel>")
+          .description("Delete a wallet")
+          .action(async (idOrLabel: string) => {
+            const { password } = (await import("@clack/prompts").then((m) =>
+              m.password({ message: "Enter passphrase to confirm:" }),
+            )) as { password: string };
+            if (!password) {
+              return;
+            }
+            await walletManager.deleteWallet(idOrLabel, password);
+            console.log(`Wallet "${idOrLabel}" deleted.`);
+          });
+
+        wallet
+          .command("export <idOrLabel>")
+          .description("Export a wallet private key (for backup)")
+          .action(async (idOrLabel: string) => {
+            const { password } = (await import("@clack/prompts").then((m) =>
+              m.password({ message: "Enter passphrase:" }),
+            )) as { password: string };
+            if (!password) {
+              return;
+            }
+            const key = await walletManager.exportWallet(idOrLabel, password);
+            console.log(`Private key: ${key}`);
+            console.log("WARNING: Store this key securely. Do not share it.");
+          });
+      },
+      { commands: ["wallet"] },
+    );
+
+    // --- Layer 5: System prompt — instruct agent to never handle keys ---
+    api.on("before_agent_start", () => {
+      const activeAddress = walletManager.getActiveAddress();
+      const { wallets } = walletManager.listWallets();
+
+      const walletLines: string[] = [];
+      if (activeAddress) {
+        walletLines.push(
+          "[Blockchain — Your Wallet]",
+          `Your active wallet address: ${activeAddress}`,
+          `Total wallets: ${wallets.length}`,
+          `Default network: ${getDefaultChainName()}`,
+          "",
+          "This is YOUR wallet. You own and operate it.",
+          '- Address questions ("what\'s my/your address") → respond with the address above',
+          '- Balance questions ("how much BNB/ETH do I have") → call get_native_balance',
+          '- Token balance ("my USDT balance") → call get_erc20_balance with the token address',
+          "- Full portfolio → call get_native_balance + get_erc20_balance across chains",
+          "- Wallet list → call wallet_list",
+          '- Transfer ("send 0.1 BNB to 0x...") → call transfer_native_token',
+          '- Token transfer ("send USDT to 0x...") → call transfer_erc20',
+          '- Swap ("swap BNB for USDT") → call swap_execute',
+          "- Address security check → call check_address_security",
+          "- Wallet locked → ask the user for their passphrase in chat, call wallet_unlock with it, then retry. Once unlocked, the wallet stays unlocked — do NOT ask for passphrase again unless you receive another lock error.",
+          "All outbound transfers are auto security-checked against GoPlus before execution.",
+          "Do NOT hallucinate balances — always call the tool.",
+        );
+      } else {
+        walletLines.push(
+          "[Blockchain — No Wallet]",
+          "No wallets configured.",
+          "When asked about wallets, balances, or addresses → suggest creating one with wallet_create or importing via CLI (`cryptoclaw wallet import`).",
+          "Do NOT hallucinate an address or balance.",
+        );
+      }
+
+      return {
+        prependContext: [
+          "[LANGUAGE] Always respond in the same language the user writes in. If the user writes Chinese, respond in Chinese. If English, respond in English.",
+          walletLines.join("\n"),
+          `Supported networks: ethereum, bsc, polygon, arbitrum, optimism, base, opbnb, iotex (+ testnets).`,
+          "Wallet import/export: CLI-only (`cryptoclaw wallet import`, `cryptoclaw wallet export`). Do NOT attempt these as agent tools.",
+          "",
+          KEY_GUARD_SYSTEM_PROMPT,
+        ].join("\n"),
+      };
+    });
+  },
+};
+
+export default blockchainPlugin;

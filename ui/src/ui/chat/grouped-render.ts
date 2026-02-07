@@ -180,9 +180,25 @@ function renderAvatar(role: string, assistant?: Pick<AssistantIdentity, "name" |
         class="chat-avatar ${className}"
         src="${assistantAvatar}"
         alt="${assistantName}"
+        @error=${(e: Event) => {
+          const img = e.target as HTMLImageElement;
+          if (img.dataset.fallback) {
+            return;
+          }
+          img.dataset.fallback = "1";
+          img.src = "/favicon.svg";
+        }}
       />`;
     }
     return html`<div class="chat-avatar ${className}">${assistantAvatar}</div>`;
+  }
+
+  if (normalized === "assistant") {
+    return html`<img
+      class="chat-avatar ${className}"
+      src="/favicon.svg"
+      alt="${assistantName}"
+    />`;
   }
 
   return html`<div class="chat-avatar ${className}">${initial}</div>`;

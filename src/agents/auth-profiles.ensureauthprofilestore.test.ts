@@ -49,7 +49,7 @@ describe("ensureAuthProfileStore", () => {
 
   it("merges main auth profiles into agent store and keeps agent overrides", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-merge-"));
-    const previousAgentDir = process.env.OPENCLAW_AGENT_DIR;
+    const previousAgentDir = process.env.CRYPTOCLAW_AGENT_DIR;
     const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
     try {
       const mainDir = path.join(root, "main-agent");
@@ -57,7 +57,7 @@ describe("ensureAuthProfileStore", () => {
       fs.mkdirSync(mainDir, { recursive: true });
       fs.mkdirSync(agentDir, { recursive: true });
 
-      process.env.OPENCLAW_AGENT_DIR = mainDir;
+      process.env.CRYPTOCLAW_AGENT_DIR = mainDir;
       process.env.PI_CODING_AGENT_DIR = mainDir;
 
       const mainStore = {
@@ -110,9 +110,9 @@ describe("ensureAuthProfileStore", () => {
       });
     } finally {
       if (previousAgentDir === undefined) {
-        delete process.env.OPENCLAW_AGENT_DIR;
+        delete process.env.CRYPTOCLAW_AGENT_DIR;
       } else {
-        process.env.OPENCLAW_AGENT_DIR = previousAgentDir;
+        process.env.CRYPTOCLAW_AGENT_DIR = previousAgentDir;
       }
       if (previousPiAgentDir === undefined) {
         delete process.env.PI_CODING_AGENT_DIR;

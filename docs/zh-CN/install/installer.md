@@ -1,6 +1,6 @@
 ---
 read_when:
-  - 你想了解 `openclaw.ai/install.sh` 的工作机制
+  - 你想了解 `npm install -g @termix-it/cryptoclaw@latest` 的工作机制
   - 你想自动化安装（CI / 无头环境）
   - 你想从 GitHub 检出安装
 summary: 安装器脚本的工作原理（install.sh + install-cli.sh）、参数和自动化
@@ -16,22 +16,15 @@ x-i18n:
 
 # 安装器内部机制
 
-OpenClaw 提供两个安装器脚本（托管在 `openclaw.ai`）：
+OpenClaw 提供以下安装方式：
 
-- `https://openclaw.ai/install.sh` — "推荐"安装器（默认全局 npm 安装；也可从 GitHub 检出安装）
-- `https://openclaw.ai/install-cli.sh` — 无需 root 权限的 CLI 安装器（安装到带有独立 Node 的前缀目录）
-- `https://openclaw.ai/install.ps1` — Windows PowerShell 安装器（默认 npm；可选 git 安装）
+- `npm install -g @termix-it/cryptoclaw@latest` — 推荐安装方式（全局 npm 安装）
+- `git clone` — 从 GitHub 检出安装（见下文）
 
 查看当前参数/行为，运行：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --help
-```
-
-Windows (PowerShell) 帮助：
-
-```powershell
-& ([scriptblock]::Create((iwr -useb https://openclaw.ai/install.ps1))) -?
+npm install -g @termix-it/cryptoclaw@latest --help
 ```
 
 如果安装器完成但在新终端中找不到 `openclaw`，通常是 Node/npm PATH 问题。参见：[安装](/install#nodejs--npm-path-sanity)。
@@ -53,7 +46,7 @@ Windows (PowerShell) 帮助：
 如果你*希望* `sharp` 链接到全局安装的 libvips（或你正在调试），请设置：
 
 ```bash
-SHARP_IGNORE_GLOBAL_LIBVIPS=0 curl -fsSL https://openclaw.ai/install.sh | bash
+SHARP_IGNORE_GLOBAL_LIBVIPS=0 npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ### 可发现性 / "git 安装"提示
@@ -86,7 +79,7 @@ SHARP_IGNORE_GLOBAL_LIBVIPS=0 curl -fsSL https://openclaw.ai/install.sh | bash
 帮助：
 
 ```bash
-curl -fsSL https://openclaw.ai/install-cli.sh | bash -s -- --help
+npm install -g @termix-it/cryptoclaw@latest --help
 ```
 
 ## install.ps1（Windows PowerShell）
@@ -102,15 +95,15 @@ curl -fsSL https://openclaw.ai/install-cli.sh | bash -s -- --help
 示例：
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git -GitDir "C:\\openclaw"
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 环境变量：

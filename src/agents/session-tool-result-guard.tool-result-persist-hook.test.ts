@@ -68,7 +68,7 @@ describe("tool_result_persist hook", () => {
 
   it("composes transforms in priority order and allows stripping toolResult.details", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-toolpersist-"));
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
 
     const pluginA = writeTempPlugin({
       dir: tmp,

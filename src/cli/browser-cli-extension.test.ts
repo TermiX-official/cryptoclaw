@@ -77,9 +77,9 @@ describe("browser extension install", () => {
   });
 
   it("copies extension path to clipboard", async () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
+    const prev = process.env.CRYPTOCLAW_STATE_DIR;
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ext-path-"));
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.CRYPTOCLAW_STATE_DIR = tmp;
 
     try {
       copyToClipboard.mockReset();
@@ -107,9 +107,9 @@ describe("browser extension install", () => {
       expect(copyToClipboard).toHaveBeenCalledWith(dir);
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.CRYPTOCLAW_STATE_DIR = prev;
       }
     }
   });

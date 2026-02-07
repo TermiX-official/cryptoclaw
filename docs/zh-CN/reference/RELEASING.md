@@ -55,7 +55,7 @@ x-i18n:
 - [ ] `OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke`（Docker 安装冒烟测试，快速路径；发布前必需）
   - 如果已知上一个 npm 发布版本有问题，为预安装步骤设置 `OPENCLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` 或 `OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1`。
 - [ ]（可选）完整安装程序冒烟测试（添加非 root + CLI 覆盖）：`pnpm test:install:smoke`
-- [ ]（可选）安装程序 E2E（Docker，运行 `curl -fsSL https://openclaw.ai/install.sh | bash`，新手引导，然后运行真实工具调用）：
+- [ ]（可选）安装程序 E2E（Docker，运行 `npm install -g @termix-it/cryptoclaw@latest`，新手引导，然后运行真实工具调用）：
   - `pnpm test:install:e2e:openai`（需要 `OPENAI_API_KEY`）
   - `pnpm test:install:e2e:anthropic`（需要 `ANTHROPIC_API_KEY`）
   - `pnpm test:install:e2e`（需要两个密钥；运行两个提供商）

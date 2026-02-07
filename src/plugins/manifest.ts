@@ -4,7 +4,11 @@ import type { PluginConfigUiHint, PluginKind } from "./types.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 
 export const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
-export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
+export const CRYPTOCLAW_PLUGIN_MANIFEST_FILENAME = "cryptoclaw.plugin.json";
+export const PLUGIN_MANIFEST_FILENAMES = [
+  CRYPTOCLAW_PLUGIN_MANIFEST_FILENAME,
+  PLUGIN_MANIFEST_FILENAME,
+] as const;
 
 export type PluginManifest = {
   id: string;

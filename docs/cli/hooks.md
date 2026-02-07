@@ -90,7 +90,7 @@ Details:
   Source: openclaw-bundled
   Path: /path/to/openclaw/hooks/bundled/session-memory/HOOK.md
   Handler: /path/to/openclaw/hooks/bundled/session-memory/handler.ts
-  Homepage: https://docs.openclaw.ai/hooks#session-memory
+  Homepage: https://github.com/TermiX-official/cryptoclaw/blob/main/docs/hooks.md#session-memory
   Events: command:new
 
 Requirements:

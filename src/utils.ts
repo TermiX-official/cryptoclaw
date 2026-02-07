@@ -24,17 +24,6 @@ export function assertWebChannel(input: string): asserts input is WebChannel {
   }
 }
 
-export function normalizePath(p: string): string {
-  if (!p.startsWith("/")) {
-    return `/${p}`;
-  }
-  return p;
-}
-
-export function withWhatsAppPrefix(number: string): string {
-  return number.startsWith("whatsapp:") ? number : `whatsapp:${number}`;
-}
-
 export function normalizeE164(number: string): string {
   const withoutPrefix = number.replace(/^whatsapp:/, "").trim();
   const digits = withoutPrefix.replace(/[^\d+]/g, "");
@@ -249,11 +238,11 @@ export function resolveConfigDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const override = env.CRYPTOCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }
-  const newDir = path.join(homedir(), ".openclaw");
+  const newDir = path.join(homedir(), ".cryptoclaw");
   try {
     const hasNew = fs.existsSync(newDir);
     if (hasNew) {
@@ -310,14 +299,6 @@ export function shortenHomeInString(input: string): string {
   return input.split(home).join("~");
 }
 
-export function displayPath(input: string): string {
-  return shortenHomePath(input);
-}
-
-export function displayString(input: string): string {
-  return shortenHomeInString(input);
-}
-
 export function formatTerminalLink(
   label: string,
   url: string,
@@ -334,5 +315,5 @@ export function formatTerminalLink(
   return `\u001b]8;;${safeUrl}\u0007${safeLabel}\u001b]8;;\u0007`;
 }
 
-// Configuration root; can be overridden via OPENCLAW_STATE_DIR.
+// Configuration root; can be overridden via CRYPTOCLAW_STATE_DIR.
 export const CONFIG_DIR = resolveConfigDir();

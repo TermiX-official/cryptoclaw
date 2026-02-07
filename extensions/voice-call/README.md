@@ -1,6 +1,6 @@
-# @openclaw/voice-call
+# @cryptoclaw/voice-call
 
-Official Voice Call plugin for **OpenClaw**.
+Official Voice Call plugin for **CryptoClaw**.
 
 Providers:
 
@@ -9,15 +9,15 @@ Providers:
 - **Plivo** (Voice API + XML transfer + GetInput speech)
 - **Mock** (dev/no network)
 
-Docs: `https://docs.openclaw.ai/plugins/voice-call`
-Plugin system: `https://docs.openclaw.ai/plugin`
+Docs: `https://cryptoclawdocs.termix.ai/plugins/voice-call`
+Plugin system: `https://cryptoclawdocs.termix.ai/plugin`
 
 ## Install (local dev)
 
-### Option A: install via OpenClaw (recommended)
+### Option A: install via CryptoClaw (recommended)
 
 ```bash
-openclaw plugins install @openclaw/voice-call
+cryptoclaw plugins install @cryptoclaw/voice-call
 ```
 
 Restart the Gateway afterwards.
@@ -25,9 +25,9 @@ Restart the Gateway afterwards.
 ### Option B: copy into your global extensions folder (dev)
 
 ```bash
-mkdir -p ~/.openclaw/extensions
-cp -R extensions/voice-call ~/.openclaw/extensions/voice-call
-cd ~/.openclaw/extensions/voice-call && pnpm install
+mkdir -p ~/.cryptoclaw/extensions
+cp -R extensions/voice-call ~/.cryptoclaw/extensions/voice-call
+cd ~/.cryptoclaw/extensions/voice-call && pnpm install
 ```
 
 ## Config
@@ -103,13 +103,13 @@ Notes:
 ## CLI
 
 ```bash
-openclaw voicecall call --to "+15555550123" --message "Hello from OpenClaw"
-openclaw voicecall continue --call-id <id> --message "Any questions?"
-openclaw voicecall speak --call-id <id> --message "One moment"
-openclaw voicecall end --call-id <id>
-openclaw voicecall status --call-id <id>
-openclaw voicecall tail
-openclaw voicecall expose --mode funnel
+cryptoclaw voicecall call --to "+15555550123" --message "Hello from CryptoClaw"
+cryptoclaw voicecall continue --call-id <id> --message "Any questions?"
+cryptoclaw voicecall speak --call-id <id> --message "One moment"
+cryptoclaw voicecall end --call-id <id>
+cryptoclaw voicecall status --call-id <id>
+cryptoclaw voicecall tail
+cryptoclaw voicecall expose --mode funnel
 ```
 
 ## Tool

@@ -339,11 +339,11 @@ describe("web auto-reply", () => {
       const firstPattern = escapeRegExp(firstTimestamp);
       const secondPattern = escapeRegExp(secondTimestamp);
       expect(firstArgs.Body).toMatch(
-        new RegExp(`\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${firstPattern}\\] \\[openclaw\\] first`),
+        new RegExp(`\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${firstPattern}\\] \\[cryptoclaw\\] first`),
       );
       expect(firstArgs.Body).not.toContain("second");
       expect(secondArgs.Body).toMatch(
-        new RegExp(`\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${secondPattern}\\] \\[openclaw\\] second`),
+        new RegExp(`\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${secondPattern}\\] \\[cryptoclaw\\] second`),
       );
       expect(secondArgs.Body).not.toContain("first");
 

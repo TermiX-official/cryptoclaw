@@ -18,7 +18,7 @@ enum AnthropicAuthMode: Equatable {
 
     var shortLabel: String {
         switch self {
-        case .oauthFile: "OAuth (OpenClaw token file)"
+        case .oauthFile: "OAuth (CryptoClaw token file)"
         case .oauthEnv: "OAuth (env var)"
         case .apiKeyEnv: "API key (env var)"
         case .missing: "Missing credentials"
@@ -215,12 +215,12 @@ enum OpenClawOAuthStore {
 
         var shortDescription: String {
             switch self {
-            case .missingFile: "OpenClaw OAuth token file not found"
-            case .unreadableFile: "OpenClaw OAuth token file not readable"
-            case .invalidJSON: "OpenClaw OAuth token file invalid"
-            case .missingProviderEntry: "No Anthropic entry in OpenClaw OAuth token file"
+            case .missingFile: "CryptoClaw OAuth token file not found"
+            case .unreadableFile: "CryptoClaw OAuth token file not readable"
+            case .invalidJSON: "CryptoClaw OAuth token file invalid"
+            case .missingProviderEntry: "No Anthropic entry in CryptoClaw OAuth token file"
             case .missingTokens: "Anthropic entry missing tokens"
-            case .connected: "OpenClaw OAuth credentials found"
+            case .connected: "CryptoClaw OAuth credentials found"
             }
         }
     }

@@ -359,17 +359,17 @@ describe("sessions", () => {
     expect(entry.lastProvider).toBeUndefined();
   });
 
-  it("derives session transcripts dir from OPENCLAW_STATE_DIR", () => {
+  it("derives session transcripts dir from CRYPTOCLAW_STATE_DIR", () => {
     const dir = resolveSessionTranscriptsDir(
-      { OPENCLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
+      { CRYPTOCLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
       () => "/home/ignored",
     );
     expect(dir).toBe(path.join(path.resolve("/custom/state"), "agents", "main", "sessions"));
   });
 
   it("includes topic ids in session transcript filenames", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = "/custom/state";
+    const prev = process.env.CRYPTOCLAW_STATE_DIR;
+    process.env.CRYPTOCLAW_STATE_DIR = "/custom/state";
     try {
       const sessionFile = resolveSessionTranscriptPath("sess-1", "main", 123);
       expect(sessionFile).toBe(
@@ -383,16 +383,16 @@ describe("sessions", () => {
       );
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.CRYPTOCLAW_STATE_DIR = prev;
       }
     }
   });
 
   it("uses agent id when resolving session file fallback paths", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = "/custom/state";
+    const prev = process.env.CRYPTOCLAW_STATE_DIR;
+    process.env.CRYPTOCLAW_STATE_DIR = "/custom/state";
     try {
       const sessionFile = resolveSessionFilePath("sess-2", undefined, {
         agentId: "codex",
@@ -402,9 +402,9 @@ describe("sessions", () => {
       );
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.CRYPTOCLAW_STATE_DIR = prev;
       }
     }
   });

@@ -73,7 +73,7 @@ export type HealthSummary = {
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 const debugHealth = (...args: unknown[]) => {
-  if (isTruthyEnvValue(process.env.OPENCLAW_DEBUG_HEALTH)) {
+  if (isTruthyEnvValue(process.env.CRYPTOCLAW_DEBUG_HEALTH)) {
     console.warn("[health:debug]", ...args);
   }
 };
@@ -585,7 +585,7 @@ export async function healthCommand(
   if (opts.json) {
     runtime.log(JSON.stringify(summary, null, 2));
   } else {
-    const debugEnabled = isTruthyEnvValue(process.env.OPENCLAW_DEBUG_HEALTH);
+    const debugEnabled = isTruthyEnvValue(process.env.CRYPTOCLAW_DEBUG_HEALTH);
     if (opts.verbose) {
       const details = buildGatewayConnectionDetails({ config: cfg });
       runtime.log(info("Gateway connection:"));

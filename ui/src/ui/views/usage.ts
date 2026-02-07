@@ -58,16 +58,16 @@ const usageStylesString = `
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    background: rgba(255, 77, 77, 0.1);
+    background: rgba(0, 230, 118, 0.1);
     border-radius: 4px;
     font-size: 12px;
-    color: #ff4d4d;
+    color: #00e676;
   }
   .usage-refresh-indicator::before {
     content: "";
     width: 10px;
     height: 10px;
-    border: 2px solid #ff4d4d;
+    border: 2px solid #00e676;
     border-top-color: transparent;
     border-radius: 50%;
     animation: usage-spin 0.6s linear infinite;
@@ -165,36 +165,36 @@ const usageStylesString = `
     border-color: var(--border-strong);
   }
   .usage-primary-btn {
-    background: #ff4d4d;
-    color: #fff;
-    border-color: #ff4d4d;
+    background: #00e676;
+    color: #050810;
+    border-color: #00e676;
     box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
   }
   .btn.usage-primary-btn {
-    background: #ff4d4d !important;
-    border-color: #ff4d4d !important;
-    color: #fff !important;
+    background: #00e676 !important;
+    border-color: #00e676 !important;
+    color: #050810 !important;
   }
   .usage-primary-btn:hover {
-    background: #e64545;
-    border-color: #e64545;
+    background: #00c853;
+    border-color: #00c853;
   }
   .btn.usage-primary-btn:hover {
-    background: #e64545 !important;
-    border-color: #e64545 !important;
+    background: #00c853 !important;
+    border-color: #00c853 !important;
   }
   .usage-primary-btn:disabled {
-    background: rgba(255, 77, 77, 0.18);
-    border-color: rgba(255, 77, 77, 0.3);
-    color: #ff4d4d;
+    background: rgba(0, 230, 118, 0.18);
+    border-color: rgba(0, 230, 118, 0.3);
+    color: #00e676;
     box-shadow: none;
     cursor: default;
     opacity: 1;
   }
   .usage-primary-btn[disabled] {
-    background: rgba(255, 77, 77, 0.18) !important;
-    border-color: rgba(255, 77, 77, 0.3) !important;
-    color: #ff4d4d !important;
+    background: rgba(0, 230, 118, 0.18) !important;
+    border-color: rgba(0, 230, 118, 0.3) !important;
+    color: #00e676 !important;
     opacity: 1 !important;
   }
   .usage-secondary-btn {
@@ -537,8 +537,8 @@ const usageStylesString = `
     border-radius: 8px;
     padding: 10px;
     color: var(--text);
-    background: rgba(255, 77, 77, 0.08);
-    border: 1px solid rgba(255, 77, 77, 0.2);
+    background: rgba(0, 230, 118, 0.08);
+    border: 1px solid rgba(0, 230, 118, 0.2);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -558,14 +558,14 @@ const usageStylesString = `
   .usage-hour-cell {
     height: 28px;
     border-radius: 6px;
-    background: rgba(255, 77, 77, 0.1);
-    border: 1px solid rgba(255, 77, 77, 0.2);
+    background: rgba(0, 230, 118, 0.1);
+    border: 1px solid rgba(0, 230, 118, 0.2);
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .usage-hour-cell.selected {
-    border-color: rgba(255, 77, 77, 0.8);
-    box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2);
+    border-color: rgba(0, 230, 118, 0.8);
+    box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2);
   }
   .usage-hour-labels {
     display: grid;
@@ -588,8 +588,8 @@ const usageStylesString = `
     width: 14px;
     height: 10px;
     border-radius: 4px;
-    background: rgba(255, 77, 77, 0.15);
-    border: 1px solid rgba(255, 77, 77, 0.2);
+    background: rgba(0, 230, 118, 0.15);
+    border: 1px solid rgba(0, 230, 118, 0.2);
   }
   .usage-calendar-labels {
     display: grid;
@@ -607,8 +607,8 @@ const usageStylesString = `
   .usage-calendar-cell {
     height: 18px;
     border-radius: 4px;
-    border: 1px solid rgba(255, 77, 77, 0.2);
-    background: rgba(255, 77, 77, 0.08);
+    border: 1px solid rgba(0, 230, 118, 0.2);
+    background: rgba(0, 230, 118, 0.08);
   }
   .usage-calendar-cell.empty {
     background: transparent;
@@ -803,8 +803,8 @@ const usageStylesString = `
     color: var(--text);
   }
   .chart-toggle .toggle-btn.active {
-    background: #ff4d4d;
-    color: white;
+    background: #00e676;
+    color: #050810;
   }
   .chart-toggle.small .toggle-btn {
     padding: 4px 8px;
@@ -860,14 +860,14 @@ const usageStylesString = `
   .daily-bar {
     width: 100%;
     max-width: var(--bar-max-width, 32px);
-    background: #ff4d4d;
+    background: #00e676;
     border-radius: 3px 3px 0 0;
     min-height: 2px;
     transition: all 0.15s;
     overflow: hidden;
   }
   .daily-bar-wrapper:hover .daily-bar {
-    background: #cc3d3d;
+    background: #00c853;
   }
   .daily-bar-label {
     position: absolute;
@@ -985,7 +985,7 @@ const usageStylesString = `
     background: #06b6d4;
   }
   .legend-dot.system {
-    background: #ff4d4d;
+    background: #00e676;
   }
   .legend-dot.skills {
     background: #8b5cf6;
@@ -1063,7 +1063,7 @@ const usageStylesString = `
   }
   .session-bar-fill {
     height: 100%;
-    background: rgba(255, 77, 77, 0.7);
+    background: rgba(0, 230, 118, 0.7);
     border-radius: 4px;
     transition: width 0.3s ease;
   }
@@ -1134,27 +1134,27 @@ const usageStylesString = `
     fill: var(--text-muted);
   }
   .timeseries-svg .ts-area {
-    fill: #ff4d4d;
+    fill: #00e676;
     fill-opacity: 0.1;
   }
   .timeseries-svg .ts-line {
     fill: none;
-    stroke: #ff4d4d;
+    stroke: #00e676;
     stroke-width: 2;
   }
   .timeseries-svg .ts-dot {
-    fill: #ff4d4d;
+    fill: #00e676;
     transition: r 0.15s, fill 0.15s;
   }
   .timeseries-svg .ts-dot:hover {
     r: 5;
   }
   .timeseries-svg .ts-bar {
-    fill: #ff4d4d;
+    fill: #00e676;
     transition: fill 0.15s;
   }
   .timeseries-svg .ts-bar:hover {
-    fill: #cc3d3d;
+    fill: #00c853;
   }
   .timeseries-svg .ts-bar.output { fill: #ef4444; }
   .timeseries-svg .ts-bar.input { fill: #f59e0b; }
@@ -1285,7 +1285,7 @@ const usageStylesString = `
     transition: width 0.3s ease;
   }
   .context-segment.system {
-    background: #ff4d4d;
+    background: #00e676;
   }
   .context-segment.skills {
     background: #8b5cf6;
@@ -1524,7 +1524,7 @@ const usageStylesString = `
   .sessions-card .session-bar-row.selected {
     border-color: var(--accent);
     background: var(--accent-subtle);
-    box-shadow: inset 0 0 0 1px rgba(255, 77, 77, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(0, 230, 118, 0.15);
   }
   .sessions-card .session-bar-label {
     flex: 1 1 auto;
@@ -1542,7 +1542,7 @@ const usageStylesString = `
     opacity: 0.5;
   }
   .sessions-card .session-bar-fill {
-    background: rgba(255, 77, 77, 0.55);
+    background: rgba(0, 230, 118, 0.55);
   }
   .sessions-clear-btn {
     margin-left: auto;
@@ -2403,7 +2403,7 @@ function renderUsageMosaic(
             ${stats.weekdayTotals.map((part) => {
               const intensity = Math.min(part.tokens / maxWeekday, 1);
               const bg =
-                part.tokens > 0 ? `rgba(255, 77, 77, ${0.12 + intensity * 0.6})` : "transparent";
+                part.tokens > 0 ? `rgba(0, 230, 118, ${0.12 + intensity * 0.6})` : "transparent";
               return html`
                 <div class="usage-daypart-cell" style="background: ${bg};">
                   <div class="usage-daypart-label">${part.label}</div>
@@ -2421,9 +2421,9 @@ function renderUsageMosaic(
           <div class="usage-hour-grid">
             ${stats.hourTotals.map((value, hour) => {
               const intensity = Math.min(value / maxHour, 1);
-              const bg = value > 0 ? `rgba(255, 77, 77, ${0.08 + intensity * 0.7})` : "transparent";
+              const bg = value > 0 ? `rgba(0, 230, 118, ${0.08 + intensity * 0.7})` : "transparent";
               const title = `${hour}:00 · ${formatTokens(value)} tokens`;
-              const border = intensity > 0.7 ? "rgba(255, 77, 77, 0.6)" : "rgba(255, 77, 77, 0.2)";
+              const border = intensity > 0.7 ? "rgba(0, 230, 118, 0.6)" : "rgba(0, 230, 118, 0.2)";
               const selected = selectedHours.includes(hour);
               return html`
                 <div
@@ -4657,15 +4657,15 @@ export function renderUsage(props: UsageProps) {
                 align-items: center;
                 gap: 6px;
                 padding: 4px 10px;
-                background: rgba(255, 77, 77, 0.1);
+                background: rgba(0, 230, 118, 0.1);
                 border-radius: 4px;
                 font-size: 12px;
-                color: #ff4d4d;
+                color: #00e676;
               ">
                 <span style="
                   width: 10px;
                   height: 10px;
-                  border: 2px solid #ff4d4d;
+                  border: 2px solid #00e676;
                   border-top-color: transparent;
                   border-radius: 50%;
                   animation: initial-spin 0.6s linear infinite;
@@ -5110,7 +5110,7 @@ export function renderUsage(props: UsageProps) {
                   class="usage-export-item"
                   @click=${() =>
                     downloadTextFile(
-                      `openclaw-usage-sessions-${exportStamp}.csv`,
+                      `cryptoclaw-usage-sessions-${exportStamp}.csv`,
                       buildSessionsCsv(filteredSessions),
                       "text/csv",
                     )}
@@ -5122,7 +5122,7 @@ export function renderUsage(props: UsageProps) {
                   class="usage-export-item"
                   @click=${() =>
                     downloadTextFile(
-                      `openclaw-usage-daily-${exportStamp}.csv`,
+                      `cryptoclaw-usage-daily-${exportStamp}.csv`,
                       buildDailyCsv(filteredDaily),
                       "text/csv",
                     )}
@@ -5134,7 +5134,7 @@ export function renderUsage(props: UsageProps) {
                   class="usage-export-item"
                   @click=${() =>
                     downloadTextFile(
-                      `openclaw-usage-${exportStamp}.json`,
+                      `cryptoclaw-usage-${exportStamp}.json`,
                       JSON.stringify(
                         {
                           totals: displayTotals,

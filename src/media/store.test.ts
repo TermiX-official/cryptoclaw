@@ -12,7 +12,7 @@ describe("media store", () => {
   const envSnapshot: Record<string, string | undefined> = {};
 
   const snapshotEnv = () => {
-    for (const key of ["HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "OPENCLAW_STATE_DIR"]) {
+    for (const key of ["HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "CRYPTOCLAW_STATE_DIR"]) {
       envSnapshot[key] = process.env[key];
     }
   };
@@ -32,7 +32,7 @@ describe("media store", () => {
     home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-home-"));
     process.env.HOME = home;
     process.env.USERPROFILE = home;
-    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
+    process.env.CRYPTOCLAW_STATE_DIR = path.join(home, ".openclaw");
     if (process.platform === "win32") {
       const match = home.match(/^([A-Za-z]:)(.*)$/);
       if (match) {

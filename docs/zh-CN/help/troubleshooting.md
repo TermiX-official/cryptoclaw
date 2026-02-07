@@ -46,13 +46,13 @@ openclaw status --deep
 以详细模式重新运行安装程序以查看完整跟踪和 npm 输出：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --verbose
+npm install -g @termix-it/cryptoclaw@latest --loglevel verbose
 ```
 
 对于 beta 安装：
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --beta --verbose
+npm install -g @termix-it/cryptoclaw@beta --loglevel verbose
 ```
 
 你也可以设置 `OPENCLAW_VERBOSE=1` 代替标志。
@@ -67,10 +67,10 @@ curl -fsSL https://openclaw.ai/install.sh | bash -s -- --beta --verbose
 - [Gateway 网关故障排除](/gateway/troubleshooting)
 - [控制 UI](/web/control-ui#insecure-http)
 
-### `docs.openclaw.ai` 显示 SSL 错误（Comcast/Xfinity）
+### `cryptoclawdocs.termix.ai` 显示 SSL 错误（Comcast/Xfinity）
 
-一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 `docs.openclaw.ai`。
-禁用 Advanced Security 或将 `docs.openclaw.ai` 添加到允许列表，然后重试。
+一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 `cryptoclawdocs.termix.ai`。
+禁用 Advanced Security 或将 `cryptoclawdocs.termix.ai` 添加到允许列表，然后重试。
 
 - Xfinity Advanced Security 帮助：https://www.xfinity.com/support/articles/using-xfinity-xfi-advanced-security
 - 快速检查：尝试移动热点或 VPN 以确认这是 ISP 级别的过滤

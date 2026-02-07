@@ -11,10 +11,10 @@ import {
 } from "./paths.js";
 
 describe("oauth paths", () => {
-  it("prefers OPENCLAW_OAUTH_DIR over OPENCLAW_STATE_DIR", () => {
+  it("prefers CRYPTOCLAW_OAUTH_DIR over CRYPTOCLAW_STATE_DIR", () => {
     const env = {
-      OPENCLAW_OAUTH_DIR: "/custom/oauth",
-      OPENCLAW_STATE_DIR: "/custom/state",
+      CRYPTOCLAW_OAUTH_DIR: "/custom/oauth",
+      CRYPTOCLAW_STATE_DIR: "/custom/state",
     } as NodeJS.ProcessEnv;
 
     expect(resolveOAuthDir(env, "/custom/state")).toBe(path.resolve("/custom/oauth"));
@@ -23,9 +23,9 @@ describe("oauth paths", () => {
     );
   });
 
-  it("derives oauth path from OPENCLAW_STATE_DIR when unset", () => {
+  it("derives oauth path from CRYPTOCLAW_STATE_DIR when unset", () => {
     const env = {
-      OPENCLAW_STATE_DIR: "/custom/state",
+      CRYPTOCLAW_STATE_DIR: "/custom/state",
     } as NodeJS.ProcessEnv;
 
     expect(resolveOAuthDir(env, "/custom/state")).toBe(path.join("/custom/state", "credentials"));
@@ -36,9 +36,9 @@ describe("oauth paths", () => {
 });
 
 describe("state + config path candidates", () => {
-  it("uses OPENCLAW_STATE_DIR when set", () => {
+  it("uses CRYPTOCLAW_STATE_DIR when set", () => {
     const env = {
-      OPENCLAW_STATE_DIR: "/new/state",
+      CRYPTOCLAW_STATE_DIR: "/new/state",
     } as NodeJS.ProcessEnv;
 
     expect(resolveStateDir(env, () => "/home/test")).toBe(path.resolve("/new/state"));
@@ -48,18 +48,27 @@ describe("state + config path candidates", () => {
     const home = "/home/test";
     const candidates = resolveDefaultConfigCandidates({} as NodeJS.ProcessEnv, () => home);
     const expected = [
+      path.join(home, ".cryptoclaw", "cryptoclaw.json"),
+      path.join(home, ".cryptoclaw", "openclaw.json"),
+      path.join(home, ".cryptoclaw", "clawdbot.json"),
+      path.join(home, ".cryptoclaw", "moltbot.json"),
+      path.join(home, ".cryptoclaw", "moldbot.json"),
+      path.join(home, ".openclaw", "cryptoclaw.json"),
       path.join(home, ".openclaw", "openclaw.json"),
       path.join(home, ".openclaw", "clawdbot.json"),
       path.join(home, ".openclaw", "moltbot.json"),
       path.join(home, ".openclaw", "moldbot.json"),
+      path.join(home, ".clawdbot", "cryptoclaw.json"),
       path.join(home, ".clawdbot", "openclaw.json"),
       path.join(home, ".clawdbot", "clawdbot.json"),
       path.join(home, ".clawdbot", "moltbot.json"),
       path.join(home, ".clawdbot", "moldbot.json"),
+      path.join(home, ".moltbot", "cryptoclaw.json"),
       path.join(home, ".moltbot", "openclaw.json"),
       path.join(home, ".moltbot", "clawdbot.json"),
       path.join(home, ".moltbot", "moltbot.json"),
       path.join(home, ".moltbot", "moldbot.json"),
+      path.join(home, ".moldbot", "cryptoclaw.json"),
       path.join(home, ".moldbot", "openclaw.json"),
       path.join(home, ".moldbot", "clawdbot.json"),
       path.join(home, ".moldbot", "moltbot.json"),
@@ -86,8 +95,8 @@ describe("state + config path candidates", () => {
     const previousUserProfile = process.env.USERPROFILE;
     const previousHomeDrive = process.env.HOMEDRIVE;
     const previousHomePath = process.env.HOMEPATH;
-    const previousOpenClawConfig = process.env.OPENCLAW_CONFIG_PATH;
-    const previousOpenClawState = process.env.OPENCLAW_STATE_DIR;
+    const previousOpenClawConfig = process.env.CRYPTOCLAW_CONFIG_PATH;
+    const previousOpenClawState = process.env.CRYPTOCLAW_STATE_DIR;
     try {
       const legacyDir = path.join(root, ".openclaw");
       await fs.mkdir(legacyDir, { recursive: true });
@@ -101,8 +110,8 @@ describe("state + config path candidates", () => {
         process.env.HOMEDRIVE = parsed.root.replace(/\\$/, "");
         process.env.HOMEPATH = root.slice(parsed.root.length - 1);
       }
-      delete process.env.OPENCLAW_CONFIG_PATH;
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.CRYPTOCLAW_CONFIG_PATH;
+      delete process.env.CRYPTOCLAW_STATE_DIR;
 
       vi.resetModules();
       const { CONFIG_PATH } = await import("./paths.js");
@@ -129,24 +138,24 @@ describe("state + config path candidates", () => {
         process.env.HOMEPATH = previousHomePath;
       }
       if (previousOpenClawConfig === undefined) {
-        delete process.env.OPENCLAW_CONFIG_PATH;
+        delete process.env.CRYPTOCLAW_CONFIG_PATH;
       } else {
-        process.env.OPENCLAW_CONFIG_PATH = previousOpenClawConfig;
+        process.env.CRYPTOCLAW_CONFIG_PATH = previousOpenClawConfig;
       }
       if (previousOpenClawConfig === undefined) {
-        delete process.env.OPENCLAW_CONFIG_PATH;
+        delete process.env.CRYPTOCLAW_CONFIG_PATH;
       } else {
-        process.env.OPENCLAW_CONFIG_PATH = previousOpenClawConfig;
+        process.env.CRYPTOCLAW_CONFIG_PATH = previousOpenClawConfig;
       }
       if (previousOpenClawState === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousOpenClawState;
+        process.env.CRYPTOCLAW_STATE_DIR = previousOpenClawState;
       }
       if (previousOpenClawState === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousOpenClawState;
+        process.env.CRYPTOCLAW_STATE_DIR = previousOpenClawState;
       }
       await fs.rm(root, { recursive: true, force: true });
       vi.resetModules();
@@ -162,9 +171,9 @@ describe("state + config path candidates", () => {
       await fs.writeFile(legacyConfig, "{}", "utf-8");
 
       const overrideDir = path.join(root, "override");
-      const env = { OPENCLAW_STATE_DIR: overrideDir } as NodeJS.ProcessEnv;
+      const env = { CRYPTOCLAW_STATE_DIR: overrideDir } as NodeJS.ProcessEnv;
       const resolved = resolveConfigPath(env, overrideDir, () => root);
-      expect(resolved).toBe(path.join(overrideDir, "openclaw.json"));
+      expect(resolved).toBe(path.join(overrideDir, "cryptoclaw.json"));
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

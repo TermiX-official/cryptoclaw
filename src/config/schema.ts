@@ -45,61 +45,41 @@ export type ChannelUiMetadata = {
   configUiHints?: Record<string, ConfigUiHint>;
 };
 
-const GROUP_LABELS: Record<string, string> = {
-  wizard: "Wizard",
-  update: "Update",
-  diagnostics: "Diagnostics",
-  logging: "Logging",
-  gateway: "Gateway",
-  nodeHost: "Node Host",
-  agents: "Agents",
-  tools: "Tools",
-  bindings: "Bindings",
-  audio: "Audio",
-  models: "Models",
-  messages: "Messages",
-  commands: "Commands",
-  session: "Session",
-  cron: "Cron",
-  hooks: "Hooks",
-  ui: "UI",
-  browser: "Browser",
-  talk: "Talk",
-  channels: "Messaging Channels",
-  skills: "Skills",
-  plugins: "Plugins",
-  discovery: "Discovery",
-  presence: "Presence",
-  voicewake: "Voice Wake",
-};
+const CONFIG_GROUPS: { id: string; label: string; order: number }[] = [
+  { id: "wizard", label: "Wizard", order: 20 },
+  { id: "update", label: "Update", order: 25 },
+  { id: "diagnostics", label: "Diagnostics", order: 27 },
+  { id: "gateway", label: "Gateway", order: 30 },
+  { id: "nodeHost", label: "Node Host", order: 35 },
+  { id: "agents", label: "Agents", order: 40 },
+  { id: "tools", label: "Tools", order: 50 },
+  { id: "bindings", label: "Bindings", order: 55 },
+  { id: "audio", label: "Audio", order: 60 },
+  { id: "models", label: "Models", order: 70 },
+  { id: "messages", label: "Messages", order: 80 },
+  { id: "commands", label: "Commands", order: 85 },
+  { id: "session", label: "Session", order: 90 },
+  { id: "cron", label: "Cron", order: 100 },
+  { id: "hooks", label: "Hooks", order: 110 },
+  { id: "ui", label: "UI", order: 120 },
+  { id: "browser", label: "Browser", order: 130 },
+  { id: "talk", label: "Talk", order: 140 },
+  { id: "channels", label: "Messaging Channels", order: 150 },
+  { id: "skills", label: "Skills", order: 200 },
+  { id: "plugins", label: "Plugins", order: 205 },
+  { id: "discovery", label: "Discovery", order: 210 },
+  { id: "presence", label: "Presence", order: 220 },
+  { id: "voicewake", label: "Voice Wake", order: 230 },
+  { id: "logging", label: "Logging", order: 900 },
+];
 
-const GROUP_ORDER: Record<string, number> = {
-  wizard: 20,
-  update: 25,
-  diagnostics: 27,
-  gateway: 30,
-  nodeHost: 35,
-  agents: 40,
-  tools: 50,
-  bindings: 55,
-  audio: 60,
-  models: 70,
-  messages: 80,
-  commands: 85,
-  session: 90,
-  cron: 100,
-  hooks: 110,
-  ui: 120,
-  browser: 130,
-  talk: 140,
-  channels: 150,
-  skills: 200,
-  plugins: 205,
-  discovery: 210,
-  presence: 220,
-  voicewake: 230,
-  logging: 900,
-};
+const GROUP_LABELS: Record<string, string> = Object.fromEntries(
+  CONFIG_GROUPS.map((g) => [g.id, g.label]),
+);
+
+const GROUP_ORDER: Record<string, number> = Object.fromEntries(
+  CONFIG_GROUPS.map((g) => [g.id, g.order]),
+);
 
 const FIELD_LABELS: Record<string, string> = {
   "meta.lastTouchedVersion": "Config Last Touched Version",
@@ -393,7 +373,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const FIELD_HELP: Record<string, string> = {
-  "meta.lastTouchedVersion": "Auto-set when OpenClaw writes the config.",
+  "meta.lastTouchedVersion": "Auto-set when CryptoClaw writes the config.",
   "meta.lastTouchedAt": "ISO timestamp of the last config write (auto-set).",
   "update.channel": 'Update channel for git + npm installs ("stable", "beta", or "dev").',
   "update.checkOnStart": "Check for npm updates when the gateway starts (default: true).",
@@ -415,7 +395,7 @@ const FIELD_HELP: Record<string, string> = {
     "Required by default for gateway access (unless using Tailscale Serve identity); required for non-loopback binds.",
   "gateway.auth.password": "Required for Tailscale funnel.",
   "gateway.controlUi.basePath":
-    "Optional URL prefix where the Control UI is served (e.g. /openclaw).",
+    "Optional URL prefix where the Control UI is served (e.g. /cryptoclaw).",
   "gateway.controlUi.root":
     "Optional filesystem root for Control UI assets (defaults to dist/control-ui).",
   "gateway.controlUi.allowedOrigins":
@@ -443,7 +423,7 @@ const FIELD_HELP: Record<string, string> = {
   "diagnostics.cacheTrace.enabled":
     "Log cache trace snapshots for embedded agent runs (default: false).",
   "diagnostics.cacheTrace.filePath":
-    "JSONL output path for cache trace logs (default: $OPENCLAW_STATE_DIR/logs/cache-trace.jsonl).",
+    "JSONL output path for cache trace logs (default: $CRYPTOCLAW_STATE_DIR/logs/cache-trace.jsonl).",
   "diagnostics.cacheTrace.includeMessages":
     "Include full message payloads in trace output (default: true).",
   "diagnostics.cacheTrace.includePrompt": "Include prompt text in trace output (default: true).",
@@ -563,7 +543,7 @@ const FIELD_HELP: Record<string, string> = {
   "agents.defaults.memorySearch.fallback":
     'Fallback provider when embeddings fail ("openai", "gemini", "local", or "none").',
   "agents.defaults.memorySearch.store.path":
-    "SQLite index path (default: ~/.openclaw/memory/{agentId}.sqlite).",
+    "SQLite index path (default: ~/.cryptoclaw/memory/{agentId}.sqlite).",
   "agents.defaults.memorySearch.store.vector.enabled":
     "Enable sqlite-vec extension for vector search (default: true).",
   "agents.defaults.memorySearch.store.vector.extensionPath":
@@ -579,7 +559,7 @@ const FIELD_HELP: Record<string, string> = {
   "agents.defaults.memorySearch.cache.enabled":
     "Cache chunk embeddings in SQLite to speed up reindexing and frequent updates (default: true).",
   memory: "Memory backend configuration (global).",
-  "memory.backend": 'Memory backend ("builtin" for OpenClaw embeddings, "qmd" for QMD sidecar).',
+  "memory.backend": 'Memory backend ("builtin" for CryptoClaw embeddings, "qmd" for QMD sidecar).',
   "memory.citations": 'Default citation behavior ("auto", "on", or "off").',
   "memory.qmd.command": "Path to the qmd binary (default: resolves from PATH).",
   "memory.qmd.includeDefaultMemory":
@@ -629,12 +609,12 @@ const FIELD_HELP: Record<string, string> = {
   "plugins.entries.*.enabled": "Overrides plugin enable/disable for this entry (restart required).",
   "plugins.entries.*.config": "Plugin-defined config payload (schema is provided by the plugin).",
   "plugins.installs":
-    "CLI-managed install metadata (used by `openclaw plugins update` to locate install sources).",
+    "CLI-managed install metadata (used by `cryptoclaw plugins update` to locate install sources).",
   "plugins.installs.*.source": 'Install source ("npm", "archive", or "path").',
   "plugins.installs.*.spec": "Original npm spec used for install (if source is npm).",
   "plugins.installs.*.sourcePath": "Original archive/path used for install (if any).",
   "plugins.installs.*.installPath":
-    "Resolved install directory (usually ~/.openclaw/extensions/<id>).",
+    "Resolved install directory (usually ~/.cryptoclaw/extensions/<id>).",
   "plugins.installs.*.version": "Version recorded at install time (if available).",
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
   "agents.list.*.identity.avatar":
@@ -757,11 +737,11 @@ const FIELD_PLACEHOLDERS: Record<string, string> = {
   "gateway.remote.url": "ws://host:18789",
   "gateway.remote.tlsFingerprint": "sha256:ab12cd34…",
   "gateway.remote.sshTarget": "user@host",
-  "gateway.controlUi.basePath": "/openclaw",
+  "gateway.controlUi.basePath": "/cryptoclaw",
   "gateway.controlUi.root": "dist/control-ui",
   "gateway.controlUi.allowedOrigins": "https://control.example.com",
   "channels.mattermost.baseUrl": "https://chat.example.com",
-  "agents.list[].identity.avatar": "avatars/openclaw.png",
+  "agents.list[].identity.avatar": "avatars/cryptoclaw.png",
 };
 
 const SENSITIVE_PATTERNS = [/token/i, /password/i, /secret/i, /api.?key/i];

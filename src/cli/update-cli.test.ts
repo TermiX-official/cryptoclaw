@@ -199,7 +199,7 @@ describe("update-cli", () => {
     await updateStatusCommand({ json: false });
 
     const logs = vi.mocked(defaultRuntime.log).mock.calls.map((call) => call[0]);
-    expect(logs.join("\n")).toContain("OpenClaw update status");
+    expect(logs.join("\n")).toContain("CryptoClaw update status");
   });
 
   it("updateStatusCommand emits JSON", async () => {
@@ -651,10 +651,10 @@ describe("update-cli", () => {
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-wizard-"));
-    const previousGitDir = process.env.OPENCLAW_GIT_DIR;
+    const previousGitDir = process.env.CRYPTOCLAW_GIT_DIR;
     try {
       setTty(true);
-      process.env.OPENCLAW_GIT_DIR = tempDir;
+      process.env.CRYPTOCLAW_GIT_DIR = tempDir;
 
       const { checkUpdateStatus } = await import("../infra/update-check.js");
       const { runGatewayUpdate } = await import("../infra/update-runner.js");
@@ -685,7 +685,7 @@ describe("update-cli", () => {
       const call = vi.mocked(runGatewayUpdate).mock.calls[0]?.[0];
       expect(call?.channel).toBe("dev");
     } finally {
-      process.env.OPENCLAW_GIT_DIR = previousGitDir;
+      process.env.CRYPTOCLAW_GIT_DIR = previousGitDir;
       await fs.rm(tempDir, { recursive: true, force: true });
     }
   });

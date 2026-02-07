@@ -1,10 +1,7 @@
 name: Install Smoke
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+  workflow_dispatch: # disabled until we have our own install URLs
 
 jobs:
   install-smoke:

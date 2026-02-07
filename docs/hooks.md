@@ -128,7 +128,7 @@ The `HOOK.md` file contains metadata in YAML frontmatter plus Markdown documenta
 ---
 name: my-hook
 description: "Short description of what this hook does"
-homepage: https://docs.openclaw.ai/hooks#my-hook
+homepage: https://github.com/TermiX-official/cryptoclaw/blob/main/docs/hooks.md#my-hook
 metadata:
   { "openclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---

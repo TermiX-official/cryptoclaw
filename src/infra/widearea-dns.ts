@@ -16,7 +16,7 @@ export function resolveWideAreaDiscoveryDomain(params?: {
   configDomain?: string | null;
 }): string | null {
   const env = params?.env ?? process.env;
-  const candidate = params?.configDomain ?? env.OPENCLAW_WIDE_AREA_DOMAIN ?? null;
+  const candidate = params?.configDomain ?? env.CRYPTOCLAW_WIDE_AREA_DOMAIN ?? null;
   return normalizeWideAreaDomain(candidate);
 }
 
@@ -104,8 +104,8 @@ export type WideAreaGatewayZoneOpts = {
 };
 
 function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string {
-  const hostname = os.hostname().split(".")[0] ?? "openclaw";
-  const hostLabel = dnsLabel(opts.hostLabel ?? hostname, "openclaw");
+  const hostname = os.hostname().split(".")[0] ?? "cryptoclaw";
+  const hostLabel = dnsLabel(opts.hostLabel ?? hostname, "cryptoclaw");
   const instanceLabel = dnsLabel(opts.instanceLabel ?? `${hostname}-gateway`, "openclaw-gw");
   const domain = normalizeWideAreaDomain(opts.domain) ?? "local.";
 

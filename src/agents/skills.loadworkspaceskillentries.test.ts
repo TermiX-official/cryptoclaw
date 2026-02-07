@@ -44,11 +44,12 @@ describe("loadWorkspaceSkillEntries", () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
     const managedDir = path.join(workspaceDir, ".managed");
     const bundledDir = path.join(workspaceDir, ".bundled");
-    const pluginRoot = path.join(workspaceDir, ".openclaw", "extensions", "open-prose");
+    const pluginRoot = path.join(workspaceDir, ".cryptoclaw", "extensions", "open-prose");
 
     await fs.mkdir(path.join(pluginRoot, "skills", "prose"), { recursive: true });
+    await fs.writeFile(path.join(pluginRoot, "index.ts"), "export default function () {}", "utf-8");
     await fs.writeFile(
-      path.join(pluginRoot, "openclaw.plugin.json"),
+      path.join(pluginRoot, "cryptoclaw.plugin.json"),
       JSON.stringify(
         {
           id: "open-prose",
@@ -83,11 +84,12 @@ describe("loadWorkspaceSkillEntries", () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
     const managedDir = path.join(workspaceDir, ".managed");
     const bundledDir = path.join(workspaceDir, ".bundled");
-    const pluginRoot = path.join(workspaceDir, ".openclaw", "extensions", "open-prose");
+    const pluginRoot = path.join(workspaceDir, ".cryptoclaw", "extensions", "open-prose");
 
     await fs.mkdir(path.join(pluginRoot, "skills", "prose"), { recursive: true });
+    await fs.writeFile(path.join(pluginRoot, "index.ts"), "export default function () {}", "utf-8");
     await fs.writeFile(
-      path.join(pluginRoot, "openclaw.plugin.json"),
+      path.join(pluginRoot, "cryptoclaw.plugin.json"),
       JSON.stringify(
         {
           id: "open-prose",

@@ -30,13 +30,13 @@ export function registerBrowserCli(program: Command) {
           true,
         )}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/browser",
-          "docs.openclaw.ai/cli/browser",
+          "cryptoclawdocs.termix.ai/cli/browser",
         )}\n`,
     )
     .action(() => {
       browser.outputHelp();
       defaultRuntime.error(
-        danger(`Missing subcommand. Try: "${formatCliCommand("openclaw browser status")}"`),
+        danger(`Missing subcommand. Try: "${formatCliCommand("cryptoclaw browser status")}"`),
       );
       defaultRuntime.exit(1);
     });

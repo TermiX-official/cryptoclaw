@@ -541,13 +541,13 @@ upgrades in place and rewrites the gateway service to point at the new install.
 Switch **to git install**:
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --no-onboard
+git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
 ```
 
 Switch **to npm global**:
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 Notes:

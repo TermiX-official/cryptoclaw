@@ -100,11 +100,11 @@ function resolveSafeInstallDir(
 async function ensureOpenClawHooks(manifest: HookPackageManifest) {
   const hooks = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(hooks)) {
-    throw new Error("package.json missing openclaw.hooks");
+    throw new Error("package.json missing cryptoclaw.hooks");
   }
   const list = hooks.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {
-    throw new Error("package.json openclaw.hooks is empty");
+    throw new Error("package.json cryptoclaw.hooks is empty");
   }
   return list;
 }
@@ -352,7 +352,7 @@ export async function installHooksFromArchive(params: {
     return { ok: false, error: `unsupported archive: ${archivePath}` };
   }
 
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hook-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-hook-"));
   const extractDir = path.join(tmpDir, "extract");
   await fs.mkdir(extractDir, { recursive: true });
 
@@ -412,7 +412,7 @@ export async function installHooksFromNpmSpec(params: {
     return { ok: false, error: "missing npm spec" };
   }
 
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hook-pack-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-hook-pack-"));
   logger.info?.(`Downloading ${spec}…`);
   const res = await runCommandWithTimeout(["npm", "pack", spec], {
     timeoutMs: Math.max(timeoutMs, 300_000),

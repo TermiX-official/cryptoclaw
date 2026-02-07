@@ -91,9 +91,9 @@ async function removeMacApp(runtime: RuntimeEnv, dryRun?: boolean) {
   if (process.platform !== "darwin") {
     return;
   }
-  await removePath("/Applications/OpenClaw.app", runtime, {
+  await removePath("/Applications/CryptoClaw.app", runtime, {
     dryRun,
-    label: "/Applications/OpenClaw.app",
+    label: "/Applications/CryptoClaw.app",
   });
 }
 
@@ -120,12 +120,12 @@ export async function uninstallCommand(runtime: RuntimeEnv, opts: UninstallOptio
           label: "Gateway service",
           hint: "launchd / systemd / schtasks",
         },
-        { value: "state", label: "State + config", hint: "~/.openclaw" },
+        { value: "state", label: "State + config", hint: "~/.cryptoclaw" },
         { value: "workspace", label: "Workspace", hint: "agent files" },
         {
           value: "app",
           label: "macOS app",
-          hint: "/Applications/OpenClaw.app",
+          hint: "/Applications/CryptoClaw.app",
         },
       ],
       initialValues: ["service", "state", "workspace"],

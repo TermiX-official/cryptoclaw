@@ -22,7 +22,7 @@ The best way to help the project right now is by sending PRs.
 
 For threat model + hardening guidance (including `openclaw security audit --deep` and `--fix`), see:
 
-- `https://docs.openclaw.ai/gateway/security`
+- `https://cryptoclawdocs.termix.ai/gateway/security`
 
 ### Web Interface Safety
 

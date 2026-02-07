@@ -133,7 +133,7 @@ export function collectSyncedFolderFindings(params: {
       severity: "warn",
       title: "State/config path looks like a synced folder",
       detail: `stateDir=${params.stateDir}, configPath=${params.configPath}. Synced folders (iCloud/Dropbox/OneDrive/Google Drive) can leak tokens and transcripts onto other devices.`,
-      remediation: `Keep OPENCLAW_STATE_DIR on a local-only volume and re-run "${formatCliCommand("openclaw security audit --fix")}".`,
+      remediation: `Keep CRYPTOCLAW_STATE_DIR on a local-only volume and re-run "${formatCliCommand("cryptoclaw security audit --fix")}".`,
     });
   }
   return findings;
@@ -156,7 +156,7 @@ export function collectSecretsInConfigFindings(cfg: OpenClawConfig): SecurityAud
       detail:
         "gateway.auth.password is set in the config file; prefer environment variables for secrets when possible.",
       remediation:
-        "Prefer OPENCLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
+        "Prefer CRYPTOCLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
     });
   }
 
@@ -1146,7 +1146,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
       title: "Plugin extensions directory scan failed",
       detail: `Static code scan could not list extensions directory: ${String(err)}`,
       remediation:
-        "Check file permissions and plugin layout, then rerun `openclaw security audit --deep`.",
+        "Check file permissions and plugin layout, then rerun `cryptoclaw security audit --deep`.",
     });
     return [];
   });
@@ -1183,7 +1183,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         title: `Plugin "${pluginName}" has extension entry path traversal`,
         detail: `Found extension entries that escape the plugin directory:\n${escapedEntries.map((entry) => `  - ${entry}`).join("\n")}`,
         remediation:
-          "Update the plugin manifest so all openclaw.extensions entries stay inside the plugin directory.",
+          "Update the plugin manifest so all cryptoclaw.extensions entries stay inside the plugin directory.",
       });
     }
 
@@ -1196,7 +1196,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         title: `Plugin "${pluginName}" code scan failed`,
         detail: `Static code scan could not complete: ${String(err)}`,
         remediation:
-          "Check file permissions and plugin layout, then rerun `openclaw security audit --deep`.",
+          "Check file permissions and plugin layout, then rerun `cryptoclaw security audit --deep`.",
       });
       return null;
     });
@@ -1267,7 +1267,7 @@ export async function collectInstalledSkillsCodeSafetyFindings(params: {
           title: `Skill "${skillName}" code scan failed`,
           detail: `Static code scan could not complete for ${skillDir}: ${String(err)}`,
           remediation:
-            "Check file permissions and skill layout, then rerun `openclaw security audit --deep`.",
+            "Check file permissions and skill layout, then rerun `cryptoclaw security audit --deep`.",
         });
         return null;
       });

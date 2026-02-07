@@ -73,5 +73,5 @@ scripts/pi/run-tests.sh --live
 
 ## 参考资料
 
-- https://docs.openclaw.ai/testing
-- https://docs.openclaw.ai/start/getting-started
+- https://github.com/TermiX-official/cryptoclaw/blob/main/docs/testing.md
+- https://github.com/TermiX-official/cryptoclaw/blob/main/docs/start/getting-started.md

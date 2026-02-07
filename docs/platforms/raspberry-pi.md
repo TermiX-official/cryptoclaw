@@ -112,7 +112,7 @@ sudo sysctl -p
 ### Option A: Standard Install (Recommended)
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 ### Option B: Hackable Install (For tinkering)

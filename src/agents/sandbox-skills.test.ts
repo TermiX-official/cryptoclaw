@@ -88,8 +88,8 @@ describe("sandbox skill mirroring", () => {
     const bundledDir = path.join(stateDir, "bundled-skills");
     await fs.mkdir(bundledDir, { recursive: true });
 
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    process.env.OPENCLAW_BUNDLED_SKILLS_DIR = bundledDir;
+    process.env.CRYPTOCLAW_STATE_DIR = stateDir;
+    process.env.CRYPTOCLAW_BUNDLED_SKILLS_DIR = bundledDir;
     vi.resetModules();
 
     const { resolveSandboxContext } = await import("./sandbox.js");

@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../config/config.js";
 
-const DIAGNOSTICS_ENV = "OPENCLAW_DIAGNOSTICS";
+const DIAGNOSTICS_ENV = "CRYPTOCLAW_DIAGNOSTICS";
 
 function normalizeFlag(value: string): string {
   return value.trim().toLowerCase();

@@ -30,6 +30,7 @@ import {
 import { setupInternalHooks } from "../commands/onboard-hooks.js";
 import { promptRemoteGatewayConfig } from "../commands/onboard-remote.js";
 import { setupSkills } from "../commands/onboard-skills.js";
+import { setupWallet } from "../commands/onboard-wallet.js";
 import {
   DEFAULT_GATEWAY_PORT,
   readConfigFileSnapshot,
@@ -55,11 +56,12 @@ async function requireRiskAcknowledgement(params: {
     [
       "Security warning — please read.",
       "",
-      "OpenClaw is a hobby project and still in beta. Expect sharp edges.",
+      "CryptoClaw is a hobby project and still in beta. Expect sharp edges.",
       "This bot can read files and run actions if tools are enabled.",
       "A bad prompt can trick it into doing unsafe things.",
+      "Never share your wallet passphrase or private keys with anyone — including AI agents.",
       "",
-      "If you’re not comfortable with basic security and access control, don’t run OpenClaw.",
+      "If you're not comfortable with basic security and access control, don't run CryptoClaw.",
       "Ask someone experienced to help before enabling tools or exposing it to the internet.",
       "",
       "Recommended baseline:",
@@ -69,10 +71,10 @@ async function requireRiskAcknowledgement(params: {
       "- Use the strongest available model for any bot with tools or untrusted inboxes.",
       "",
       "Run regularly:",
-      "openclaw security audit --deep",
-      "openclaw security audit --fix",
+      "cryptoclaw security audit --deep",
+      "cryptoclaw security audit --fix",
       "",
-      "Must read: https://docs.openclaw.ai/gateway/security",
+      "Must read: https://cryptoclawdocs.termix.ai/gateway/security",
     ].join("\n"),
     "Security",
   );
@@ -92,7 +94,7 @@ export async function runOnboardingWizard(
   prompter: WizardPrompter,
 ) {
   printWizardHeader(runtime);
-  await prompter.intro("OpenClaw onboarding");
+  await prompter.intro("CryptoClaw setup");
   await requireRiskAcknowledgement({ opts, prompter });
 
   const snapshot = await readConfigFileSnapshot();
@@ -105,19 +107,19 @@ export async function runOnboardingWizard(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.openclaw.ai/gateway/configuration",
+          "Docs: https://cryptoclawdocs.termix.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );
     }
     await prompter.outro(
-      `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run onboarding.`,
+      `Config invalid. Run \`${formatCliCommand("cryptoclaw doctor")}\` to repair it, then re-run onboarding.`,
     );
     runtime.exit(1);
     return;
   }
 
-  const quickstartHint = `Configure details later via ${formatCliCommand("openclaw configure")}.`;
+  const quickstartHint = `Configure details later via ${formatCliCommand("cryptoclaw configure")}.`;
   const manualHint = "Configure port, network, Tailscale, and auth options.";
   const explicitFlowRaw = opts.flow?.trim();
   const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
@@ -294,8 +296,8 @@ export async function runOnboardingWizard(
   const localUrl = `ws://127.0.0.1:${localPort}`;
   const localProbe = await probeGatewayReachable({
     url: localUrl,
-    token: baseConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN,
-    password: baseConfig.gateway?.auth?.password ?? process.env.OPENCLAW_GATEWAY_PASSWORD,
+    token: baseConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN,
+    password: baseConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
   const remoteProbe = remoteUrl
@@ -406,6 +408,67 @@ export async function runOnboardingWizard(
 
   await warnIfModelConfigLooksOff(nextConfig, prompter);
 
+  // --- Wallet setup (early — crypto is front-and-center) ---
+  let walletAddress: string | undefined;
+  if (!opts.skipWallet) {
+    const { resolveStateDir } = await import("../config/paths.js");
+    const stateDir = resolveStateDir();
+    const walletResult = await setupWallet(stateDir, prompter, {
+      walletCreate: opts.walletCreate,
+      walletImport: opts.walletImport,
+      walletLabel: opts.walletLabel,
+      skipWallet: opts.skipWallet,
+    });
+    walletAddress = walletResult.address;
+    if (walletAddress) {
+      await prompter.note(`Wallet ready: ${walletAddress}`, "Blockchain");
+    }
+  }
+
+  // --- Default chain selection ---
+  const existingDefault = (
+    baseConfig.plugins?.entries as Record<string, { config?: Record<string, unknown> }> | undefined
+  )?.blockchain?.config?.defaultChain as string | undefined;
+
+  const defaultChain =
+    flow === "quickstart"
+      ? (existingDefault ?? "bsc")
+      : await prompter.select({
+          message: "Default blockchain network",
+          options: [
+            { value: "bsc", label: "BNB Smart Chain (BSC)", hint: "Low fees, fast blocks" },
+            { value: "ethereum", label: "Ethereum", hint: "Largest ecosystem" },
+            { value: "base", label: "Base", hint: "Coinbase L2, low fees" },
+            { value: "arbitrum", label: "Arbitrum", hint: "Ethereum L2" },
+            { value: "polygon", label: "Polygon", hint: "Low fees, wide adoption" },
+          ],
+          initialValue: existingDefault ?? "bsc",
+        });
+
+  // Persist the chain choice into plugin config
+  const blockchainPluginEntries =
+    (
+      nextConfig.plugins?.entries as
+        | Record<string, { config?: Record<string, unknown> }>
+        | undefined
+    )?.blockchain ?? {};
+  nextConfig = {
+    ...nextConfig,
+    plugins: {
+      ...nextConfig.plugins,
+      entries: {
+        ...(nextConfig.plugins?.entries as Record<string, unknown> | undefined),
+        blockchain: {
+          ...blockchainPluginEntries,
+          config: {
+            ...blockchainPluginEntries.config,
+            defaultChain,
+          },
+        },
+      },
+    },
+  };
+
   const gateway = await configureGatewayForOnboarding({
     flow,
     baseConfig,
@@ -463,6 +526,7 @@ export async function runOnboardingWizard(
     settings,
     prompter,
     runtime,
+    walletAddress,
   });
   if (launchedTui) {
     return;

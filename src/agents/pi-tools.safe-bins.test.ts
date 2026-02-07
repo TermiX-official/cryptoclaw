@@ -5,10 +5,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ExecApprovalsResolved } from "../infra/exec-approvals.js";
 
-const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+const previousBundledPluginsDir = process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR;
 
 beforeAll(() => {
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = path.join(
+  process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR = path.join(
     os.tmpdir(),
     "openclaw-test-no-bundled-extensions",
   );
@@ -16,9 +16,9 @@ beforeAll(() => {
 
 afterAll(() => {
   if (previousBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
+    process.env.CRYPTOCLAW_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
   }
 });
 
@@ -109,8 +109,8 @@ describe("createOpenClawCodingTools safeBins", () => {
     expect(execTool).toBeDefined();
 
     const marker = `safe-bins-${Date.now()}`;
-    const prevShellEnvTimeoutMs = process.env.OPENCLAW_SHELL_ENV_TIMEOUT_MS;
-    process.env.OPENCLAW_SHELL_ENV_TIMEOUT_MS = "1000";
+    const prevShellEnvTimeoutMs = process.env.CRYPTOCLAW_SHELL_ENV_TIMEOUT_MS;
+    process.env.CRYPTOCLAW_SHELL_ENV_TIMEOUT_MS = "1000";
     const result = await (async () => {
       try {
         return await execTool!.execute("call1", {
@@ -119,9 +119,9 @@ describe("createOpenClawCodingTools safeBins", () => {
         });
       } finally {
         if (prevShellEnvTimeoutMs === undefined) {
-          delete process.env.OPENCLAW_SHELL_ENV_TIMEOUT_MS;
+          delete process.env.CRYPTOCLAW_SHELL_ENV_TIMEOUT_MS;
         } else {
-          process.env.OPENCLAW_SHELL_ENV_TIMEOUT_MS = prevShellEnvTimeoutMs;
+          process.env.CRYPTOCLAW_SHELL_ENV_TIMEOUT_MS = prevShellEnvTimeoutMs;
         }
       }
     })();

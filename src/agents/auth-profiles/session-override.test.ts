@@ -23,8 +23,8 @@ async function writeAuthStore(agentDir: string) {
 describe("resolveSessionAuthProfileOverride", () => {
   it("keeps user override when provider alias differs", async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    const prevStateDir = process.env.CRYPTOCLAW_STATE_DIR;
+    process.env.CRYPTOCLAW_STATE_DIR = tmpDir;
     try {
       const agentDir = path.join(tmpDir, "agent");
       await fs.mkdir(agentDir, { recursive: true });
@@ -53,9 +53,9 @@ describe("resolveSessionAuthProfileOverride", () => {
       expect(sessionEntry.authProfileOverride).toBe("zai:work");
     } finally {
       if (prevStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.CRYPTOCLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
+        process.env.CRYPTOCLAW_STATE_DIR = prevStateDir;
       }
       await fs.rm(tmpDir, { recursive: true, force: true });
     }

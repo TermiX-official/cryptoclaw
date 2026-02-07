@@ -128,7 +128,7 @@ export function resolveOutboundTarget(params: {
     return {
       ok: false,
       error: new Error(
-        `Delivering to WebChat is not supported via \`${formatCliCommand("openclaw agent")}\`; use WhatsApp/Telegram or run with --deliver=false.`,
+        `Delivering to WebChat is not supported via \`${formatCliCommand("cryptoclaw agent")}\`; use WhatsApp/Telegram or run with --deliver=false.`,
       ),
     };
   }

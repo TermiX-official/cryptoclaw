@@ -18,7 +18,7 @@ android {
   }
 
   defaultConfig {
-    applicationId = "ai.openclaw.android"
+    applicationId = "ai.cryptoclaw.android"
     minSdk = 31
     targetSdk = 36
     versionCode = 202602030
@@ -65,7 +65,7 @@ androidComponents {
         val versionName = output.versionName.orNull ?: "0"
         val buildType = variant.buildType
 
-        val outputFileName = "openclaw-${versionName}-${buildType}.apk"
+        val outputFileName = "cryptoclaw-${versionName}-${buildType}.apk"
         output.outputFileName = outputFileName
       }
   }

@@ -57,7 +57,7 @@ Windows：使用 **WSL2**（推荐 Ubuntu）。强烈推荐 WSL2；原生 Window
 ## 1) 安装 CLI（推荐）
 
 ```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 安装程序选项（安装方法、非交互式、从 GitHub）：[安装](/install)。
@@ -65,7 +65,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 Windows (PowerShell)：
 
 ```powershell
-iwr -useb https://openclaw.ai/install.ps1 | iex
+npm install -g @termix-it/cryptoclaw@latest
 ```
 
 替代方案（全局安装）：

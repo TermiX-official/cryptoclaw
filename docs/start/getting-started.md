@@ -1,5 +1,5 @@
 ---
-summary: "Get OpenClaw installed and run your first chat in minutes."
+summary: "Get CryptoClaw installed and run your first chat in minutes."
 read_when:
   - First time setup from zero
   - You want the fastest path to a working chat
@@ -11,9 +11,9 @@ title: "Getting Started"
 Goal: go from zero to a first working chat with minimal setup.
 
 <Info>
-Fastest chat: open the Control UI (no channel setup needed). Run `openclaw dashboard`
+Fastest chat: open the Control UI (no channel setup needed). Run `cryptoclaw dashboard`
 and chat in the browser, or open `http://127.0.0.1:18789/` on the
-<Tooltip headline="Gateway host" tip="The machine running the OpenClaw gateway service.">gateway host</Tooltip>.
+<Tooltip headline="Gateway host" tip="The machine running the CryptoClaw gateway service.">gateway host</Tooltip>.
 Docs: [Dashboard](/web/dashboard) and [Control UI](/web/control-ui).
 </Info>
 
@@ -28,16 +28,16 @@ Check your Node version with `node --version` if you are unsure.
 ## Quick setup (CLI)
 
 <Steps>
-  <Step title="Install OpenClaw (recommended)">
+  <Step title="Install CryptoClaw (recommended)">
     <Tabs>
       <Tab title="macOS/Linux">
         ```bash
-        curl -fsSL https://openclaw.ai/install.sh | bash
+        npm install -g @termix-it/cryptoclaw@latest
         ```
       </Tab>
       <Tab title="Windows (PowerShell)">
         ```powershell
-        iwr -useb https://openclaw.ai/install.ps1 | iex
+        npm install -g @termix-it/cryptoclaw@latest
         ```
       </Tab>
     </Tabs>
@@ -49,7 +49,7 @@ Check your Node version with `node --version` if you are unsure.
   </Step>
   <Step title="Run the onboarding wizard">
     ```bash
-    openclaw onboard --install-daemon
+    cryptoclaw onboard --install-daemon
     ```
 
     The wizard configures auth, gateway settings, and optional channels.
@@ -60,13 +60,13 @@ Check your Node version with `node --version` if you are unsure.
     If you installed the service, it should already be running:
 
     ```bash
-    openclaw gateway status
+    cryptoclaw gateway status
     ```
 
   </Step>
   <Step title="Open the Control UI">
     ```bash
-    openclaw dashboard
+    cryptoclaw dashboard
     ```
   </Step>
 </Steps>
@@ -82,7 +82,7 @@ If the Control UI loads, your Gateway is ready for use.
     Useful for quick tests or troubleshooting.
 
     ```bash
-    openclaw gateway --port 18789
+    cryptoclaw gateway --port 18789
     ```
 
   </Accordion>
@@ -90,7 +90,7 @@ If the Control UI loads, your Gateway is ready for use.
     Requires a configured channel.
 
     ```bash
-    openclaw message send --target +15555550123 --message "Hello from OpenClaw"
+    cryptoclaw message send --target +15555550123 --message "Hello from CryptoClaw"
     ```
 
   </Accordion>
@@ -117,4 +117,5 @@ If the Control UI loads, your Gateway is ready for use.
 
 - DM safety and approvals: [Pairing](/start/pairing)
 - Connect more channels: [Channels](/channels)
+- Set up a blockchain wallet: [Wallet Management](/blockchain/wallet)
 - Advanced workflows and from source: [Setup](/start/setup)

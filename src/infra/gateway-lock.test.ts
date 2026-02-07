@@ -15,8 +15,8 @@ async function makeEnv() {
   return {
     env: {
       ...process.env,
-      OPENCLAW_STATE_DIR: dir,
-      OPENCLAW_CONFIG_PATH: configPath,
+      CRYPTOCLAW_STATE_DIR: dir,
+      CRYPTOCLAW_CONFIG_PATH: configPath,
     },
     cleanup: async () => {
       await fs.rm(dir, { recursive: true, force: true });

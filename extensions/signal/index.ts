@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
+import type { OpenClawPluginApi } from "cryptoclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "cryptoclaw/plugin-sdk";
 import { signalPlugin } from "./src/channel.js";
 import { setSignalRuntime } from "./src/runtime.js";
 

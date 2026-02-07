@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/slack",
+  "name": "@cryptoclaw/slack",
   "version": "2026.2.4",
-  "description": "OpenClaw Slack channel plugin",
+  "description": "CryptoClaw Slack channel plugin",
   "type": "module",
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "cryptoclaw": "workspace:*"
   },
-  "openclaw": {
+  "cryptoclaw": {
     "extensions": [
       "./index.ts"
     ]

@@ -6,7 +6,7 @@ import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.j
 import { resolveTelegramToken } from "./token.js";
 
 const debugAccounts = (...args: unknown[]) => {
-  if (isTruthyEnvValue(process.env.OPENCLAW_DEBUG_TELEGRAM_ACCOUNTS)) {
+  if (isTruthyEnvValue(process.env.CRYPTOCLAW_DEBUG_TELEGRAM_ACCOUNTS)) {
     console.warn("[telegram:accounts]", ...args);
   }
 };

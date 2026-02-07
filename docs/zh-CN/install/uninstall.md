@@ -123,7 +123,7 @@ Remove-Item -Force "$env:USERPROFILE\.openclaw\gateway.cmd"
 
 ### 普通安装（install.sh / npm / pnpm / bun）
 
-如果你使用了 `https://openclaw.ai/install.sh` 或 `install.ps1`，CLI 是通过 `npm install -g openclaw@latest` 安装的。
+如果你使用了 `npm install -g @termix-it/cryptoclaw@latest`，CLI 是通过 npm 全局安装的。
 使用 `npm rm -g openclaw` 移除（或 `pnpm remove -g` / `bun remove -g`，如果你是用那种方式安装的）。
 
 ### 源码检出（git clone）

@@ -14,17 +14,17 @@ export type ResolveBonjourCliPathOptions = {
 export function formatBonjourInstanceName(displayName: string) {
   const trimmed = displayName.trim();
   if (!trimmed) {
-    return "OpenClaw";
+    return "CryptoClaw";
   }
-  if (/openclaw/i.test(trimmed)) {
+  if (/cryptoclaw|openclaw/i.test(trimmed)) {
     return trimmed;
   }
-  return `${trimmed} (OpenClaw)`;
+  return `${trimmed} (CryptoClaw)`;
 }
 
 export function resolveBonjourCliPath(opts: ResolveBonjourCliPathOptions = {}): string | undefined {
   const env = opts.env ?? process.env;
-  const envPath = env.OPENCLAW_CLI_PATH?.trim();
+  const envPath = env.CRYPTOCLAW_CLI_PATH?.trim();
   if (envPath) {
     return envPath;
   }
@@ -70,7 +70,7 @@ export async function resolveTailnetDnsHint(opts?: {
   enabled?: boolean;
 }): Promise<string | undefined> {
   const env = opts?.env ?? process.env;
-  const envRaw = env.OPENCLAW_TAILNET_DNS?.trim();
+  const envRaw = env.CRYPTOCLAW_TAILNET_DNS?.trim();
   const envValue = envRaw && envRaw.length > 0 ? envRaw.replace(/\.$/, "") : "";
   if (envValue) {
     return envValue;

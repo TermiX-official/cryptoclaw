@@ -1,6 +1,12 @@
+---
+name: canvas
+description: Display HTML content on connected CryptoClaw nodes (Mac, iOS, Android).
+metadata: { "cryptoclaw": { "emoji": "🎨" } }
+---
+
 # Canvas Skill
 
-Display HTML content on connected OpenClaw nodes (Mac app, iOS, Android).
+Display HTML content on connected CryptoClaw nodes (Mac app, iOS, Android).
 
 ## Overview
 
@@ -57,7 +63,7 @@ This is why localhost URLs don't work - the node receives the Tailscale hostname
 
 ## Configuration
 
-In `~/.openclaw/openclaw.json`:
+In `~/.cryptoclaw/cryptoclaw.json`:
 
 ```json
 {
@@ -106,7 +112,7 @@ HTML
 Check how your gateway is bound:
 
 ```bash
-cat ~/.openclaw/openclaw.json | jq '.gateway.bind'
+cat ~/.cryptoclaw/cryptoclaw.json | jq '.gateway.bind'
 ```
 
 Then construct the URL:
@@ -123,7 +129,7 @@ tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//'
 ### 3. Find connected nodes
 
 ```bash
-openclaw nodes list
+cryptoclaw nodes list
 ```
 
 Look for Mac/iOS/Android nodes with canvas capability.
@@ -156,7 +162,7 @@ canvas action:hide node:<node-id>
 
 **Debug steps:**
 
-1. Check server bind: `cat ~/.openclaw/openclaw.json | jq '.gateway.bind'`
+1. Check server bind: `cat ~/.cryptoclaw/cryptoclaw.json | jq '.gateway.bind'`
 2. Check what port canvas is on: `lsof -i :18793`
 3. Test URL directly: `curl http://<hostname>:18793/__openclaw__/canvas/<file>.html`
 
@@ -168,7 +174,7 @@ Always specify `node:<node-id>` parameter.
 
 ### "node not connected" error
 
-Node is offline. Use `openclaw nodes list` to find online nodes.
+Node is offline. Use `cryptoclaw nodes list` to find online nodes.
 
 ### Content not updating
 

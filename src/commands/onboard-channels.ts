@@ -192,7 +192,7 @@ async function noteChannelPrimer(
   await prompter.note(
     [
       "DM security: default is pairing; unknown DMs get a pairing code.",
-      `Approve with: ${formatCliCommand("openclaw pairing approve <channel> <code>")}`,
+      `Approve with: ${formatCliCommand("cryptoclaw pairing approve <channel> <code>")}`,
       'Public DMs require dmPolicy="open" + allowFrom=["*"].',
       'Multi-user DMs: set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
       `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
@@ -245,7 +245,7 @@ async function maybeConfigureDmPolicies(params: {
     await prompter.note(
       [
         "Default: pairing (unknown DMs get a pairing code).",
-        `Approve: ${formatCliCommand(`openclaw pairing approve ${policy.channel} <code>`)}`,
+        `Approve: ${formatCliCommand(`cryptoclaw pairing approve ${policy.channel} <code>`)}`,
         `Allowlist DMs: ${policy.policyKey}="allowlist" + ${policy.allowFromKey} entries.`,
         `Public DMs: ${policy.policyKey}="open" + ${policy.allowFromKey} includes "*".`,
         'Multi-user DMs: set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
@@ -616,7 +616,7 @@ export async function setupChannels(
         {
           value: "__skip__",
           label: "Skip for now",
-          hint: `You can add channels later via \`${formatCliCommand("openclaw channels add")}\``,
+          hint: `You can add channels later via \`${formatCliCommand("cryptoclaw channels add")}\``,
         },
       ],
       initialValue: quickstartDefault,

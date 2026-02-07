@@ -268,7 +268,7 @@ final class WebChatSwiftUIWindowController {
                 styleMask: [.titled, .closable, .resizable, .miniaturizable],
                 backing: .buffered,
                 defer: false)
-            window.title = "OpenClaw Chat"
+            window.title = "CryptoClaw Chat"
             window.contentViewController = contentViewController
             window.isReleasedWhenClosed = false
             window.titleVisibility = .visible

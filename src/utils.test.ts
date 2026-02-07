@@ -8,38 +8,16 @@ import {
   ensureDir,
   jidToE164,
   normalizeE164,
-  normalizePath,
   resolveConfigDir,
   resolveJidToE164,
   resolveUserPath,
   sleep,
   toWhatsappJid,
-  withWhatsAppPrefix,
 } from "./utils.js";
-
-describe("normalizePath", () => {
-  it("adds leading slash when missing", () => {
-    expect(normalizePath("foo")).toBe("/foo");
-  });
-
-  it("keeps existing slash", () => {
-    expect(normalizePath("/bar")).toBe("/bar");
-  });
-});
-
-describe("withWhatsAppPrefix", () => {
-  it("adds whatsapp prefix", () => {
-    expect(withWhatsAppPrefix("+1555")).toBe("whatsapp:+1555");
-  });
-
-  it("leaves prefixed intact", () => {
-    expect(withWhatsAppPrefix("whatsapp:+1555")).toBe("whatsapp:+1555");
-  });
-});
 
 describe("ensureDir", () => {
   it("creates nested directory", async () => {
-    const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-test-"));
+    const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-test-"));
     const target = path.join(tmp, "nested", "dir");
     await ensureDir(target);
     expect(fs.existsSync(target)).toBe(true);
@@ -93,7 +71,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @lid from authDir mapping files", () => {
-    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "cryptoclaw-auth-"));
     const mappingPath = path.join(authDir, "lid-mapping-456_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify("5559876"));
     expect(jidToE164("456@lid", { authDir })).toBe("+5559876");
@@ -101,7 +79,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @hosted.lid from authDir mapping files", () => {
-    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "cryptoclaw-auth-"));
     const mappingPath = path.join(authDir, "lid-mapping-789_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify(4440001));
     expect(jidToE164("789@hosted.lid", { authDir })).toBe("+4440001");
@@ -113,8 +91,8 @@ describe("jidToE164", () => {
   });
 
   it("falls back through lidMappingDirs in order", () => {
-    const first = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-lid-a-"));
-    const second = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-lid-b-"));
+    const first = fs.mkdtempSync(path.join(os.tmpdir(), "cryptoclaw-lid-a-"));
+    const second = fs.mkdtempSync(path.join(os.tmpdir(), "cryptoclaw-lid-b-"));
     const mappingPath = path.join(second, "lid-mapping-321_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify("123321"));
     expect(jidToE164("321@lid", { lidMappingDirs: [first, second] })).toBe("+123321");
@@ -124,10 +102,10 @@ describe("jidToE164", () => {
 });
 
 describe("resolveConfigDir", () => {
-  it("prefers ~/.openclaw when legacy dir is missing", async () => {
-    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-config-dir-"));
+  it("prefers ~/.cryptoclaw when legacy dir is missing", async () => {
+    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cryptoclaw-config-dir-"));
     try {
-      const newDir = path.join(root, ".openclaw");
+      const newDir = path.join(root, ".cryptoclaw");
       await fs.promises.mkdir(newDir, { recursive: true });
       const resolved = resolveConfigDir({} as NodeJS.ProcessEnv, () => root);
       expect(resolved).toBe(newDir);

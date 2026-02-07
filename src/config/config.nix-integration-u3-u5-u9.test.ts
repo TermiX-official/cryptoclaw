@@ -5,29 +5,29 @@ import { withEnvOverride, withTempHome } from "./test-helpers.js";
 
 describe("Nix integration (U3, U5, U9)", () => {
   describe("U3: isNixMode env var detection", () => {
-    it("isNixMode is false when OPENCLAW_NIX_MODE is not set", async () => {
-      await withEnvOverride({ OPENCLAW_NIX_MODE: undefined }, async () => {
+    it("isNixMode is false when CRYPTOCLAW_NIX_MODE is not set", async () => {
+      await withEnvOverride({ CRYPTOCLAW_NIX_MODE: undefined }, async () => {
         const { isNixMode } = await import("./config.js");
         expect(isNixMode).toBe(false);
       });
     });
 
-    it("isNixMode is false when OPENCLAW_NIX_MODE is empty", async () => {
-      await withEnvOverride({ OPENCLAW_NIX_MODE: "" }, async () => {
+    it("isNixMode is false when CRYPTOCLAW_NIX_MODE is empty", async () => {
+      await withEnvOverride({ CRYPTOCLAW_NIX_MODE: "" }, async () => {
         const { isNixMode } = await import("./config.js");
         expect(isNixMode).toBe(false);
       });
     });
 
-    it("isNixMode is false when OPENCLAW_NIX_MODE is not '1'", async () => {
-      await withEnvOverride({ OPENCLAW_NIX_MODE: "true" }, async () => {
+    it("isNixMode is false when CRYPTOCLAW_NIX_MODE is not '1'", async () => {
+      await withEnvOverride({ CRYPTOCLAW_NIX_MODE: "true" }, async () => {
         const { isNixMode } = await import("./config.js");
         expect(isNixMode).toBe(false);
       });
     });
 
-    it("isNixMode is true when OPENCLAW_NIX_MODE=1", async () => {
-      await withEnvOverride({ OPENCLAW_NIX_MODE: "1" }, async () => {
+    it("isNixMode is true when CRYPTOCLAW_NIX_MODE=1", async () => {
+      await withEnvOverride({ CRYPTOCLAW_NIX_MODE: "1" }, async () => {
         const { isNixMode } = await import("./config.js");
         expect(isNixMode).toBe(true);
       });
@@ -35,40 +35,43 @@ describe("Nix integration (U3, U5, U9)", () => {
   });
 
   describe("U5: CONFIG_PATH and STATE_DIR env var overrides", () => {
-    it("STATE_DIR defaults to ~/.openclaw when env not set", async () => {
-      await withEnvOverride({ OPENCLAW_STATE_DIR: undefined }, async () => {
+    it("STATE_DIR defaults to ~/.cryptoclaw when env not set", async () => {
+      await withEnvOverride({ CRYPTOCLAW_STATE_DIR: undefined }, async () => {
         const { STATE_DIR } = await import("./config.js");
-        expect(STATE_DIR).toMatch(/\.openclaw$/);
+        expect(STATE_DIR).toMatch(/\.cryptoclaw$/);
       });
     });
 
-    it("STATE_DIR respects OPENCLAW_STATE_DIR override", async () => {
-      await withEnvOverride({ OPENCLAW_STATE_DIR: "/custom/state/dir" }, async () => {
+    it("STATE_DIR respects CRYPTOCLAW_STATE_DIR override", async () => {
+      await withEnvOverride({ CRYPTOCLAW_STATE_DIR: "/custom/state/dir" }, async () => {
         const { STATE_DIR } = await import("./config.js");
         expect(STATE_DIR).toBe(path.resolve("/custom/state/dir"));
       });
     });
 
-    it("CONFIG_PATH defaults to ~/.openclaw/openclaw.json when env not set", async () => {
+    it("CONFIG_PATH defaults to ~/.cryptoclaw/cryptoclaw.json when env not set", async () => {
       await withEnvOverride(
-        { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        { CRYPTOCLAW_CONFIG_PATH: undefined, CRYPTOCLAW_STATE_DIR: undefined },
         async () => {
           const { CONFIG_PATH } = await import("./config.js");
-          expect(CONFIG_PATH).toMatch(/\.openclaw[\\/]openclaw\.json$/);
+          expect(CONFIG_PATH).toMatch(/\.cryptoclaw[\\/]cryptoclaw\.json$/);
         },
       );
     });
 
-    it("CONFIG_PATH respects OPENCLAW_CONFIG_PATH override", async () => {
-      await withEnvOverride({ OPENCLAW_CONFIG_PATH: "/nix/store/abc/openclaw.json" }, async () => {
-        const { CONFIG_PATH } = await import("./config.js");
-        expect(CONFIG_PATH).toBe(path.resolve("/nix/store/abc/openclaw.json"));
-      });
+    it("CONFIG_PATH respects CRYPTOCLAW_CONFIG_PATH override", async () => {
+      await withEnvOverride(
+        { CRYPTOCLAW_CONFIG_PATH: "/nix/store/abc/openclaw.json" },
+        async () => {
+          const { CONFIG_PATH } = await import("./config.js");
+          expect(CONFIG_PATH).toBe(path.resolve("/nix/store/abc/openclaw.json"));
+        },
+      );
     });
 
-    it("CONFIG_PATH expands ~ in OPENCLAW_CONFIG_PATH override", async () => {
+    it("CONFIG_PATH expands ~ in CRYPTOCLAW_CONFIG_PATH override", async () => {
       await withTempHome(async (home) => {
-        await withEnvOverride({ OPENCLAW_CONFIG_PATH: "~/.openclaw/custom.json" }, async () => {
+        await withEnvOverride({ CRYPTOCLAW_CONFIG_PATH: "~/.openclaw/custom.json" }, async () => {
           const { CONFIG_PATH } = await import("./config.js");
           expect(CONFIG_PATH).toBe(path.join(home, ".openclaw", "custom.json"));
         });
@@ -78,12 +81,12 @@ describe("Nix integration (U3, U5, U9)", () => {
     it("CONFIG_PATH uses STATE_DIR when only state dir is overridden", async () => {
       await withEnvOverride(
         {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: "/custom/state",
+          CRYPTOCLAW_CONFIG_PATH: undefined,
+          CRYPTOCLAW_STATE_DIR: "/custom/state",
         },
         async () => {
           const { CONFIG_PATH } = await import("./config.js");
-          expect(CONFIG_PATH).toBe(path.join(path.resolve("/custom/state"), "openclaw.json"));
+          expect(CONFIG_PATH).toBe(path.join(path.resolve("/custom/state"), "cryptoclaw.json"));
         },
       );
     });
@@ -169,21 +172,21 @@ describe("Nix integration (U3, U5, U9)", () => {
 
   describe("U6: gateway port resolution", () => {
     it("uses default when env and config are unset", async () => {
-      await withEnvOverride({ OPENCLAW_GATEWAY_PORT: undefined }, async () => {
+      await withEnvOverride({ CRYPTOCLAW_GATEWAY_PORT: undefined }, async () => {
         const { DEFAULT_GATEWAY_PORT, resolveGatewayPort } = await import("./config.js");
         expect(resolveGatewayPort({})).toBe(DEFAULT_GATEWAY_PORT);
       });
     });
 
-    it("prefers OPENCLAW_GATEWAY_PORT over config", async () => {
-      await withEnvOverride({ OPENCLAW_GATEWAY_PORT: "19001" }, async () => {
+    it("prefers CRYPTOCLAW_GATEWAY_PORT over config", async () => {
+      await withEnvOverride({ CRYPTOCLAW_GATEWAY_PORT: "19001" }, async () => {
         const { resolveGatewayPort } = await import("./config.js");
         expect(resolveGatewayPort({ gateway: { port: 19002 } })).toBe(19001);
       });
     });
 
     it("falls back to config when env is invalid", async () => {
-      await withEnvOverride({ OPENCLAW_GATEWAY_PORT: "nope" }, async () => {
+      await withEnvOverride({ CRYPTOCLAW_GATEWAY_PORT: "nope" }, async () => {
         const { resolveGatewayPort } = await import("./config.js");
         expect(resolveGatewayPort({ gateway: { port: 19003 } })).toBe(19003);
       });

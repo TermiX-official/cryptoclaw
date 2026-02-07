@@ -3,15 +3,15 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 let previousProfile: string | undefined;
 
 beforeAll(() => {
-  previousProfile = process.env.OPENCLAW_PROFILE;
-  process.env.OPENCLAW_PROFILE = "isolated";
+  previousProfile = process.env.CRYPTOCLAW_PROFILE;
+  process.env.CRYPTOCLAW_PROFILE = "isolated";
 });
 
 afterAll(() => {
   if (previousProfile === undefined) {
-    delete process.env.OPENCLAW_PROFILE;
+    delete process.env.CRYPTOCLAW_PROFILE;
   } else {
-    process.env.OPENCLAW_PROFILE = previousProfile;
+    process.env.CRYPTOCLAW_PROFILE = previousProfile;
   }
 });
 
@@ -315,7 +315,7 @@ describe("statusCommand", () => {
     (runtime.log as vi.Mock).mockClear();
     await statusCommand({}, runtime as never);
     const logs = (runtime.log as vi.Mock).mock.calls.map((c) => String(c[0]));
-    expect(logs.some((l) => l.includes("OpenClaw status"))).toBe(true);
+    expect(logs.some((l) => l.includes("CryptoClaw status"))).toBe(true);
     expect(logs.some((l) => l.includes("Overview"))).toBe(true);
     expect(logs.some((l) => l.includes("Security audit"))).toBe(true);
     expect(logs.some((l) => l.includes("Summary:"))).toBe(true);
@@ -335,17 +335,15 @@ describe("statusCommand", () => {
     expect(
       logs.some(
         (l) =>
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all") ||
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all"),
+          l.includes("cryptoclaw status --all") ||
+          l.includes("cryptoclaw --profile isolated status --all"),
       ),
     ).toBe(true);
   });
 
   it("shows gateway auth when reachable", async () => {
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "abcd1234";
+    const prevToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+    process.env.CRYPTOCLAW_GATEWAY_TOKEN = "abcd1234";
     try {
       mocks.probeGateway.mockResolvedValueOnce({
         ok: true,
@@ -364,9 +362,9 @@ describe("statusCommand", () => {
       expect(logs.some((l) => l.includes("auth token"))).toBe(true);
     } finally {
       if (prevToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+        process.env.CRYPTOCLAW_GATEWAY_TOKEN = prevToken;
       }
     }
   });

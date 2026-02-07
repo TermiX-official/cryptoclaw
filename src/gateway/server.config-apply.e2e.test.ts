@@ -18,8 +18,8 @@ let port = 0;
 let previousToken: string | undefined;
 
 beforeAll(async () => {
-  previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-  delete process.env.OPENCLAW_GATEWAY_TOKEN;
+  previousToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+  delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
   port = await getFreePort();
   server = await startGatewayServer(port);
 });
@@ -27,9 +27,9 @@ beforeAll(async () => {
 afterAll(async () => {
   await server.close();
   if (previousToken === undefined) {
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
   } else {
-    process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+    process.env.CRYPTOCLAW_GATEWAY_TOKEN = previousToken;
   }
 });
 

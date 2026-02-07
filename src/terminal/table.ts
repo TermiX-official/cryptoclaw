@@ -1,4 +1,4 @@
-import { displayString } from "../utils.js";
+import { shortenHomeInString } from "../utils.js";
 import { visibleWidth } from "./ansi.js";
 
 type Align = "left" | "right" | "center";
@@ -235,7 +235,7 @@ export function renderTable(opts: RenderTableOptions): string {
   const rows = opts.rows.map((row) => {
     const next: Record<string, string> = {};
     for (const [key, value] of Object.entries(row)) {
-      next[key] = displayString(value);
+      next[key] = shortenHomeInString(value);
     }
     return next;
   });

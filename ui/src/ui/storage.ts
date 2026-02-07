@@ -1,6 +1,12 @@
-const KEY = "openclaw.control.settings.v1";
+const KEY = "cryptoclaw.control.settings.v1";
 
 import type { ThemeMode } from "./theme.ts";
+
+declare global {
+  interface Window {
+    __CRYPTOCLAW_GATEWAY_TOKEN__?: string;
+  }
+}
 
 export type UiSettings = {
   gatewayUrl: string;
@@ -21,9 +27,11 @@ export function loadSettings(): UiSettings {
     return `${proto}://${location.host}`;
   })();
 
+  const injectedToken = window.__CRYPTOCLAW_GATEWAY_TOKEN__ ?? "";
+
   const defaults: UiSettings = {
     gatewayUrl: defaultUrl,
-    token: "",
+    token: injectedToken,
     sessionKey: "main",
     lastActiveSessionKey: "main",
     theme: "system",
@@ -45,7 +53,7 @@ export function loadSettings(): UiSettings {
         typeof parsed.gatewayUrl === "string" && parsed.gatewayUrl.trim()
           ? parsed.gatewayUrl.trim()
           : defaults.gatewayUrl,
-      token: typeof parsed.token === "string" ? parsed.token : defaults.token,
+      token: typeof parsed.token === "string" && parsed.token ? parsed.token : defaults.token,
       sessionKey:
         typeof parsed.sessionKey === "string" && parsed.sessionKey.trim()
           ? parsed.sessionKey.trim()

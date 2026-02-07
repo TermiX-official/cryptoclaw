@@ -53,15 +53,18 @@ export function registerSwapTools(api: OpenClawPluginApi, walletManager: WalletM
       },
       required: ["tokenIn", "tokenOut", "amountIn"],
     },
-    async execute(params: {
-      tokenIn: string;
-      tokenOut: string;
-      amountIn: string;
-      slippage?: number;
-      preferVersion?: string;
-      feeTier?: number;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        tokenIn: string;
+        tokenOut: string;
+        amountIn: string;
+        slippage?: number;
+        preferVersion?: string;
+        feeTier?: number;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const slippageBps = params.slippage ? Math.round(params.slippage * 100) : undefined;
       const preferVersion = params.preferVersion as "v2" | "v3" | undefined;
@@ -144,16 +147,19 @@ export function registerSwapTools(api: OpenClawPluginApi, walletManager: WalletM
       },
       required: ["tokenIn", "tokenOut", "amountIn"],
     },
-    async execute(params: {
-      tokenIn: string;
-      tokenOut: string;
-      amountIn: string;
-      slippage?: number;
-      preferVersion?: string;
-      feeTier?: number;
-      deadline?: number;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        tokenIn: string;
+        tokenOut: string;
+        amountIn: string;
+        slippage?: number;
+        preferVersion?: string;
+        feeTier?: number;
+        deadline?: number;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const slippageBps = params.slippage ? Math.round(params.slippage * 100) : undefined;
       const preferVersion = params.preferVersion as "v2" | "v3" | undefined;
@@ -213,7 +219,10 @@ export function registerSwapTools(api: OpenClawPluginApi, walletManager: WalletM
       },
       required: ["tokenAddress"],
     },
-    async execute(params: { tokenAddress: string; network?: string; version?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { tokenAddress: string; network?: string; version?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = walletManager.getActiveAddress();
       if (!address) {
@@ -260,7 +269,7 @@ export function registerSwapTools(api: OpenClawPluginApi, walletManager: WalletM
         },
       },
     },
-    async execute(params: { network?: string }) {
+    async execute(_toolCallId: string, params: { network?: string }) {
       if (params.network) {
         const chainId = resolveChainId(params.network);
         const config = getDexConfig(chainId);

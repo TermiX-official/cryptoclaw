@@ -24,13 +24,16 @@ export function registerContractTools(api: OpenClawPluginApi, walletManager: Wal
       },
       required: ["contractAddress", "abi", "functionName"],
     },
-    async execute(params: {
-      contractAddress: string;
-      abi: string;
-      functionName: string;
-      args?: string;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        contractAddress: string;
+        abi: string;
+        functionName: string;
+        args?: string;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const abi = JSON.parse(params.abi) as Abi;
       const args = params.args ? JSON.parse(params.args) : [];
@@ -64,14 +67,17 @@ export function registerContractTools(api: OpenClawPluginApi, walletManager: Wal
       },
       required: ["contractAddress", "abi", "functionName"],
     },
-    async execute(params: {
-      contractAddress: string;
-      abi: string;
-      functionName: string;
-      args?: string;
-      value?: string;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        contractAddress: string;
+        abi: string;
+        functionName: string;
+        args?: string;
+        value?: string;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const abi = JSON.parse(params.abi) as Abi;
@@ -116,7 +122,7 @@ export function registerContractTools(api: OpenClawPluginApi, walletManager: Wal
       },
       required: ["address"],
     },
-    async execute(params: { address: string; network?: string }) {
+    async execute(_toolCallId: string, params: { address: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const result = await isContract(params.address, chainId);
       return {

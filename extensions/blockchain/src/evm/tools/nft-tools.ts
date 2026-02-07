@@ -18,7 +18,10 @@ export function registerNftTools(api: OpenClawPluginApi, walletManager: WalletMa
       },
       required: ["nftAddress", "tokenId"],
     },
-    async execute(params: { nftAddress: string; tokenId: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { nftAddress: string; tokenId: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const result = await getERC721TokenMetadata(
         params.nftAddress,
@@ -42,7 +45,10 @@ export function registerNftTools(api: OpenClawPluginApi, walletManager: WalletMa
       },
       required: ["nftAddress", "to", "tokenId"],
     },
-    async execute(params: { nftAddress: string; to: string; tokenId: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { nftAddress: string; to: string; tokenId: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const result = await transferERC721(
@@ -71,13 +77,16 @@ export function registerNftTools(api: OpenClawPluginApi, walletManager: WalletMa
       },
       required: ["tokenAddress", "to", "tokenId", "amount"],
     },
-    async execute(params: {
-      tokenAddress: string;
-      to: string;
-      tokenId: string;
-      amount: string;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        tokenAddress: string;
+        to: string;
+        tokenId: string;
+        amount: string;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const result = await transferERC1155(

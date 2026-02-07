@@ -16,7 +16,7 @@ export function registerTxTools(api: OpenClawPluginApi, _walletManager: WalletMa
       },
       required: ["txHash"],
     },
-    async execute(params: { txHash: string; network?: string }) {
+    async execute(_toolCallId: string, params: { txHash: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const tx = await getTransaction(params.txHash as `0x${string}`, chainId);
       return { content: [{ type: "text", text: formatJson(tx) }] };
@@ -34,7 +34,7 @@ export function registerTxTools(api: OpenClawPluginApi, _walletManager: WalletMa
       },
       required: ["txHash"],
     },
-    async execute(params: { txHash: string; network?: string }) {
+    async execute(_toolCallId: string, params: { txHash: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const receipt = await getTransactionReceipt(params.txHash as `0x${string}`, chainId);
       return { content: [{ type: "text", text: formatJson(receipt) }] };
@@ -54,7 +54,10 @@ export function registerTxTools(api: OpenClawPluginApi, _walletManager: WalletMa
       },
       required: ["to"],
     },
-    async execute(params: { to: string; value?: string; data?: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { to: string; value?: string; data?: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const result = await estimateGas(
         {

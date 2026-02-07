@@ -254,7 +254,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
           '- Token transfer ("send USDT to 0x...") → call transfer_erc20',
           '- Swap ("swap BNB for USDT") → call swap_execute',
           "- Address security check → call check_address_security",
-          "- Wallet locked → ask user for passphrase, call wallet_unlock, then retry",
+          "- Wallet locked → ask the user for their passphrase in chat, call wallet_unlock with it, then retry. Once unlocked, the wallet stays unlocked — do NOT ask for passphrase again unless you receive another lock error.",
           "All outbound transfers are auto security-checked against GoPlus before execution.",
           "Do NOT hallucinate balances — always call the tool.",
         );
@@ -269,6 +269,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
 
       return {
         prependContext: [
+          "[LANGUAGE] Always respond in the same language the user writes in. If the user writes Chinese, respond in Chinese. If English, respond in English.",
           walletLines.join("\n"),
           `Supported networks: ethereum, bsc, polygon, arbitrum, optimism, base, opbnb, iotex (+ testnets).`,
           "Wallet import/export: CLI-only (`cryptoclaw wallet import`, `cryptoclaw wallet export`). Do NOT attempt these as agent tools.",

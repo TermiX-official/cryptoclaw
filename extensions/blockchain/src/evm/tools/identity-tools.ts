@@ -37,7 +37,7 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
       },
       required: ["agentURI"],
     },
-    async execute(params: { agentURI: string; network?: string }) {
+    async execute(_toolCallId: string, params: { agentURI: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       if (!isErc8004Supported(chainId)) {
@@ -97,7 +97,7 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
         },
       },
     },
-    async execute(params: { agentId?: string; network?: string }) {
+    async execute(_toolCallId: string, params: { agentId?: string; network?: string }) {
       let chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       let agentIdBigint: bigint;
@@ -158,7 +158,7 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
         },
       },
     },
-    async execute(params: { agentId?: string; network?: string }) {
+    async execute(_toolCallId: string, params: { agentId?: string; network?: string }) {
       let chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       let agentIdBigint: bigint;
@@ -223,7 +223,7 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
         },
       },
     },
-    async execute(params: { agentId?: string; network?: string }) {
+    async execute(_toolCallId: string, params: { agentId?: string; network?: string }) {
       let chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       let agentIdBigint: bigint;
@@ -273,7 +273,7 @@ export function registerIdentityTools(api: OpenClawPluginApi, walletManager: Wal
         },
       },
     },
-    async execute(params: { network?: string }) {
+    async execute(_toolCallId: string, params: { network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
 
       const address = walletManager.getActiveAddress();

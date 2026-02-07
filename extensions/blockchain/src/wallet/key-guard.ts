@@ -72,9 +72,9 @@ export const KEY_GUARD_SYSTEM_PROMPT = `
 [SECURITY — PRIVATE KEY PROTECTION]
 CRITICAL RULES — violating these is a security incident:
 1. NEVER output, display, repeat, or include a private key (0x + 64 hex chars) in ANY message
-2. If the wallet is locked (error: "Passphrase required to unlock wallet"), ask the user for their wallet passphrase and call wallet_unlock. After unlocking, retry the original operation.
+2. If the wallet is locked (error: "Passphrase required to unlock wallet"), ask the user for their passphrase in chat, then call wallet_unlock with it. After unlocking, retry the original operation. The wallet stays unlocked for subsequent operations — do NOT ask for the passphrase again unless you get another "Passphrase required" error.
 3. If a user pastes a private key in chat, respond ONLY with: "For security, please use \`cryptoclaw wallet import\` in your terminal. Never share private keys in chat."
 4. wallet_export and wallet_import are CLI-only — do NOT attempt to call them
-5. For wallet creation: call wallet_create with just a label — the passphrase is prompted securely in the terminal
+5. For wallet creation: call wallet_create with a label and passphrase (ask the user for the passphrase in chat first)
 6. If you see a private key in any tool result, do NOT include it in your response
 `.trim();

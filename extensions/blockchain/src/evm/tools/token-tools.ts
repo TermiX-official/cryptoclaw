@@ -21,7 +21,7 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
         network: { type: "string", description: 'Network name or chain ID (default: "bsc")' },
       },
     },
-    async execute(params: { address?: string; network?: string }) {
+    async execute(_toolCallId: string, params: { address?: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = params.address ?? walletManager.getActiveAddress();
       if (!address) {
@@ -47,7 +47,10 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
       },
       required: ["tokenAddress"],
     },
-    async execute(params: { address?: string; tokenAddress: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { address?: string; tokenAddress: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const address = params.address ?? walletManager.getActiveAddress();
       if (!address) {
@@ -69,7 +72,7 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
       },
       required: ["tokenAddress"],
     },
-    async execute(params: { tokenAddress: string; network?: string }) {
+    async execute(_toolCallId: string, params: { tokenAddress: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const result = await getERC20TokenInfo(params.tokenAddress, chainId);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -89,7 +92,7 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
       },
       required: ["to", "amount"],
     },
-    async execute(params: { to: string; amount: string; network?: string }) {
+    async execute(_toolCallId: string, params: { to: string; amount: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const result = await transferNativeToken(privateKey, params.to, params.amount, chainId);
@@ -110,7 +113,10 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
       },
       required: ["tokenAddress", "to", "amount"],
     },
-    async execute(params: { tokenAddress: string; to: string; amount: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { tokenAddress: string; to: string; amount: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const result = await transferERC20(
@@ -137,12 +143,15 @@ export function registerTokenTools(api: OpenClawPluginApi, walletManager: Wallet
       },
       required: ["tokenAddress", "spender", "amount"],
     },
-    async execute(params: {
-      tokenAddress: string;
-      spender: string;
-      amount: string;
-      network?: string;
-    }) {
+    async execute(
+      _toolCallId: string,
+      params: {
+        tokenAddress: string;
+        spender: string;
+        amount: string;
+        network?: string;
+      },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const privateKey = await resolveActivePrivateKey(walletManager);
       const result = await approveERC20(

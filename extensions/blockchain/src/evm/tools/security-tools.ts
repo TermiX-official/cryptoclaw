@@ -15,7 +15,7 @@ export function registerSecurityTools(api: OpenClawPluginApi) {
       },
       required: ["address"],
     },
-    async execute(params: { address: string; network?: string }) {
+    async execute(_toolCallId: string, params: { address: string; network?: string }) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       const result = await checkAddressSecurity(params.address, chainId);
 

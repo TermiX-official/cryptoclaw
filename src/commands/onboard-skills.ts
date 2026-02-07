@@ -1,3 +1,4 @@
+import type { SkillStatusEntry } from "../agents/skills-status.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -5,6 +6,52 @@ import { installSkill } from "../agents/skills-install.js";
 import { buildWorkspaceSkillStatus } from "../agents/skills-status.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { detectBinary, resolveNodeManagerOptions } from "./onboard-helpers.js";
+
+// ---------------------------------------------------------------------------
+// Skill → category mapping
+// ---------------------------------------------------------------------------
+
+const SKILL_CATEGORY: Record<string, string> = {
+  "wallet-manager": "🔗",
+  "token-swap": "🔗",
+  "contract-deployer": "🔗",
+  "nft-manager": "🔗",
+  "agent-identity": "🔗",
+  "defi-dashboard": "💰",
+  defillama: "💰",
+  "aave-bsc": "💰",
+  debank: "💰",
+  "market-data": "📊",
+  coingecko: "📊",
+  "whale-watcher": "📊",
+  "gas-tracker": "📊",
+  "macro-calendar": "📊",
+  "four-meme": "📊",
+  dune: "📊",
+  "security-check": "🛡️",
+  etherscan: "🛡️",
+  discord: "💬",
+  bird: "💬",
+  github: "🛠️",
+  tmux: "🛠️",
+  "coding-agent": "🛠️",
+  canvas: "🛠️",
+};
+
+/** Sort key — lower = earlier in the list */
+const CATEGORY_RANK: Record<string, number> = {
+  "🔗": 0, // Blockchain
+  "💰": 1, // DeFi
+  "📊": 2, // Market & Data
+  "🛡️": 3, // Security
+  "💬": 4, // Social
+  "🛠️": 5, // Developer
+  "📦": 6, // Other
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function summarizeInstallFailure(message: string): string | undefined {
   const cleaned = message.replace(/^Install failed(?:\s*\([^)]*\))?\s*:?\s*/i, "").trim();
@@ -15,27 +62,56 @@ function summarizeInstallFailure(message: string): string | undefined {
   return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 1)}…` : cleaned;
 }
 
-function formatSkillHint(skill: {
-  description?: string;
-  install: Array<{ label: string }>;
-}): string {
+function formatSkillHint(skill: SkillStatusEntry): string {
+  const parts: string[] = [];
+
   const desc = skill.description?.trim();
-  const installLabel = skill.install[0]?.label?.trim();
-  const combined = desc && installLabel ? `${desc} — ${installLabel}` : desc || installLabel;
+  if (desc) {
+    parts.push(desc);
+  }
+
+  // Status indicator
+  if (skill.eligible) {
+    parts.push("✓ ready");
+  } else if (skill.missing.env.length > 0) {
+    parts.push(`needs ${skill.primaryEnv ?? "API key"}`);
+  } else if (skill.missing.bins.length > 0) {
+    parts.push(`needs ${skill.missing.bins.join(", ")}`);
+  }
+
+  const combined = parts.join(" — ");
   if (!combined) {
-    return "install";
+    return "";
   }
   const maxLen = 90;
   return combined.length > maxLen ? `${combined.slice(0, maxLen - 1)}…` : combined;
 }
 
+function skillSortKey(skill: SkillStatusEntry): number {
+  const cat = SKILL_CATEGORY[skill.name] ?? "📦";
+  return CATEGORY_RANK[cat] ?? 99;
+}
+
+function buildSkillOptions(skills: SkillStatusEntry[]) {
+  const filtered = skills.filter((s) => !s.blockedByAllowlist && !s.disabled);
+  const sorted = [...filtered].sort((a, b) => skillSortKey(a) - skillSortKey(b));
+  return sorted.map((skill) => {
+    const cat = SKILL_CATEGORY[skill.name] ?? "📦";
+    return {
+      value: skill.name,
+      label: `${cat} ${skill.name}`,
+      hint: formatSkillHint(skill),
+    };
+  });
+}
+
 function upsertSkillEntry(
   cfg: OpenClawConfig,
   skillKey: string,
-  patch: { apiKey?: string },
+  patch: { apiKey?: string; enabled?: boolean },
 ): OpenClawConfig {
   const entries = { ...cfg.skills?.entries };
-  const existing = (entries[skillKey] as { apiKey?: string } | undefined) ?? {};
+  const existing = (entries[skillKey] as { apiKey?: string; enabled?: boolean } | undefined) ?? {};
   entries[skillKey] = { ...existing, ...patch };
   return {
     ...cfg,
@@ -46,6 +122,10 @@ function upsertSkillEntry(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Main flow
+// ---------------------------------------------------------------------------
+
 export async function setupSkills(
   cfg: OpenClawConfig,
   workspaceDir: string,
@@ -53,31 +133,42 @@ export async function setupSkills(
   prompter: WizardPrompter,
 ): Promise<OpenClawConfig> {
   const report = buildWorkspaceSkillStatus(workspaceDir, { config: cfg });
-  const eligible = report.skills.filter((s) => s.eligible);
-  const missing = report.skills.filter((s) => !s.eligible && !s.disabled && !s.blockedByAllowlist);
-  const blocked = report.skills.filter((s) => s.blockedByAllowlist);
 
-  const needsBrewPrompt =
-    process.platform !== "win32" &&
-    report.skills.some((skill) => skill.install.some((option) => option.kind === "brew")) &&
-    !(await detectBinary("brew"));
-
-  await prompter.note(
-    [
-      `Eligible: ${eligible.length}`,
-      `Missing requirements: ${missing.length}`,
-      `Blocked by allowlist: ${blocked.length}`,
-    ].join("\n"),
-    "Skills status",
-  );
-
-  const shouldConfigure = await prompter.confirm({
-    message: "Configure skills now? (recommended)",
-    initialValue: true,
-  });
-  if (!shouldConfigure) {
+  // Build categorized, sorted options for selection UI
+  const options = buildSkillOptions(report.skills);
+  if (options.length === 0) {
+    await prompter.note("No skills available to configure.", "Skills");
     return cfg;
   }
+
+  const selectable = report.skills.filter((s) => !s.blockedByAllowlist && !s.disabled);
+
+  // Pre-select eligible skills
+  const initialValues = selectable.filter((s) => s.eligible).map((s) => s.name);
+
+  const selected = await prompter.multiselect<string>({
+    message: "Select skills to enable",
+    options,
+    initialValues,
+  });
+
+  const selectedSet = new Set(selected);
+
+  // Mark deselected skills as disabled in config
+  let next = cfg;
+  for (const skill of selectable) {
+    if (!selectedSet.has(skill.name)) {
+      next = upsertSkillEntry(next, skill.skillKey, { enabled: false });
+    }
+  }
+
+  // Homebrew prompt — only if selected skills need brew installs
+  const needsBrewPrompt =
+    process.platform !== "win32" &&
+    report.skills
+      .filter((s) => selectedSet.has(s.name))
+      .some((skill) => skill.install.some((option) => option.kind === "brew")) &&
+    !(await detectBinary("brew"));
 
   if (needsBrewPrompt) {
     await prompter.note(
@@ -102,26 +193,33 @@ export async function setupSkills(
     }
   }
 
-  const nodeManager = (await prompter.select({
-    message: "Preferred node manager for skill installs",
-    options: resolveNodeManagerOptions(),
-  })) as "npm" | "pnpm" | "bun";
-
-  let next: OpenClawConfig = {
-    ...cfg,
-    skills: {
-      ...cfg.skills,
-      install: {
-        ...cfg.skills?.install,
-        nodeManager,
-      },
-    },
-  };
-
-  const installable = missing.filter(
-    (skill) => skill.install.length > 0 && skill.missing.bins.length > 0,
+  // Determine which selected skills need dependency installation
+  const installable = report.skills.filter(
+    (skill) =>
+      selectedSet.has(skill.name) &&
+      !skill.eligible &&
+      skill.install.length > 0 &&
+      skill.missing.bins.length > 0,
   );
+
+  // Only ask for node manager if there are things to install
   if (installable.length > 0) {
+    const nodeManager = (await prompter.select({
+      message: "Preferred node manager for skill installs",
+      options: resolveNodeManagerOptions(),
+    })) as "npm" | "pnpm" | "bun";
+
+    next = {
+      ...next,
+      skills: {
+        ...next.skills,
+        install: {
+          ...next.skills?.install,
+          nodeManager,
+        },
+      },
+    };
+
     const toInstall = await prompter.multiselect({
       message: "Install missing skill dependencies",
       options: [
@@ -133,13 +231,13 @@ export async function setupSkills(
         ...installable.map((skill) => ({
           value: skill.name,
           label: `${skill.emoji ?? "🧩"} ${skill.name}`,
-          hint: formatSkillHint(skill),
+          hint: `needs ${skill.missing.bins.join(", ")}`,
         })),
       ],
     });
 
-    const selected = toInstall.filter((name) => name !== "__skip__");
-    for (const name of selected) {
+    const toInstallFiltered = toInstall.filter((name) => name !== "__skip__");
+    for (const name of toInstallFiltered) {
       const target = installable.find((s) => s.name === name);
       if (!target || target.install.length === 0) {
         continue;
@@ -182,7 +280,9 @@ export async function setupSkills(
   }
 
   // --- API key setup ---
-  const needsKey = missing.filter((s) => s.primaryEnv && s.missing.env.length > 0);
+  const needsKey = report.skills.filter(
+    (s) => selectedSet.has(s.name) && s.primaryEnv && s.missing.env.length > 0,
+  );
   if (needsKey.length > 0) {
     const toSetup = await prompter.multiselect({
       message: "Set up API keys (required to enable these skills)",

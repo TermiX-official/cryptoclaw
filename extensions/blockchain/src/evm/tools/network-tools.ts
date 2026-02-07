@@ -7,7 +7,7 @@ export function registerNetworkTools(api: OpenClawPluginApi) {
     name: "get_supported_networks",
     description: "List all supported blockchain networks with chain IDs and native currencies",
     parameters: { type: "object", properties: {} },
-    async execute() {
+    async execute(_toolCallId: string) {
       const networks = getSupportedNetworks();
       return { content: [{ type: "text", text: JSON.stringify(networks, null, 2) }] };
     },
@@ -27,7 +27,7 @@ export function registerNetworkTools(api: OpenClawPluginApi) {
       },
       required: ["network"],
     },
-    async execute(params: { network: string }) {
+    async execute(_toolCallId: string, params: { network: string }) {
       const chainId = resolveChainId(params.network);
       const client = getPublicClient(chainId);
       const [blockNumber, gasPrice, chainIdResult] = await Promise.all([

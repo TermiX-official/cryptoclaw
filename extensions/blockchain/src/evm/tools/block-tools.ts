@@ -15,7 +15,10 @@ export function registerBlockTools(api: OpenClawPluginApi) {
         network: { type: "string", description: 'Network name or chain ID (default: "bsc")' },
       },
     },
-    async execute(params: { blockNumber?: string; blockHash?: string; network?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { blockNumber?: string; blockHash?: string; network?: string },
+    ) {
       const chainId = params.network ? resolveChainId(params.network) : DEFAULT_CHAIN_ID;
       let block;
       if (params.blockHash) {

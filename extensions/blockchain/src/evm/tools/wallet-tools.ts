@@ -7,16 +7,17 @@ import type { WalletManager } from "../../wallet/wallet-manager.js";
  * Security design:
  * - wallet_export is CLI-only (not registered here) — private keys never enter agent context
  * - wallet_import is CLI-only — private keys should never be pasted in chat
- * - wallet_create prompts passphrase via terminal, NOT as a tool parameter
- * - wallet_delete prompts passphrase via terminal
- * - Only safe metadata operations (list, switch) are parameter-free
+ * - wallet_create / wallet_delete / wallet_unlock accept passphrase as a tool parameter
+ *   so the agent can ask the user in chat (works across gateway/TUI/messaging channels)
+ * - Passphrases are listed in SENSITIVE_PARAM_NAMES and stripped from persisted context
+ * - Only safe metadata operations (list, switch) need no passphrase
  */
 export function registerWalletTools(api: OpenClawPluginApi, walletManager: WalletManager) {
   api.registerTool({
     name: "wallet_create",
     description:
       "Create a new blockchain wallet with a random private key. " +
-      "The passphrase will be securely prompted in the user's terminal — do NOT ask for it in chat.",
+      "Ask the user for a passphrase in chat, then call this tool with it.",
     parameters: {
       type: "object",
       properties: {
@@ -24,49 +25,39 @@ export function registerWalletTools(api: OpenClawPluginApi, walletManager: Walle
           type: "string",
           description: "Human-friendly name for the wallet (e.g. 'Trading', 'Savings')",
         },
+        passphrase: {
+          type: "string",
+          description: "Passphrase to encrypt the wallet (ask the user in chat first)",
+        },
       },
-      required: ["label"],
+      required: ["label", "passphrase"],
     },
-    async execute(params: { label: string }) {
-      // Passphrase is prompted directly in the terminal — never flows through agent context
-      const prompts = await import("@clack/prompts");
-      const passphrase = await prompts.password({
-        message: "Enter a passphrase to encrypt your new wallet:",
-      });
-      if (!passphrase || typeof passphrase !== "string") {
-        return {
-          content: [{ type: "text", text: "Wallet creation cancelled — no passphrase provided." }],
-        };
-      }
-      const confirm = await prompts.password({
-        message: "Confirm passphrase:",
-      });
-      if (confirm !== passphrase) {
+    async execute(_toolCallId: string, params: { label: string; passphrase: string }) {
+      try {
+        const wallet = await walletManager.createWallet(params.label, params.passphrase);
         return {
           content: [
-            { type: "text", text: "Wallet creation cancelled — passphrases did not match." },
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  message: "Wallet created successfully",
+                  label: wallet.label,
+                  address: wallet.address,
+                  // Intentionally omit: id, privateKey, passphrase
+                },
+                null,
+                2,
+              ),
+            },
           ],
         };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return {
+          content: [{ type: "text", text: `Failed to create wallet: ${msg}` }],
+        };
       }
-
-      const wallet = await walletManager.createWallet(params.label, passphrase);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                message: "Wallet created successfully",
-                label: wallet.label,
-                address: wallet.address,
-                // Intentionally omit: id, privateKey, passphrase
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
     },
   });
 
@@ -78,7 +69,7 @@ export function registerWalletTools(api: OpenClawPluginApi, walletManager: Walle
     name: "wallet_list",
     description: "List all wallets with addresses and labels. Does not expose private keys.",
     parameters: { type: "object", properties: {} },
-    async execute() {
+    async execute(_toolCallId: string) {
       const { wallets, activeWalletId } = walletManager.listWallets();
       return {
         content: [
@@ -114,63 +105,72 @@ export function registerWalletTools(api: OpenClawPluginApi, walletManager: Walle
       },
       required: ["label"],
     },
-    async execute(params: { label: string }) {
-      const wallet = walletManager.switchWallet(params.label);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Switched to wallet "${wallet.label}" (${wallet.address})`,
-          },
-        ],
-      };
+    async execute(_toolCallId: string, params: { label: string }) {
+      try {
+        const wallet = walletManager.switchWallet(params.label);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Switched to wallet "${wallet.label}" (${wallet.address})`,
+            },
+          ],
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return {
+          content: [{ type: "text", text: `Failed to switch wallet: ${msg}` }],
+        };
+      }
     },
   });
 
   api.registerTool({
     name: "wallet_delete",
     description:
-      "Delete a wallet permanently. The passphrase will be securely prompted in the user's terminal.",
+      "Delete a wallet permanently. Ask the user for their passphrase in chat to confirm, then call this tool with it.",
     parameters: {
       type: "object",
       properties: {
         label: { type: "string", description: "Wallet label to delete" },
+        passphrase: {
+          type: "string",
+          description: "Wallet passphrase to confirm deletion (ask the user in chat first)",
+        },
       },
-      required: ["label"],
+      required: ["label", "passphrase"],
     },
-    async execute(params: { label: string }) {
-      const prompts = await import("@clack/prompts");
-      const passphrase = await prompts.password({
-        message: `Enter passphrase to confirm deletion of wallet "${params.label}":`,
-      });
-      if (!passphrase || typeof passphrase !== "string") {
-        return { content: [{ type: "text", text: "Deletion cancelled." }] };
+    async execute(_toolCallId: string, params: { label: string; passphrase: string }) {
+      try {
+        await walletManager.deleteWallet(params.label, params.passphrase);
+        return {
+          content: [{ type: "text", text: `Wallet "${params.label}" deleted successfully.` }],
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return {
+          content: [{ type: "text", text: `Failed to delete wallet: ${msg}` }],
+        };
       }
-
-      await walletManager.deleteWallet(params.label, passphrase);
-      return {
-        content: [{ type: "text", text: `Wallet "${params.label}" deleted successfully.` }],
-      };
     },
   });
 
   api.registerTool({
     name: "wallet_unlock",
     description:
-      "Unlock the active wallet by providing the passphrase. " +
-      "Call this when a transaction fails with 'Passphrase required to unlock wallet'. " +
-      "Ask the user for their passphrase in conversation, then call this tool.",
+      "Unlock the active wallet. Ask the user for their passphrase in chat, then call this tool with it. " +
+      "Call this when a transaction fails with 'Passphrase required to unlock wallet'.",
     parameters: {
       type: "object",
       properties: {
         passphrase: {
           type: "string",
-          description: "The wallet encryption passphrase",
+          description: "Wallet passphrase (ask the user in chat first)",
         },
       },
       required: ["passphrase"],
     },
-    async execute(params: { passphrase: string }) {
+    async execute(_toolCallId: string, params: { passphrase: string }) {
       try {
         await walletManager.getActivePrivateKey(params.passphrase);
         return {

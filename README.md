@@ -35,7 +35,7 @@ Built on a multi-channel messaging platform, CryptoClaw answers on **WhatsApp, T
 
 ```bash
 # Install globally
-npm install -g cryptoclaw@latest
+npm install -g @termix-it/cryptoclaw@latest
 
 # Run the onboarding wizard
 cryptoclaw onboard --install-daemon

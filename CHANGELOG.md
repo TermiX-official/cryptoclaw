@@ -41,45 +41,6 @@ Docs: https://cryptoclawdocs.termix.ai
 - Remove unused `bnbchain-mcp/` directory.
 - Update wallet-manager SKILL.md to document CLI-only operations.
 
-## Unreleased — CryptoClaw
-
-### Blockchain Extension
-
-- Add full EVM blockchain extension with wallet management, token transfers, NFT operations, smart contract interaction, and multi-chain support (16+ networks).
-- Add DEX swap tools (Uniswap/PancakeSwap V2+V3) with automated quoting, best-price selection, and slippage protection.
-- Add key guard security: 5-layer private key leak prevention with AES-256-GCM encrypted keystore, tool result sanitization, and outbound message scrubbing.
-- Add spending limits with per-transaction and daily USD caps, transaction confirmation hooks.
-- Add CLI wallet management commands: `cryptoclaw wallet create|import|list|switch|delete|export`.
-
-### ERC-8004 Agent Identity
-
-- Add ERC-8004 (Trustless Agents) integration for on-chain agent identity as ERC-721 NFTs.
-- Add identity tools: `agent_register`, `agent_identity`, `agent_set_wallet`, `agent_reputation`, `agent_list_registered`.
-- Support 14 chains (9 mainnet + 5 testnet) with singleton registry deployments.
-- Add EIP-712 signed wallet assignment for agent identity.
-- Add local identity persistence and reputation queries.
-
-### Onboarding
-
-- Add wallet setup step to `cryptoclaw onboard` wizard (create, import, or skip).
-- Add `--wallet-create`, `--wallet-import`, `--wallet-label`, `--skip-wallet` CLI flags.
-- Add non-interactive wallet creation via `CRYPTOCLAW_WALLET_PASSPHRASE` and `CRYPTOCLAW_WALLET_PRIVATE_KEY` env vars.
-
-### Branding
-
-- Rebrand iOS, macOS, and Android apps to CryptoClaw.
-- Rename plugin manifest to `cryptoclaw.plugin.json` (with backwards-compatible `openclaw.plugin.json` fallback).
-- Rewrite README with crypto-focused features, supported networks, and security model.
-
-### Testing
-
-- Add test suites for dex-config, key-guard, wallet-manager, swap, and agent-identity-config.
-
-### Cleanup
-
-- Remove unused `bnbchain-mcp/` directory.
-- Update wallet-manager SKILL.md to document CLI-only operations.
-
 ## 2026.2.4
 
 ### Changes

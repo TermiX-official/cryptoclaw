@@ -93,8 +93,10 @@ function skillSortKey(skill: SkillStatusEntry): number {
 }
 
 function buildSkillOptions(skills: SkillStatusEntry[]) {
-  const filtered = skills.filter((s) => !s.blockedByAllowlist && !s.disabled);
-  const sorted = [...filtered].sort((a, b) => skillSortKey(a) - skillSortKey(b));
+  // Show all skills (including previously disabled) so users can re-enable them.
+  // Only exclude skills blocked by an explicit allowBundled allowlist.
+  const filtered = skills.filter((s) => !s.blockedByAllowlist);
+  const sorted = filtered.toSorted((a, b) => skillSortKey(a) - skillSortKey(b));
   return sorted.map((skill) => {
     const cat = SKILL_CATEGORY[skill.name] ?? "📦";
     return {
@@ -141,7 +143,7 @@ export async function setupSkills(
     return cfg;
   }
 
-  const selectable = report.skills.filter((s) => !s.blockedByAllowlist && !s.disabled);
+  const selectable = report.skills.filter((s) => !s.blockedByAllowlist);
 
   // Pre-select eligible skills
   const initialValues = selectable.filter((s) => s.eligible).map((s) => s.name);

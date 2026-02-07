@@ -1,3 +1,9 @@
+---
+name: aave-bsc
+description: Interact with Aave V3 lending protocol on BNB Smart Chain (BSC).
+metadata: { "cryptoclaw": { "emoji": "🏦" } }
+---
+
 # AAVE V3 BSC SKILL
 
 This skill allows CryptoClaw to interact with the Aave V3 protocol on the BNB Smart Chain (BSC).

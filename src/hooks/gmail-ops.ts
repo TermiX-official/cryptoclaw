@@ -11,7 +11,7 @@ import {
 } from "../config/config.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime } from "../runtime.js";
-import { displayPath } from "../utils.js";
+import { shortenHomePath } from "../utils.js";
 import {
   ensureDependency,
   ensureGcloudAuth,
@@ -276,7 +276,7 @@ export async function runGmailSetup(opts: GmailSetupOptions) {
   defaultRuntime.log(`- subscription: ${subscription}`);
   defaultRuntime.log(`- push endpoint: ${pushEndpoint}`);
   defaultRuntime.log(`- hook url: ${hookUrl}`);
-  defaultRuntime.log(`- config: ${displayPath(CONFIG_PATH)}`);
+  defaultRuntime.log(`- config: ${shortenHomePath(CONFIG_PATH)}`);
   defaultRuntime.log(`Next: ${formatCliCommand("cryptoclaw webhooks gmail run")}`);
 }
 

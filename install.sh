@@ -711,6 +711,14 @@ ensure_cryptoclaw_bin_link() {
         ln -sf "$npm_root/@termix-it/cryptoclaw/dist/entry.js" "${npm_bin}/cryptoclaw"
         echo -e "${WARN}→${NC} Installed cryptoclaw bin link at ${INFO}${npm_bin}/cryptoclaw${NC}"
     fi
+
+    # Create a "cryptoclaw" symlink so extensions can resolve "cryptoclaw/plugin-sdk"
+    # via Node's standard module resolution (subpath exports on the scoped package).
+    if [[ ! -e "$npm_root/cryptoclaw" ]]; then
+        ln -sf "$npm_root/@termix-it/cryptoclaw" "$npm_root/cryptoclaw"
+        echo -e "${SUCCESS}✓${NC} Linked ${INFO}cryptoclaw${NC} → ${INFO}@termix-it/cryptoclaw${NC} for plugin-sdk resolution"
+    fi
+
     return 0
 }
 
@@ -792,11 +800,18 @@ ensure_user_local_bin_on_path() {
     done
 }
 
-# Check for existing CryptoClaw installation
+# Check for existing CryptoClaw installation.
+# Returns 0 (upgrade) only when both the binary AND config file exist.
+# If the binary is present but config is missing, this is a partial/broken
+# install and should be treated as a fresh install so onboarding runs.
 check_existing_cryptoclaw() {
     if [[ -n "$(type -P cryptoclaw 2>/dev/null || true)" ]]; then
-        echo -e "${WARN}→${NC} Existing CryptoClaw installation detected"
-        return 0
+        if [[ -f "${HOME}/.cryptoclaw/cryptoclaw.json" ]]; then
+            echo -e "${WARN}→${NC} Existing CryptoClaw installation detected"
+            return 0
+        fi
+        echo -e "${WARN}→${NC} CryptoClaw binary found, but no config — treating as fresh install"
+        return 1
     fi
     return 1
 }

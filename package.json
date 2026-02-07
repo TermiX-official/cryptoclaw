@@ -1,5 +1,5 @@
 {
-  "name": "cryptoclaw",
+  "name": "@termix-it/cryptoclaw",
   "version": "1.0.0",
   "description": "Private crypto AI assistant — wallet management, DeFi, NFTs, and multi-chain operations from your terminal",
   "keywords": [],

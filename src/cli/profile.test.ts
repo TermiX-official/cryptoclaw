@@ -61,10 +61,10 @@ describe("applyCliProfileEnv", () => {
       env,
       homedir: () => "/home/peter",
     });
-    const expectedStateDir = path.join("/home/peter", ".openclaw-dev");
+    const expectedStateDir = path.join("/home/peter", ".cryptoclaw-dev");
     expect(env.CRYPTOCLAW_PROFILE).toBe("dev");
     expect(env.CRYPTOCLAW_STATE_DIR).toBe(expectedStateDir);
-    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "openclaw.json"));
+    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "cryptoclaw.json"));
     expect(env.CRYPTOCLAW_GATEWAY_PORT).toBe("19001");
   });
 
@@ -80,7 +80,7 @@ describe("applyCliProfileEnv", () => {
     });
     expect(env.CRYPTOCLAW_STATE_DIR).toBe("/custom");
     expect(env.CRYPTOCLAW_GATEWAY_PORT).toBe("19099");
-    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join("/custom", "openclaw.json"));
+    expect(env.CRYPTOCLAW_CONFIG_PATH).toBe(path.join("/custom", "cryptoclaw.json"));
   });
 });
 

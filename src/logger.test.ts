@@ -69,10 +69,10 @@ describe("logger helpers", () => {
     resetLogger();
     setLoggerOverride({}); // force defaults regardless of user config
     const today = localDateString(new Date());
-    const todayPath = path.join(DEFAULT_LOG_DIR, `openclaw-${today}.log`);
+    const todayPath = path.join(DEFAULT_LOG_DIR, `cryptoclaw-${today}.log`);
 
     // create an old file to be pruned
-    const oldPath = path.join(DEFAULT_LOG_DIR, "openclaw-2000-01-01.log");
+    const oldPath = path.join(DEFAULT_LOG_DIR, "cryptoclaw-2000-01-01.log");
     fs.mkdirSync(DEFAULT_LOG_DIR, { recursive: true });
     fs.writeFileSync(oldPath, "old");
     fs.utimesSync(oldPath, new Date(0), new Date(0));

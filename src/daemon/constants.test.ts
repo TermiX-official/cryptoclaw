@@ -130,17 +130,17 @@ describe("resolveGatewayWindowsTaskName", () => {
 
   it("returns profile-specific task name when profile is set", () => {
     const result = resolveGatewayWindowsTaskName("dev");
-    expect(result).toBe("OpenClaw Gateway (dev)");
+    expect(result).toBe("CryptoClaw Gateway (dev)");
   });
 
   it("returns profile-specific task name for custom profile", () => {
     const result = resolveGatewayWindowsTaskName("work");
-    expect(result).toBe("OpenClaw Gateway (work)");
+    expect(result).toBe("CryptoClaw Gateway (work)");
   });
 
   it("trims whitespace from profile", () => {
     const result = resolveGatewayWindowsTaskName("  ci  ");
-    expect(result).toBe("OpenClaw Gateway (ci)");
+    expect(result).toBe("CryptoClaw Gateway (ci)");
   });
 
   it("returns default task name for empty string profile", () => {
@@ -180,19 +180,19 @@ describe("formatGatewayServiceDescription", () => {
 
   it("includes profile when set", () => {
     expect(formatGatewayServiceDescription({ profile: "work" })).toBe(
-      "OpenClaw Gateway (profile: work)",
+      "CryptoClaw Gateway (profile: work)",
     );
   });
 
   it("includes version when set", () => {
     expect(formatGatewayServiceDescription({ version: "2026.1.10" })).toBe(
-      "OpenClaw Gateway (v2026.1.10)",
+      "CryptoClaw Gateway (v2026.1.10)",
     );
   });
 
   it("includes profile and version when set", () => {
     expect(formatGatewayServiceDescription({ profile: "dev", version: "1.2.3" })).toBe(
-      "OpenClaw Gateway (profile: dev, v1.2.3)",
+      "CryptoClaw Gateway (profile: dev, v1.2.3)",
     );
   });
 });

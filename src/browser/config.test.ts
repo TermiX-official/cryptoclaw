@@ -17,7 +17,7 @@ describe("browser config", () => {
     expect(profile?.cdpUrl).toBe("http://127.0.0.1:18792");
 
     const openclaw = resolveProfile(resolved, "openclaw");
-    expect(openclaw?.driver).toBe("openclaw");
+    expect(openclaw?.driver).toBe("cryptoclaw");
     expect(openclaw?.cdpPort).toBe(18800);
     expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:18800");
     expect(resolved.remoteCdpTimeoutMs).toBe(1500);

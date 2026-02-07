@@ -624,8 +624,8 @@ export async function statusCommand(
   }
 
   runtime.log("");
-  runtime.log("FAQ: https://docs.openclaw.ai/faq");
-  runtime.log("Troubleshooting: https://docs.openclaw.ai/troubleshooting");
+  runtime.log("FAQ: https://cryptoclawdocs.termix.ai/faq");
+  runtime.log("Troubleshooting: https://cryptoclawdocs.termix.ai/troubleshooting");
   runtime.log("");
   const updateHint = formatUpdateAvailableHint(update);
   if (updateHint) {

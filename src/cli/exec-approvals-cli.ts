@@ -244,7 +244,7 @@ export function registerExecApprovalsCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "cryptoclawdocs.termix.ai/cli/approvals")}\n`,
     );
 
   const getCmd = approvals
@@ -348,7 +348,7 @@ export function registerExecApprovalsCli(program: Command) {
         )}\n${formatExample(
           'cryptoclaw approvals allowlist remove "~/Projects/**/bin/rg"',
           "Remove an allowlist pattern.",
-        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "cryptoclawdocs.termix.ai/cli/approvals")}\n`,
     );
 
   const allowlistAdd = allowlist

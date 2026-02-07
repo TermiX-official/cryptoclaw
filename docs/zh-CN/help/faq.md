@@ -27,7 +27,7 @@ x-i18n:
   - [卡在 "wake up my friend" / 新手引导无法启动，怎么办？](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [能否将我的设置迁移到新机器（Mac mini）而不重新进行新手引导？](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [在哪里查看最新版本的更新内容？](#where-do-i-see-whats-new-in-the-latest-version)
-  - [无法访问 docs.openclaw.ai（SSL 错误），怎么办？](#i-cant-access-docsopenclawai-ssl-error-what-now)
+  - [无法访问 cryptoclawdocs.termix.ai（SSL 错误），怎么办？](#i-cant-access-docsopenclawai-ssl-error-what-now)
   - [stable 和 beta 有什么区别？](#whats-the-difference-between-stable-and-beta)
 - [如何安装 beta 版本，beta 和 dev 有什么区别？](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [如何试用最新代码？](#how-do-i-try-the-latest-bits)
@@ -425,9 +425,9 @@ https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md
 
 最新条目在顶部。如果顶部部分标记为 **Unreleased**，则下一个带日期的部分是最新发布版本。条目按**亮点**、**变更**和**修复**分组（需要时还有文档/其他部分）。
 
-### 无法访问 docs.openclaw.ai（SSL 错误），怎么办
+### 无法访问 cryptoclawdocs.termix.ai（SSL 错误），怎么办
 
-一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 错误地拦截了 `docs.openclaw.ai`。禁用该功能或将 `docs.openclaw.ai` 加入白名单，然后重试。更多详情：[故障排除](/help/troubleshooting#docsopenclawai-shows-an-ssl-error-comcastxfinity)。
+一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 错误地拦截了 `cryptoclawdocs.termix.ai`。禁用该功能或将 `cryptoclawdocs.termix.ai` 加入白名单，然后重试。更多详情：[故障排除](/help/troubleshooting#docsopenclawai-shows-an-ssl-error-comcastxfinity)。
 请帮助我们在此处报告以解除封锁：https://spa.xfinity.com/check_url_status。
 
 如果仍然无法访问该网站，文档在 GitHub 上有镜像：

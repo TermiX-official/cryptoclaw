@@ -147,9 +147,11 @@ export async function configureGatewayForOnboarding(
   let tailscaleResetOnExit = flow === "quickstart" ? quickstartGateway.tailscaleResetOnExit : false;
   if (tailscaleMode !== "off" && flow !== "quickstart") {
     await prompter.note(
-      ["Docs:", "https://docs.openclaw.ai/gateway/tailscale", "https://docs.openclaw.ai/web"].join(
-        "\n",
-      ),
+      [
+        "Docs:",
+        "https://cryptoclawdocs.termix.ai/gateway/tailscale",
+        "https://cryptoclawdocs.termix.ai/web",
+      ].join("\n"),
       "Tailscale",
     );
     tailscaleResetOnExit = Boolean(

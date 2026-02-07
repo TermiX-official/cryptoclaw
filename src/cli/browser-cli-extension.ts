@@ -102,7 +102,7 @@ export function registerBrowserExtensionCommands(
             `- “Load unpacked” → select: ${displayPath}`,
             `- Pin “OpenClaw Browser Relay”, then click it on the tab (badge shows ON)`,
             "",
-            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "docs.openclaw.ai/tools/chrome-extension")}`,
+            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "cryptoclawdocs.termix.ai/tools/chrome-extension")}`,
           ].join("\n"),
         ),
       );
@@ -119,7 +119,7 @@ export function registerBrowserExtensionCommands(
           danger(
             [
               `Chrome extension is not installed. Run: "${formatCliCommand("cryptoclaw browser extension install")}"`,
-              `Docs: ${formatDocsLink("/tools/chrome-extension", "docs.openclaw.ai/tools/chrome-extension")}`,
+              `Docs: ${formatDocsLink("/tools/chrome-extension", "cryptoclawdocs.termix.ai/tools/chrome-extension")}`,
             ].join("\n"),
           ),
         );

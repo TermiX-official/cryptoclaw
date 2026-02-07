@@ -221,8 +221,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.openclaw.ai/gateway/health",
-          "https://docs.openclaw.ai/gateway/troubleshooting",
+          "https://cryptoclawdocs.termix.ai/gateway/health",
+          "https://cryptoclawdocs.termix.ai/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -274,7 +274,7 @@ export async function finalizeOnboardingWizard(
       `Web UI: ${dashboardUrl}`,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.openclaw.ai/web/control-ui",
+      "Docs: https://cryptoclawdocs.termix.ai/web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -366,7 +366,7 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.openclaw.ai/security",
+    "Running agents on your computer is risky — harden your setup: https://cryptoclawdocs.termix.ai/security",
     "Security",
   );
 

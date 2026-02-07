@@ -277,7 +277,7 @@ export async function setupSkills(
       runtime.log(
         `Tip: run \`${formatCliCommand("cryptoclaw doctor")}\` to review skills + requirements.`,
       );
-      runtime.log("Docs: https://docs.openclaw.ai/skills");
+      runtime.log("Docs: https://cryptoclawdocs.termix.ai/skills");
     }
   }
 

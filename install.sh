@@ -801,15 +801,23 @@ ensure_user_local_bin_on_path() {
 }
 
 # Check for existing CryptoClaw installation.
-# Returns 0 (upgrade) only when both the binary AND config file exist.
+# Returns 0 (upgrade) only when both the binary AND a config file exist.
 # If the binary is present but config is missing, this is a partial/broken
 # install and should be treated as a fresh install so onboarding runs.
+# Mirrors the legacy search order in src/config/paths.ts.
 check_existing_cryptoclaw() {
     if [[ -n "$(type -P cryptoclaw 2>/dev/null || true)" ]]; then
-        if [[ -f "${HOME}/.cryptoclaw/cryptoclaw.json" ]]; then
-            echo -e "${WARN}→${NC} Existing CryptoClaw installation detected"
-            return 0
-        fi
+        # Check current + legacy state dirs and config filenames
+        local -a state_dirs=( ".cryptoclaw" ".openclaw" ".clawdbot" ".moltbot" ".moldbot" )
+        local -a config_names=( "cryptoclaw.json" "openclaw.json" "clawdbot.json" "moltbot.json" "moldbot.json" )
+        for dir in "${state_dirs[@]}"; do
+            for cfg in "${config_names[@]}"; do
+                if [[ -f "${HOME}/${dir}/${cfg}" ]]; then
+                    echo -e "${WARN}→${NC} Existing CryptoClaw installation detected (${dir}/${cfg})"
+                    return 0
+                fi
+            done
+        done
         echo -e "${WARN}→${NC} CryptoClaw binary found, but no config — treating as fresh install"
         return 1
     fi

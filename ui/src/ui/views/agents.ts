@@ -255,11 +255,17 @@ function resolveAgentEmoji(
     agent.identity?.avatar,
   ]) {
     const trimmed = raw?.trim();
-    if (!trimmed) continue;
-    if (isLikelyEmoji(trimmed)) return trimmed;
+    if (!trimmed) {
+      continue;
+    }
+    if (isLikelyEmoji(trimmed)) {
+      return trimmed;
+    }
     // Value may contain an emoji followed by description text (e.g. "🤖 (or ⚠️ …)")
     const leading = extractLeadingEmoji(trimmed);
-    if (leading) return leading;
+    if (leading) {
+      return leading;
+    }
   }
   return "";
 }

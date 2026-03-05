@@ -1,3 +1,4 @@
+import { formatCliCommand } from "../cli/command-format.js";
 import type {
   GatewayAuthChoice,
   OnboardMode,
@@ -5,43 +6,18 @@ import type {
   ResetScope,
 } from "../commands/onboard-types.js";
 import type { OpenClawConfig } from "../config/config.js";
-import type { RuntimeEnv } from "../runtime.js";
-import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
-import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
-import { listChannelPlugins } from "../channels/plugins/index.js";
-import { formatCliCommand } from "../cli/command-format.js";
-import { promptAuthChoiceGrouped } from "../commands/auth-choice-prompt.js";
-import {
-  applyAuthChoice,
-  resolvePreferredProviderForAuthChoice,
-  warnIfModelConfigLooksOff,
-} from "../commands/auth-choice.js";
-import { applyPrimaryModel, promptDefaultModel } from "../commands/model-picker.js";
-import { setupChannels } from "../commands/onboard-channels.js";
-import {
-  applyWizardMetadata,
-  DEFAULT_WORKSPACE,
-  ensureWorkspaceAndSessions,
-  handleReset,
-  printWizardHeader,
-  probeGatewayReachable,
-  summarizeExistingConfig,
-} from "../commands/onboard-helpers.js";
-import { setupInternalHooks } from "../commands/onboard-hooks.js";
-import { promptRemoteGatewayConfig } from "../commands/onboard-remote.js";
-import { setupSkills } from "../commands/onboard-skills.js";
-import { setupWallet } from "../commands/onboard-wallet.js";
 import {
   DEFAULT_GATEWAY_PORT,
   readConfigFileSnapshot,
   resolveGatewayPort,
   writeConfigFile,
 } from "../config/config.js";
-import { logConfigUpdated } from "../config/logging.js";
+import { normalizeSecretInputString } from "../config/types.secrets.js";
+import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
-import { finalizeOnboardingWizard } from "./onboarding.finalize.js";
-import { configureGatewayForOnboarding } from "./onboarding.gateway-config.js";
+import { resolveOnboardingSecretInputString } from "./onboarding.secret-input.js";
+import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
 
 async function requireRiskAcknowledgement(params: {
@@ -56,31 +32,37 @@ async function requireRiskAcknowledgement(params: {
     [
       "Security warning — please read.",
       "",
-      "CryptoClaw is a hobby project and still in beta. Expect sharp edges.",
+      "OpenClaw is a hobby project and still in beta. Expect sharp edges.",
+      "By default, OpenClaw is a personal agent: one trusted operator boundary.",
       "This bot can read files and run actions if tools are enabled.",
       "A bad prompt can trick it into doing unsafe things.",
-      "Never share your wallet passphrase or private keys with anyone — including AI agents.",
       "",
-      "If you're not comfortable with basic security and access control, don't run CryptoClaw.",
+      "OpenClaw is not a hostile multi-tenant boundary by default.",
+      "If multiple users can message one tool-enabled agent, they share that delegated tool authority.",
+      "",
+      "If you’re not comfortable with security hardening and access control, don’t run OpenClaw.",
       "Ask someone experienced to help before enabling tools or exposing it to the internet.",
       "",
       "Recommended baseline:",
       "- Pairing/allowlists + mention gating.",
+      "- Multi-user/shared inbox: split trust boundaries (separate gateway/credentials, ideally separate OS users/hosts).",
       "- Sandbox + least-privilege tools.",
+      "- Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep tool access minimal.",
       "- Keep secrets out of the agent’s reachable filesystem.",
       "- Use the strongest available model for any bot with tools or untrusted inboxes.",
       "",
       "Run regularly:",
-      "cryptoclaw security audit --deep",
-      "cryptoclaw security audit --fix",
+      "openclaw security audit --deep",
+      "openclaw security audit --fix",
       "",
-      "Must read: https://cryptoclawdocs.termix.ai/gateway/security",
+      "Must read: https://docs.openclaw.ai/gateway/security",
     ].join("\n"),
     "Security",
   );
 
   const ok = await params.prompter.confirm({
-    message: "I understand this is powerful and inherently risky. Continue?",
+    message:
+      "I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?",
     initialValue: false,
   });
   if (!ok) {
@@ -93,33 +75,34 @@ export async function runOnboardingWizard(
   runtime: RuntimeEnv = defaultRuntime,
   prompter: WizardPrompter,
 ) {
-  printWizardHeader(runtime);
-  await prompter.intro("CryptoClaw setup");
+  const onboardHelpers = await import("../commands/onboard-helpers.js");
+  onboardHelpers.printWizardHeader(runtime);
+  await prompter.intro("OpenClaw onboarding");
   await requireRiskAcknowledgement({ opts, prompter });
 
   const snapshot = await readConfigFileSnapshot();
   let baseConfig: OpenClawConfig = snapshot.valid ? snapshot.config : {};
 
   if (snapshot.exists && !snapshot.valid) {
-    await prompter.note(summarizeExistingConfig(baseConfig), "Invalid config");
+    await prompter.note(onboardHelpers.summarizeExistingConfig(baseConfig), "Invalid config");
     if (snapshot.issues.length > 0) {
       await prompter.note(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://cryptoclawdocs.termix.ai/gateway/configuration",
+          "Docs: https://docs.openclaw.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );
     }
     await prompter.outro(
-      `Config invalid. Run \`${formatCliCommand("cryptoclaw doctor")}\` to repair it, then re-run onboarding.`,
+      `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run onboarding.`,
     );
     runtime.exit(1);
     return;
   }
 
-  const quickstartHint = `Configure details later via ${formatCliCommand("cryptoclaw configure")}.`;
+  const quickstartHint = `Configure details later via ${formatCliCommand("openclaw configure")}.`;
   const manualHint = "Configure port, network, Tailscale, and auth options.";
   const explicitFlowRaw = opts.flow?.trim();
   const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
@@ -156,7 +139,10 @@ export async function runOnboardingWizard(
   }
 
   if (snapshot.exists) {
-    await prompter.note(summarizeExistingConfig(baseConfig), "Existing config detected");
+    await prompter.note(
+      onboardHelpers.summarizeExistingConfig(baseConfig),
+      "Existing config detected",
+    );
 
     const action = await prompter.select({
       message: "Config handling",
@@ -168,7 +154,8 @@ export async function runOnboardingWizard(
     });
 
     if (action === "reset") {
-      const workspaceDefault = baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
+      const workspaceDefault =
+        baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE;
       const resetScope = (await prompter.select({
         message: "Reset scope",
         options: [
@@ -183,7 +170,7 @@ export async function runOnboardingWizard(
           },
         ],
       })) as ResetScope;
-      await handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
+      await onboardHelpers.handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
       baseConfig = {};
     }
   }
@@ -294,16 +281,39 @@ export async function runOnboardingWizard(
 
   const localPort = resolveGatewayPort(baseConfig);
   const localUrl = `ws://127.0.0.1:${localPort}`;
-  const localProbe = await probeGatewayReachable({
+  let localGatewayPassword =
+    process.env.OPENCLAW_GATEWAY_PASSWORD ??
+    normalizeSecretInputString(baseConfig.gateway?.auth?.password);
+  try {
+    const resolvedGatewayPassword = await resolveOnboardingSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.auth?.password,
+      path: "gateway.auth.password",
+      env: process.env,
+    });
+    if (resolvedGatewayPassword) {
+      localGatewayPassword = resolvedGatewayPassword;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.auth.password SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
+
+  const localProbe = await onboardHelpers.probeGatewayReachable({
     url: localUrl,
-    token: baseConfig.gateway?.auth?.token ?? process.env.CRYPTOCLAW_GATEWAY_TOKEN,
-    password: baseConfig.gateway?.auth?.password ?? process.env.CRYPTOCLAW_GATEWAY_PASSWORD,
+    token: baseConfig.gateway?.auth?.token ?? process.env.OPENCLAW_GATEWAY_TOKEN,
+    password: localGatewayPassword,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
   const remoteProbe = remoteUrl
-    ? await probeGatewayReachable({
+    ? await onboardHelpers.probeGatewayReachable({
         url: remoteUrl,
-        token: baseConfig.gateway?.remote?.token,
+        token: normalizeSecretInputString(baseConfig.gateway?.remote?.token),
       })
     : null;
 
@@ -334,8 +344,12 @@ export async function runOnboardingWizard(
         })) as OnboardMode));
 
   if (mode === "remote") {
-    let nextConfig = await promptRemoteGatewayConfig(baseConfig, prompter);
-    nextConfig = applyWizardMetadata(nextConfig, { command: "onboard", mode });
+    const { promptRemoteGatewayConfig } = await import("../commands/onboard-remote.js");
+    const { logConfigUpdated } = await import("../config/logging.js");
+    let nextConfig = await promptRemoteGatewayConfig(baseConfig, prompter, {
+      secretInputMode: opts.secretInputMode,
+    });
+    nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
     await writeConfigFile(nextConfig);
     logConfigUpdated(runtime);
     await prompter.outro("Remote gateway configured.");
@@ -345,28 +359,23 @@ export async function runOnboardingWizard(
   const workspaceInput =
     opts.workspace ??
     (flow === "quickstart"
-      ? (baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE)
+      ? (baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE)
       : await prompter.text({
           message: "Workspace directory",
-          initialValue: baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE,
+          initialValue: baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE,
         }));
 
-  const workspaceDir = resolveUserPath(workspaceInput.trim() || DEFAULT_WORKSPACE);
+  const workspaceDir = resolveUserPath(workspaceInput.trim() || onboardHelpers.DEFAULT_WORKSPACE);
 
-  let nextConfig: OpenClawConfig = {
-    ...baseConfig,
-    agents: {
-      ...baseConfig.agents,
-      defaults: {
-        ...baseConfig.agents?.defaults,
-        workspace: workspaceDir,
-      },
-    },
-    gateway: {
-      ...baseConfig.gateway,
-      mode: "local",
-    },
-  };
+  const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
+  let nextConfig: OpenClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+
+  const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
+  const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
+  const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
+  const { applyAuthChoice, resolvePreferredProviderForAuthChoice, warnIfModelConfigLooksOff } =
+    await import("../commands/auth-choice.js");
+  const { applyPrimaryModel, promptDefaultModel } = await import("../commands/model-picker.js");
 
   const authStore = ensureAuthProfileStore(undefined, {
     allowKeychainPrompt: false,
@@ -380,27 +389,41 @@ export async function runOnboardingWizard(
       includeSkip: true,
     }));
 
-  const authResult = await applyAuthChoice({
-    authChoice,
-    config: nextConfig,
-    prompter,
-    runtime,
-    setDefaultModel: true,
-    opts: {
-      tokenProvider: opts.tokenProvider,
-      token: opts.authChoice === "apiKey" && opts.token ? opts.token : undefined,
-    },
-  });
-  nextConfig = authResult.config;
+  if (authChoice === "custom-api-key") {
+    const customResult = await promptCustomApiConfig({
+      prompter,
+      runtime,
+      config: nextConfig,
+      secretInputMode: opts.secretInputMode,
+    });
+    nextConfig = customResult.config;
+  } else {
+    const authResult = await applyAuthChoice({
+      authChoice,
+      config: nextConfig,
+      prompter,
+      runtime,
+      setDefaultModel: true,
+      opts: {
+        tokenProvider: opts.tokenProvider,
+        token: opts.authChoice === "apiKey" && opts.token ? opts.token : undefined,
+      },
+    });
+    nextConfig = authResult.config;
+  }
 
-  if (authChoiceFromPrompt) {
+  if (authChoiceFromPrompt && authChoice !== "custom-api-key") {
     const modelSelection = await promptDefaultModel({
       config: nextConfig,
       prompter,
       allowKeep: true,
       ignoreAllowlist: true,
+      includeVllm: true,
       preferredProvider: resolvePreferredProviderForAuthChoice(authChoice),
     });
+    if (modelSelection.config) {
+      nextConfig = modelSelection.config;
+    }
     if (modelSelection.model) {
       nextConfig = applyPrimaryModel(nextConfig, modelSelection.model);
     }
@@ -408,73 +431,14 @@ export async function runOnboardingWizard(
 
   await warnIfModelConfigLooksOff(nextConfig, prompter);
 
-  // --- Wallet setup (early — crypto is front-and-center) ---
-  let walletAddress: string | undefined;
-  if (!opts.skipWallet) {
-    const { resolveStateDir } = await import("../config/paths.js");
-    const stateDir = resolveStateDir();
-    const walletResult = await setupWallet(stateDir, prompter, {
-      walletCreate: opts.walletCreate,
-      walletImport: opts.walletImport,
-      walletLabel: opts.walletLabel,
-      skipWallet: opts.skipWallet,
-    });
-    walletAddress = walletResult.address;
-    if (walletAddress) {
-      await prompter.note(`Wallet ready: ${walletAddress}`, "Blockchain");
-    }
-  }
-
-  // --- Default chain selection ---
-  const existingDefault = (
-    baseConfig.plugins?.entries as Record<string, { config?: Record<string, unknown> }> | undefined
-  )?.blockchain?.config?.defaultChain as string | undefined;
-
-  const defaultChain =
-    flow === "quickstart"
-      ? (existingDefault ?? "bsc")
-      : await prompter.select({
-          message: "Default blockchain network",
-          options: [
-            { value: "bsc", label: "BNB Smart Chain (BSC)", hint: "Low fees, fast blocks" },
-            { value: "ethereum", label: "Ethereum", hint: "Largest ecosystem" },
-            { value: "base", label: "Base", hint: "Coinbase L2, low fees" },
-            { value: "arbitrum", label: "Arbitrum", hint: "Ethereum L2" },
-            { value: "polygon", label: "Polygon", hint: "Low fees, wide adoption" },
-          ],
-          initialValue: existingDefault ?? "bsc",
-        });
-
-  // Persist the chain choice into plugin config
-  const blockchainPluginEntries =
-    (
-      nextConfig.plugins?.entries as
-        | Record<string, { config?: Record<string, unknown> }>
-        | undefined
-    )?.blockchain ?? {};
-  nextConfig = {
-    ...nextConfig,
-    plugins: {
-      ...nextConfig.plugins,
-      entries: {
-        ...(nextConfig.plugins?.entries as Record<string, unknown> | undefined),
-        blockchain: {
-          ...blockchainPluginEntries,
-          config: {
-            ...blockchainPluginEntries.config,
-            defaultChain,
-          },
-        },
-      },
-    },
-  };
-
+  const { configureGatewayForOnboarding } = await import("./onboarding.gateway-config.js");
   const gateway = await configureGatewayForOnboarding({
     flow,
     baseConfig,
     nextConfig,
     localPort,
     quickstartGateway,
+    secretInputMode: opts.secretInputMode,
     prompter,
     runtime,
   });
@@ -484,6 +448,8 @@ export async function runOnboardingWizard(
   if (opts.skipChannels ?? opts.skipProviders) {
     await prompter.note("Skipping channel setup.", "Channels");
   } else {
+    const { listChannelPlugins } = await import("../channels/plugins/index.js");
+    const { setupChannels } = await import("../commands/onboard-channels.js");
     const quickstartAllowFromChannels =
       flow === "quickstart"
         ? listChannelPlugins()
@@ -496,27 +462,32 @@ export async function runOnboardingWizard(
       skipDmPolicyPrompt: flow === "quickstart",
       skipConfirm: flow === "quickstart",
       quickstartDefaults: flow === "quickstart",
+      secretInputMode: opts.secretInputMode,
     });
   }
 
   await writeConfigFile(nextConfig);
+  const { logConfigUpdated } = await import("../config/logging.js");
   logConfigUpdated(runtime);
-  await ensureWorkspaceAndSessions(workspaceDir, runtime, {
+  await onboardHelpers.ensureWorkspaceAndSessions(workspaceDir, runtime, {
     skipBootstrap: Boolean(nextConfig.agents?.defaults?.skipBootstrap),
   });
 
   if (opts.skipSkills) {
     await prompter.note("Skipping skills setup.", "Skills");
   } else {
+    const { setupSkills } = await import("../commands/onboard-skills.js");
     nextConfig = await setupSkills(nextConfig, workspaceDir, runtime, prompter);
   }
 
   // Setup hooks (session memory on /new)
+  const { setupInternalHooks } = await import("../commands/onboard-hooks.js");
   nextConfig = await setupInternalHooks(nextConfig, runtime, prompter);
 
-  nextConfig = applyWizardMetadata(nextConfig, { command: "onboard", mode });
+  nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);
 
+  const { finalizeOnboardingWizard } = await import("./onboarding.finalize.js");
   const { launchedTui } = await finalizeOnboardingWizard({
     flow,
     opts,
@@ -526,7 +497,6 @@ export async function runOnboardingWizard(
     settings,
     prompter,
     runtime,
-    walletAddress,
   });
   if (launchedTui) {
     return;

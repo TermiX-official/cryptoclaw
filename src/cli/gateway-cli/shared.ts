@@ -6,26 +6,9 @@ import {
 import { resolveGatewayService } from "../../daemon/service.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
+import { parsePort } from "../shared/parse-port.js";
 
-export function parsePort(raw: unknown): number | null {
-  if (raw === undefined || raw === null) {
-    return null;
-  }
-  const value =
-    typeof raw === "string"
-      ? raw
-      : typeof raw === "number" || typeof raw === "bigint"
-        ? raw.toString()
-        : null;
-  if (value === null) {
-    return null;
-  }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-  return parsed;
-}
+export { parsePort };
 
 export const toOptionString = (value: unknown): string | undefined => {
   if (typeof value === "string") {
@@ -82,25 +65,25 @@ export function extractGatewayMiskeys(parsed: unknown): {
 }
 
 export function renderGatewayServiceStopHints(env: NodeJS.ProcessEnv = process.env): string[] {
-  const profile = env.CRYPTOCLAW_PROFILE;
+  const profile = env.OPENCLAW_PROFILE;
   switch (process.platform) {
     case "darwin":
       return [
-        `Tip: ${formatCliCommand("cryptoclaw gateway stop")}`,
+        `Tip: ${formatCliCommand("openclaw gateway stop")}`,
         `Or: launchctl bootout gui/$UID/${resolveGatewayLaunchAgentLabel(profile)}`,
       ];
     case "linux":
       return [
-        `Tip: ${formatCliCommand("cryptoclaw gateway stop")}`,
+        `Tip: ${formatCliCommand("openclaw gateway stop")}`,
         `Or: systemctl --user stop ${resolveGatewaySystemdServiceName(profile)}.service`,
       ];
     case "win32":
       return [
-        `Tip: ${formatCliCommand("cryptoclaw gateway stop")}`,
+        `Tip: ${formatCliCommand("openclaw gateway stop")}`,
         `Or: schtasks /End /TN "${resolveGatewayWindowsTaskName(profile)}"`,
       ];
     default:
-      return [`Tip: ${formatCliCommand("cryptoclaw gateway stop")}`];
+      return [`Tip: ${formatCliCommand("openclaw gateway stop")}`];
   }
 }
 

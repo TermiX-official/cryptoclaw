@@ -1,31 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CryptoClawApp } from "./app.ts";
+import { describe, expect, it } from "vitest";
+import { mountApp, registerAppMountHooks } from "./test-helpers/app-mount.ts";
 
-// oxlint-disable-next-line typescript/unbound-method
-const originalConnect = CryptoClawApp.prototype.connect;
-
-function mountApp(pathname: string) {
-  window.history.replaceState({}, "", pathname);
-  const app = document.createElement("cryptoclaw-app") as CryptoClawApp;
-  document.body.append(app);
-  return app;
-}
-
-beforeEach(() => {
-  CryptoClawApp.prototype.connect = () => {
-    // no-op: avoid real gateway WS connections in browser tests
-  };
-  window.__CRYPTOCLAW_CONTROL_UI_BASE_PATH__ = undefined;
-  localStorage.clear();
-  document.body.innerHTML = "";
-});
-
-afterEach(() => {
-  CryptoClawApp.prototype.connect = originalConnect;
-  window.__CRYPTOCLAW_CONTROL_UI_BASE_PATH__ = undefined;
-  localStorage.clear();
-  document.body.innerHTML = "";
-});
+registerAppMountHooks();
 
 describe("chat markdown rendering", () => {
   it("renders markdown inside tool output sidebar", async () => {

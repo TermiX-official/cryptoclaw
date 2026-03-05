@@ -1,9 +1,9 @@
-import type { Command } from "commander";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Command } from "commander";
 import { movePathToTrash } from "../browser/trash.js";
-import { STATE_DIR } from "../config/paths.js";
+import { resolveStateDir } from "../config/paths.js";
 import { danger, info } from "../globals.js";
 import { copyToClipboard } from "../infra/clipboard.js";
 import { defaultRuntime } from "../runtime.js";
@@ -32,7 +32,7 @@ export function resolveBundledExtensionRootDir(
 }
 
 function installedExtensionRootDir() {
-  return path.join(STATE_DIR, "browser", "chrome-extension");
+  return path.join(resolveStateDir(), "browser", "chrome-extension");
 }
 
 function hasManifest(dir: string) {
@@ -48,7 +48,7 @@ export async function installChromeExtension(opts?: {
     throw new Error("Bundled Chrome extension is missing. Reinstall OpenClaw and try again.");
   }
 
-  const stateDir = opts?.stateDir ?? STATE_DIR;
+  const stateDir = opts?.stateDir ?? resolveStateDir();
   const dest = path.join(stateDir, "browser", "chrome-extension");
   fs.mkdirSync(path.dirname(dest), { recursive: true });
 
@@ -84,6 +84,7 @@ export function registerBrowserExtensionCommands(
       } catch (err) {
         defaultRuntime.error(danger(String(err)));
         defaultRuntime.exit(1);
+        return;
       }
 
       if (parent?.json) {
@@ -102,7 +103,7 @@ export function registerBrowserExtensionCommands(
             `- “Load unpacked” → select: ${displayPath}`,
             `- Pin “OpenClaw Browser Relay”, then click it on the tab (badge shows ON)`,
             "",
-            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "cryptoclawdocs.termix.ai/tools/chrome-extension")}`,
+            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "docs.openclaw.ai/tools/chrome-extension")}`,
           ].join("\n"),
         ),
       );
@@ -118,8 +119,8 @@ export function registerBrowserExtensionCommands(
         defaultRuntime.error(
           danger(
             [
-              `Chrome extension is not installed. Run: "${formatCliCommand("cryptoclaw browser extension install")}"`,
-              `Docs: ${formatDocsLink("/tools/chrome-extension", "cryptoclawdocs.termix.ai/tools/chrome-extension")}`,
+              `Chrome extension is not installed. Run: "${formatCliCommand("openclaw browser extension install")}"`,
+              `Docs: ${formatDocsLink("/tools/chrome-extension", "docs.openclaw.ai/tools/chrome-extension")}`,
             ].join("\n"),
           ),
         );

@@ -1,12 +1,8 @@
-const KEY = "cryptoclaw.control.settings.v1";
+const KEY = "openclaw.control.settings.v1";
 
+import { isSupportedLocale } from "../i18n/index.ts";
+import { inferBasePathFromPathname, normalizeBasePath } from "./navigation.ts";
 import type { ThemeMode } from "./theme.ts";
-
-declare global {
-  interface Window {
-    __CRYPTOCLAW_GATEWAY_TOKEN__?: string;
-  }
-}
 
 export type UiSettings = {
   gatewayUrl: string;
@@ -19,19 +15,25 @@ export type UiSettings = {
   splitRatio: number; // Sidebar split ratio (0.4 to 0.7, default 0.6)
   navCollapsed: boolean; // Collapsible sidebar state
   navGroupsCollapsed: Record<string, boolean>; // Which nav groups are collapsed
+  locale?: string;
 };
 
 export function loadSettings(): UiSettings {
   const defaultUrl = (() => {
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    return `${proto}://${location.host}`;
+    const configured =
+      typeof window !== "undefined" &&
+      typeof window.__OPENCLAW_CONTROL_UI_BASE_PATH__ === "string" &&
+      window.__OPENCLAW_CONTROL_UI_BASE_PATH__.trim();
+    const basePath = configured
+      ? normalizeBasePath(configured)
+      : inferBasePathFromPathname(location.pathname);
+    return `${proto}://${location.host}${basePath}`;
   })();
-
-  const injectedToken = window.__CRYPTOCLAW_GATEWAY_TOKEN__ ?? "";
 
   const defaults: UiSettings = {
     gatewayUrl: defaultUrl,
-    token: injectedToken,
+    token: "",
     sessionKey: "main",
     lastActiveSessionKey: "main",
     theme: "system",
@@ -53,7 +55,7 @@ export function loadSettings(): UiSettings {
         typeof parsed.gatewayUrl === "string" && parsed.gatewayUrl.trim()
           ? parsed.gatewayUrl.trim()
           : defaults.gatewayUrl,
-      token: typeof parsed.token === "string" && parsed.token ? parsed.token : defaults.token,
+      token: typeof parsed.token === "string" ? parsed.token : defaults.token,
       sessionKey:
         typeof parsed.sessionKey === "string" && parsed.sessionKey.trim()
           ? parsed.sessionKey.trim()
@@ -85,6 +87,7 @@ export function loadSettings(): UiSettings {
         typeof parsed.navGroupsCollapsed === "object" && parsed.navGroupsCollapsed !== null
           ? parsed.navGroupsCollapsed
           : defaults.navGroupsCollapsed,
+      locale: isSupportedLocale(parsed.locale) ? parsed.locale : undefined,
     };
   } catch {
     return defaults;

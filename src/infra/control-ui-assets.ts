@@ -5,6 +5,36 @@ import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
 
+const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
+
+export function resolveControlUiDistIndexPathForRoot(root: string): string {
+  return path.join(root, ...CONTROL_UI_DIST_PATH_SEGMENTS);
+}
+
+export type ControlUiDistIndexHealth = {
+  indexPath: string | null;
+  exists: boolean;
+};
+
+export async function resolveControlUiDistIndexHealth(
+  opts: {
+    root?: string;
+    argv1?: string;
+    moduleUrl?: string;
+  } = {},
+): Promise<ControlUiDistIndexHealth> {
+  const indexPath = opts.root
+    ? resolveControlUiDistIndexPathForRoot(opts.root)
+    : await resolveControlUiDistIndexPath({
+        argv1: opts.argv1 ?? process.argv[1],
+        moduleUrl: opts.moduleUrl,
+      });
+  return {
+    indexPath,
+    exists: Boolean(indexPath && fs.existsSync(indexPath)),
+  };
+}
+
 export function resolveControlUiRepoRoot(
   argv1: string | undefined = process.argv[1],
 ): string | null {
@@ -40,8 +70,11 @@ export function resolveControlUiRepoRoot(
 }
 
 export async function resolveControlUiDistIndexPath(
-  argv1: string | undefined = process.argv[1],
+  argv1OrOpts?: string | { argv1?: string; moduleUrl?: string },
 ): Promise<string | null> {
+  const argv1 =
+    typeof argv1OrOpts === "string" ? argv1OrOpts : (argv1OrOpts?.argv1 ?? process.argv[1]);
+  const moduleUrl = typeof argv1OrOpts === "object" ? argv1OrOpts?.moduleUrl : undefined;
   if (!argv1) {
     return null;
   }
@@ -53,26 +86,29 @@ export async function resolveControlUiDistIndexPath(
     return path.join(distDir, "control-ui", "index.html");
   }
 
-  const packageRoot = await resolveOpenClawPackageRoot({ argv1: normalized });
+  const packageRoot = await resolveOpenClawPackageRoot({ argv1: normalized, moduleUrl });
   if (packageRoot) {
     return path.join(packageRoot, "dist", "control-ui", "index.html");
   }
 
-  // Fallback: traverse up and find package.json with name "cryptoclaw" + dist/control-ui/index.html
+  // Fallback: traverse up and find package.json with name "openclaw" + dist/control-ui/index.html
   // This handles global installs where path-based resolution might fail.
   let dir = path.dirname(normalized);
   for (let i = 0; i < 8; i++) {
     const pkgJsonPath = path.join(dir, "package.json");
     const indexPath = path.join(dir, "dist", "control-ui", "index.html");
-    if (fs.existsSync(pkgJsonPath) && fs.existsSync(indexPath)) {
+    if (fs.existsSync(pkgJsonPath)) {
       try {
         const raw = fs.readFileSync(pkgJsonPath, "utf-8");
         const parsed = JSON.parse(raw) as { name?: unknown };
-        if (parsed.name === "cryptoclaw" || parsed.name === "openclaw") {
-          return indexPath;
+        if (parsed.name === "openclaw") {
+          return fs.existsSync(indexPath) ? indexPath : null;
         }
+        // Stop at the first package boundary to avoid resolving through unrelated ancestors.
+        return null;
       } catch {
-        // Invalid package.json, continue searching
+        // Invalid package.json at package boundary; abort fallback resolution.
+        return null;
       }
     }
     const parent = path.dirname(dir);
@@ -147,7 +183,7 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
     addCandidate(candidates, path.join(moduleDir, "../../dist/control-ui"));
   }
   if (argv1Dir) {
-    // cryptoclaw.mjs or dist/<bundle>.js
+    // openclaw.mjs or dist/<bundle>.js
     addCandidate(candidates, path.join(argv1Dir, "dist", "control-ui"));
     addCandidate(candidates, path.join(argv1Dir, "control-ui"));
   }
@@ -190,8 +226,9 @@ export async function ensureControlUiAssetsBuilt(
   runtime: RuntimeEnv = defaultRuntime,
   opts?: { timeoutMs?: number },
 ): Promise<EnsureControlUiAssetsResult> {
-  const indexFromDist = await resolveControlUiDistIndexPath(process.argv[1]);
-  if (indexFromDist && fs.existsSync(indexFromDist)) {
+  const health = await resolveControlUiDistIndexHealth({ argv1: process.argv[1] });
+  const indexFromDist = health.indexPath;
+  if (health.exists) {
     return { ok: true, built: false };
   }
 
@@ -207,7 +244,7 @@ export async function ensureControlUiAssetsBuilt(
     };
   }
 
-  const indexPath = path.join(repoRoot, "dist", "control-ui", "index.html");
+  const indexPath = resolveControlUiDistIndexPathForRoot(repoRoot);
   if (fs.existsSync(indexPath)) {
     return { ok: true, built: false };
   }

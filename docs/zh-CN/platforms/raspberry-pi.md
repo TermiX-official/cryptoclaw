@@ -119,7 +119,7 @@ sudo sysctl -p
 ### 选项 A：标准安装（推荐）
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 ### 选项 B：可修改安装（用于调试）

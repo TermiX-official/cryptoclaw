@@ -545,13 +545,13 @@ openclaw gateway restart
 切换**到 git 安装**：
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --no-onboard
 ```
 
 切换**到 npm 全局**：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 注意事项：

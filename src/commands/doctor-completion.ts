@@ -1,7 +1,5 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import type { RuntimeEnv } from "../runtime.js";
-import type { DoctorPrompter } from "./doctor-prompter.js";
 import { resolveCliName } from "../cli/cli-name.js";
 import {
   completionCacheExists,
@@ -12,7 +10,9 @@ import {
   usesSlowDynamicCompletion,
 } from "../cli/completion-cli.js";
 import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
+import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
+import type { DoctorPrompter } from "./doctor-prompter.js";
 
 type CompletionShell = "zsh" | "bash" | "fish" | "powershell";
 
@@ -27,7 +27,7 @@ async function generateCompletionCache(): Promise<boolean> {
     return false;
   }
 
-  const binPath = path.join(root, "cryptoclaw.mjs");
+  const binPath = path.join(root, "openclaw.mjs");
   const result = spawnSync(process.execPath, [binPath, "completion", "--write-state"], {
     cwd: root,
     env: process.env,
@@ -42,13 +42,13 @@ export type ShellCompletionStatus = {
   profileInstalled: boolean;
   cacheExists: boolean;
   cachePath: string;
-  /** True if profile uses slow dynamic pattern like `source <(cryptoclaw completion ...)` */
+  /** True if profile uses slow dynamic pattern like `source <(openclaw completion ...)` */
   usesSlowPattern: boolean;
 };
 
 /** Check the status of shell completion for the current shell. */
 export async function checkShellCompletionStatus(
-  binName = "cryptoclaw",
+  binName = "openclaw",
 ): Promise<ShellCompletionStatus> {
   const shell = resolveShellFromEnv() as CompletionShell;
   const profileInstalled = await isCompletionInstalled(shell, binName);
@@ -167,7 +167,7 @@ export async function doctorShellCompletion(
  * cases where profile has completion but no cache.
  * This is a silent fix - no prompts.
  */
-export async function ensureCompletionCacheExists(binName = "cryptoclaw"): Promise<boolean> {
+export async function ensureCompletionCacheExists(binName = "openclaw"): Promise<boolean> {
   const shell = resolveShellFromEnv() as CompletionShell;
   const cacheExists = await completionCacheExists(shell, binName);
 

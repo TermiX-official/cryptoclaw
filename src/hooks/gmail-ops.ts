@@ -11,7 +11,7 @@ import {
 } from "../config/config.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime } from "../runtime.js";
-import { shortenHomePath } from "../utils.js";
+import { displayPath } from "../utils.js";
 import {
   ensureDependency,
   ensureGcloudAuth,
@@ -44,9 +44,7 @@ import {
   resolveGmailHookRuntimeConfig,
 } from "./gmail.js";
 
-export type GmailSetupOptions = {
-  account: string;
-  project?: string;
+type GmailCommonOptions = {
   topic?: string;
   subscription?: string;
   label?: string;
@@ -62,27 +60,17 @@ export type GmailSetupOptions = {
   tailscale?: "off" | "serve" | "funnel";
   tailscalePath?: string;
   tailscaleTarget?: string;
+};
+
+export type GmailSetupOptions = GmailCommonOptions & {
+  account: string;
+  project?: string;
   pushEndpoint?: string;
   json?: boolean;
 };
 
-export type GmailRunOptions = {
+export type GmailRunOptions = GmailCommonOptions & {
   account?: string;
-  topic?: string;
-  subscription?: string;
-  label?: string;
-  hookToken?: string;
-  pushToken?: string;
-  hookUrl?: string;
-  bind?: string;
-  port?: number;
-  path?: string;
-  includeBody?: boolean;
-  maxBytes?: number;
-  renewEveryMinutes?: number;
-  tailscale?: "off" | "serve" | "funnel";
-  tailscalePath?: string;
-  tailscaleTarget?: string;
 };
 
 const DEFAULT_GMAIL_TOPIC_IAM_MEMBER = "serviceAccount:gmail-api-push@system.gserviceaccount.com";
@@ -276,8 +264,8 @@ export async function runGmailSetup(opts: GmailSetupOptions) {
   defaultRuntime.log(`- subscription: ${subscription}`);
   defaultRuntime.log(`- push endpoint: ${pushEndpoint}`);
   defaultRuntime.log(`- hook url: ${hookUrl}`);
-  defaultRuntime.log(`- config: ${shortenHomePath(CONFIG_PATH)}`);
-  defaultRuntime.log(`Next: ${formatCliCommand("cryptoclaw webhooks gmail run")}`);
+  defaultRuntime.log(`- config: ${displayPath(CONFIG_PATH)}`);
+  defaultRuntime.log(`Next: ${formatCliCommand("openclaw webhooks gmail run")}`);
 }
 
 export async function runGmailService(opts: GmailRunOptions) {
@@ -330,11 +318,17 @@ export async function runGmailService(opts: GmailRunOptions) {
     void startGmailWatch(runtimeConfig);
   }, renewMs);
 
+  const detachSignals = () => {
+    process.off("SIGINT", shutdown);
+    process.off("SIGTERM", shutdown);
+  };
+
   const shutdown = () => {
     if (shuttingDown) {
       return;
     }
     shuttingDown = true;
+    detachSignals();
     clearInterval(renewTimer);
     child.kill("SIGTERM");
   };
@@ -344,6 +338,7 @@ export async function runGmailService(opts: GmailRunOptions) {
 
   child.on("exit", () => {
     if (shuttingDown) {
+      detachSignals();
       return;
     }
     defaultRuntime.log("gog watch serve exited; restarting in 2s");

@@ -1,8 +1,8 @@
 import AppKit
+import Observation
 import OpenClawDiscovery
 import OpenClawIPC
 import OpenClawKit
-import Observation
 import SwiftUI
 
 struct GeneralSettings: View {
@@ -16,16 +16,21 @@ struct GeneralSettings: View {
     @State private var remoteStatus: RemoteStatus = .idle
     @State private var showRemoteAdvanced = false
     private let isPreview = ProcessInfo.processInfo.isPreview
-    private var isNixMode: Bool { ProcessInfo.processInfo.isNixMode }
-    private var remoteLabelWidth: CGFloat { 88 }
+    private var isNixMode: Bool {
+        ProcessInfo.processInfo.isNixMode
+    }
+
+    private var remoteLabelWidth: CGFloat {
+        88
+    }
 
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 12) {
                     SettingsToggleRow(
-                        title: "CryptoClaw active",
-                        subtitle: "Pause to stop the CryptoClaw gateway; no messages will be processed.",
+                        title: "OpenClaw active",
+                        subtitle: "Pause to stop the OpenClaw gateway; no messages will be processed.",
                         binding: self.activeBinding)
 
                     self.connectionSection
@@ -34,12 +39,12 @@ struct GeneralSettings: View {
 
                     SettingsToggleRow(
                         title: "Launch at login",
-                        subtitle: "Automatically start CryptoClaw after you sign in.",
+                        subtitle: "Automatically start OpenClaw after you sign in.",
                         binding: self.$state.launchAtLogin)
 
                     SettingsToggleRow(
                         title: "Show Dock icon",
-                        subtitle: "Keep CryptoClaw visible in the Dock instead of menu-bar-only mode.",
+                        subtitle: "Keep OpenClaw visible in the Dock instead of menu-bar-only mode.",
                         binding: self.$state.showDockIcon)
 
                     SettingsToggleRow(
@@ -71,7 +76,7 @@ struct GeneralSettings: View {
                 Spacer(minLength: 12)
                 HStack {
                     Spacer()
-                    Button("Quit CryptoClaw") { NSApp.terminate(nil) }
+                    Button("Quit OpenClaw") { NSApp.terminate(nil) }
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -98,7 +103,7 @@ struct GeneralSettings: View {
 
     private var connectionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("CryptoClaw runs")
+            Text("OpenClaw runs")
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -172,7 +177,7 @@ struct GeneralSettings: View {
                                 .frame(width: 280)
                         }
                         LabeledContent("CLI path") {
-                            TextField("/Applications/CryptoClaw.app/.../cryptoclaw", text: self.$state.remoteCliPath)
+                            TextField("/Applications/OpenClaw.app/.../openclaw", text: self.$state.remoteCliPath)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 280)
                         }
@@ -255,17 +260,7 @@ struct GeneralSettings: View {
                 TextField("user@host[:22]", text: self.$state.remoteTarget)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: .infinity)
-                Button {
-                    Task { await self.testRemote() }
-                } label: {
-                    if self.remoteStatus == .checking {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Text("Test remote")
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(self.remoteStatus == .checking || !canTest)
+                self.remoteTestButton(disabled: !canTest)
             }
             if let validationMessage {
                 Text(validationMessage)
@@ -285,24 +280,29 @@ struct GeneralSettings: View {
                 TextField("wss://gateway.example.ts.net", text: self.$state.remoteUrl)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: .infinity)
-                Button {
-                    Task { await self.testRemote() }
-                } label: {
-                    if self.remoteStatus == .checking {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Text("Test remote")
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(self.remoteStatus == .checking || self.state.remoteUrl
-                    .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                self.remoteTestButton(
+                    disabled: self.state.remoteUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            Text("Direct mode requires a ws:// or wss:// URL (Tailscale Serve uses wss://<magicdns>).")
+            Text(
+                "Direct mode requires wss:// for remote hosts. ws:// is only allowed for localhost/127.0.0.1.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.leading, self.remoteLabelWidth + 10)
         }
+    }
+
+    private func remoteTestButton(disabled: Bool) -> some View {
+        Button {
+            Task { await self.testRemote() }
+        } label: {
+            if self.remoteStatus == .checking {
+                ProgressView().controlSize(.small)
+            } else {
+                Text("Test remote")
+            }
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(self.remoteStatus == .checking || disabled)
     }
 
     private var controlStatusLine: String {
@@ -541,7 +541,8 @@ extension GeneralSettings {
                 return
             }
             guard Self.isValidWsUrl(trimmedUrl) else {
-                self.remoteStatus = .failed("Gateway URL must start with ws:// or wss://")
+                self.remoteStatus = .failed(
+                    "Gateway URL must use wss:// for remote hosts (ws:// only for localhost)")
                 return
             }
         } else {
@@ -598,11 +599,7 @@ extension GeneralSettings {
     }
 
     private static func isValidWsUrl(_ raw: String) -> Bool {
-        guard let url = URL(string: raw.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
-        let scheme = url.scheme?.lowercased() ?? ""
-        guard scheme == "ws" || scheme == "wss" else { return false }
-        let host = url.host?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return !host.isEmpty
+        GatewayRemoteConfig.normalizeGatewayUrl(raw) != nil
     }
 
     private static func sshCheckCommand(target: String, identity: String) -> [String]? {
@@ -669,22 +666,7 @@ extension GeneralSettings {
 
     private func applyDiscoveredGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) {
         MacNodeModeCoordinator.shared.setPreferredGatewayStableID(gateway.stableID)
-
-        let host = gateway.tailnetDns ?? gateway.lanHost
-        guard let host else { return }
-        let user = NSUserName()
-        if self.state.remoteTransport == .direct {
-            if let url = GatewayDiscoveryHelpers.directUrl(for: gateway) {
-                self.state.remoteUrl = url
-            }
-        } else {
-            self.state.remoteTarget = GatewayDiscoveryModel.buildSSHTarget(
-                user: user,
-                host: host,
-                port: gateway.sshPort)
-            self.state.remoteCliPath = gateway.cliPath ?? ""
-            OpenClawConfigFile.setRemoteGatewayUrl(host: host, port: gateway.gatewayPort)
-        }
+        GatewayDiscoverySelectionSupport.applyRemoteSelection(gateway: gateway, state: self.state)
     }
 }
 

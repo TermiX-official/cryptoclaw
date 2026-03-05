@@ -1,12 +1,10 @@
 {
-  "name": "@cryptoclaw/telegram",
-  "version": "2026.2.4",
-  "description": "CryptoClaw Telegram channel plugin",
+  "name": "@openclaw/telegram",
+  "version": "2026.3.2",
+  "private": true,
+  "description": "OpenClaw Telegram channel plugin",
   "type": "module",
-  "devDependencies": {
-    "cryptoclaw": "workspace:*"
-  },
-  "cryptoclaw": {
+  "openclaw": {
     "extensions": [
       "./index.ts"
     ]

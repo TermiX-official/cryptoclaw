@@ -1,1 +1,1 @@
-console.warn("moltbot renamed -> cryptoclaw");
+console.warn("moltbot renamed -> openclaw");

@@ -27,7 +27,7 @@ x-i18n:
   - [卡在 "wake up my friend" / 新手引导无法启动，怎么办？](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [能否将我的设置迁移到新机器（Mac mini）而不重新进行新手引导？](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [在哪里查看最新版本的更新内容？](#where-do-i-see-whats-new-in-the-latest-version)
-  - [无法访问 cryptoclawdocs.termix.ai（SSL 错误），怎么办？](#i-cant-access-docsopenclawai-ssl-error-what-now)
+  - [无法访问 docs.openclaw.ai（SSL 错误），怎么办？](#i-cant-access-docsopenclawai-ssl-error-what-now)
   - [stable 和 beta 有什么区别？](#whats-the-difference-between-stable-and-beta)
 - [如何安装 beta 版本，beta 和 dev 有什么区别？](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [如何试用最新代码？](#how-do-i-try-the-latest-bits)
@@ -277,10 +277,10 @@ x-i18n:
 这些工具可以读取仓库、运行命令、检查日志，并帮助修复你的机器级别设置（PATH、服务、权限、认证文件）。通过可编辑（git）安装提供**完整源代码**：
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
-这会从 **git checkout** 安装 OpenClaw，这样智能体可以读取代码 + 文档，并推理你正在运行的确切版本。你可以随时通过 `npm install -g @termix-it/cryptoclaw@latest` 切回稳定版。
+这会从 **git checkout** 安装 OpenClaw，这样智能体可以读取代码 + 文档，并推理你正在运行的确切版本。你可以随时通过不带 `--install-method git` 重新运行安装程序切回稳定版。
 
 提示：要求智能体**计划并监督**修复（逐步进行），然后只执行必要的命令。这样改动较小，更容易审查。
 
@@ -313,7 +313,7 @@ openclaw doctor
 仓库推荐从源码运行并使用新手引导向导：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 openclaw onboard --install-daemon
 ```
 
@@ -425,9 +425,9 @@ https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md
 
 最新条目在顶部。如果顶部部分标记为 **Unreleased**，则下一个带日期的部分是最新发布版本。条目按**亮点**、**变更**和**修复**分组（需要时还有文档/其他部分）。
 
-### 无法访问 cryptoclawdocs.termix.ai（SSL 错误），怎么办
+### 无法访问 docs.openclaw.ai（SSL 错误），怎么办
 
-一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 错误地拦截了 `cryptoclawdocs.termix.ai`。禁用该功能或将 `cryptoclawdocs.termix.ai` 加入白名单，然后重试。更多详情：[故障排除](/help/troubleshooting#docsopenclawai-shows-an-ssl-error-comcastxfinity)。
+一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 错误地拦截了 `docs.openclaw.ai`。禁用该功能或将 `docs.openclaw.ai` 加入白名单，然后重试。更多详情：[故障排除](/help/troubleshooting#docsopenclawai-shows-an-ssl-error-comcastxfinity)。
 请帮助我们在此处报告以解除封锁：https://spa.xfinity.com/check_url_status。
 
 如果仍然无法访问该网站，文档在 GitHub 上有镜像：
@@ -453,15 +453,15 @@ https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md
 一行命令（macOS/Linux）：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@beta
+curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --beta
 ```
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 Windows 安装程序（PowerShell）：
-npm install -g @termix-it/cryptoclaw@latest
+https://openclaw.ai/install.ps1
 
 更多详情：[开发渠道](/install/development-channels)和[安装程序标志](/install/installer)。
 
@@ -489,7 +489,7 @@ openclaw update --channel dev
 2. **可编辑安装（从安装程序网站）：**
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 这会给你一个可编辑的本地仓库，然后通过 git 更新。
@@ -511,19 +511,19 @@ pnpm build
 使用**详细输出**重新运行安装程序：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest --loglevel verbose
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --verbose
 ```
 
 带详细输出的 Beta 安装：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@beta --loglevel verbose
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --beta --verbose
 ```
 
 可编辑（git）安装：
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --verbose
 ```
 
 更多选项：[安装程序标志](/install/installer)。
@@ -555,7 +555,7 @@ git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && 
 使用**可编辑（git）安装**，这样你在本地拥有完整的源码和文档，然后从该文件夹向你的机器人（或 Claude/Codex）提问，这样它可以读取仓库并精确回答。
 
 ```bash
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 更多详情：[安装](/install)和[安装程序标志](/install/installer)。
@@ -669,7 +669,7 @@ claude setup-token
 
 ### 支持 AWS Bedrock 吗
 
-是的——通过 pi-ai 的 **Amazon Bedrock (Converse)** 提供商进行**手动配置**。你必须在 Gateway 网关主机上提供 AWS 凭据/区域，并在模型配置中添加 Bedrock 提供商条目。参阅 [Amazon Bedrock](/bedrock) 和[模型提供商](/providers/models)。如果你更喜欢托管密钥流程，在 Bedrock 前面使用兼容 OpenAI 的代理仍然是有效选项。
+是的——通过 pi-ai 的 **Amazon Bedrock (Converse)** 提供商进行**手动配置**。你必须在 Gateway 网关主机上提供 AWS 凭据/区域，并在模型配置中添加 Bedrock 提供商条目。参阅 [Amazon Bedrock](/providers/bedrock) 和[模型提供商](/providers/models)。如果你更喜欢托管密钥流程，在 Bedrock 前面使用兼容 OpenAI 的代理仍然是有效选项。
 
 ### Codex 认证如何工作
 
@@ -1094,7 +1094,7 @@ openclaw browser extension path
 
 使用 `agents.defaults.sandbox.mode: "non-main"`，这样群组/频道会话（非主键）在 Docker 中运行，而主私信会话保持在主机上。然后通过 `tools.sandbox.tools` 限制沙箱会话中可用的工具。
 
-设置指南 + 示例配置：[群组：个人私信 + 公开群组](/concepts/groups#pattern-personal-dms-public-groups-single-agent)
+设置指南 + 示例配置：[群组：个人私信 + 公开群组](/channels/groups#pattern-personal-dms-public-groups-single-agent)
 
 关键配置参考：[Gateway 网关配置](/gateway/configuration#agentsdefaultssandbox)
 
@@ -1321,7 +1321,7 @@ Gateway 网关监视配置文件并支持热重载：
 - **子智能体：** 需要并行处理时从主智能体生成后台工作。
 - **TUI：** 连接到 Gateway 网关并切换智能体/会话。
 
-文档：[节点](/nodes)、[远程访问](/gateway/remote)、[多智能体路由](/concepts/multi-agent)、[子智能体](/tools/subagents)、[TUI](/tui)。
+文档：[节点](/nodes)、[远程访问](/gateway/remote)、[多智能体路由](/concepts/multi-agent)、[子智能体](/tools/subagents)、[TUI](/web/tui)。
 
 ### OpenClaw 浏览器可以无头运行吗
 
@@ -1527,7 +1527,7 @@ OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量，
 }
 ```
 
-参阅 [/environment](/environment) 了解优先级和来源详情。
+参阅 [/environment](/help/environment) 了解优先级和来源详情。
 
 ### 我通过服务启动了 Gateway 网关，但环境变量消失了，怎么办
 
@@ -1570,7 +1570,7 @@ openclaw models status
 ```
 
 Copilot 令牌从 `COPILOT_GITHUB_TOKEN` 读取（也支持 `GH_TOKEN` / `GITHUB_TOKEN`）。
-参阅 [/concepts/model-providers](/concepts/model-providers) 和 [/environment](/environment)。
+参阅 [/concepts/model-providers](/concepts/model-providers) 和 [/environment](/help/environment)。
 
 ## 会话与多聊天
 
@@ -1731,11 +1731,11 @@ openclaw directory groups list --channel whatsapp
 - 提及限制已开启（默认）。你必须 @提及机器人（或匹配 `mentionPatterns`）。
 - 你配置了 `channels.whatsapp.groups` 但没有 `"*"` 且该群组未加入允许列表。
 
-参阅[群组](/concepts/groups)和[群组消息](/concepts/group-messages)。
+参阅[群组](/channels/groups)和[群组消息](/channels/group-messages)。
 
 ### 群组/线程与私聊共享上下文吗
 
-直接聊天默认折叠到主会话。群组/频道有自己的会话键，Telegram 话题 / Discord 线程是独立的会话。参阅[群组](/concepts/groups)和[群组消息](/concepts/group-messages)。
+直接聊天默认折叠到主会话。群组/频道有自己的会话键，Telegram 话题 / Discord 线程是独立的会话。参阅[群组](/channels/groups)和[群组消息](/channels/group-messages)。
 
 ### 可以创建多少个工作区和智能体
 
@@ -2410,7 +2410,7 @@ openclaw logs --follow
 
 在 TUI 中，使用 `/status` 查看当前状态。如果你期望在聊天渠道中收到回复，确保投递已启用（`/deliver on`）。
 
-文档：[TUI](/tui)、[斜杠命令](/tools/slash-commands)。
+文档：[TUI](/web/tui)、[斜杠命令](/tools/slash-commands)。
 
 ### 如何完全停止然后启动 Gateway 网关如果你安装了服务：
 
@@ -2492,7 +2492,7 @@ openclaw message send --target +15555550123 --message "Here you go" --media /pat
 
 从小处开始。只授予你实际需要的工具和账户的访问权限，以后需要时再扩展。
 
-文档：[安全](/gateway/security)、[配对](/start/pairing)。
+文档：[安全](/gateway/security)、[配对](/channels/pairing)。
 
 ### 我能让它自主管理我的短信吗？这安全吗
 

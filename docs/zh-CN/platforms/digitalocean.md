@@ -74,7 +74,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 
 # Install OpenClaw
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 
 # Verify
 openclaw --version

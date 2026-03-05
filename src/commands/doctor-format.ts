@@ -1,4 +1,3 @@
-import type { GatewayServiceRuntime } from "../daemon/service-runtime.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import {
   resolveGatewayLaunchAgentLabel,
@@ -6,6 +5,8 @@ import {
   resolveGatewayWindowsTaskName,
 } from "../daemon/constants.js";
 import { resolveGatewayLogPaths } from "../daemon/launchd.js";
+import { formatRuntimeStatus } from "../daemon/runtime-format.js";
+import type { GatewayServiceRuntime } from "../daemon/service-runtime.js";
 import {
   isSystemdUnavailableDetail,
   renderSystemdUnavailableHints,
@@ -21,36 +22,7 @@ type RuntimeHintOptions = {
 export function formatGatewayRuntimeSummary(
   runtime: GatewayServiceRuntime | undefined,
 ): string | null {
-  if (!runtime) {
-    return null;
-  }
-  const status = runtime.status ?? "unknown";
-  const details: string[] = [];
-  if (runtime.pid) {
-    details.push(`pid ${runtime.pid}`);
-  }
-  if (runtime.state && runtime.state.toLowerCase() !== status) {
-    details.push(`state ${runtime.state}`);
-  }
-  if (runtime.subState) {
-    details.push(`sub ${runtime.subState}`);
-  }
-  if (runtime.lastExitStatus !== undefined) {
-    details.push(`last exit ${runtime.lastExitStatus}`);
-  }
-  if (runtime.lastExitReason) {
-    details.push(`reason ${runtime.lastExitReason}`);
-  }
-  if (runtime.lastRunResult) {
-    details.push(`last run ${runtime.lastRunResult}`);
-  }
-  if (runtime.lastRunTime) {
-    details.push(`last run time ${runtime.lastRunTime}`);
-  }
-  if (runtime.detail) {
-    details.push(runtime.detail);
-  }
-  return details.length > 0 ? `${status} (${details.join(", ")})` : status;
+  return formatRuntimeStatus(runtime);
 }
 
 export function buildGatewayRuntimeHints(
@@ -78,16 +50,14 @@ export function buildGatewayRuntimeHints(
     return hints;
   }
   if (runtime.cachedLabel && platform === "darwin") {
-    const label = resolveGatewayLaunchAgentLabel(env.CRYPTOCLAW_PROFILE);
+    const label = resolveGatewayLaunchAgentLabel(env.OPENCLAW_PROFILE);
     hints.push(
       `LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${label}`,
     );
-    hints.push(`Then reinstall: ${formatCliCommand("cryptoclaw gateway install", env)}`);
+    hints.push(`Then reinstall: ${formatCliCommand("openclaw gateway install", env)}`);
   }
   if (runtime.missingUnit) {
-    hints.push(
-      `Service not installed. Run: ${formatCliCommand("cryptoclaw gateway install", env)}`,
-    );
+    hints.push(`Service not installed. Run: ${formatCliCommand("openclaw gateway install", env)}`);
     if (fileLog) {
       hints.push(`File logs: ${fileLog}`);
     }
@@ -103,10 +73,10 @@ export function buildGatewayRuntimeHints(
       hints.push(`Launchd stdout (if installed): ${logs.stdoutPath}`);
       hints.push(`Launchd stderr (if installed): ${logs.stderrPath}`);
     } else if (platform === "linux") {
-      const unit = resolveGatewaySystemdServiceName(env.CRYPTOCLAW_PROFILE);
+      const unit = resolveGatewaySystemdServiceName(env.OPENCLAW_PROFILE);
       hints.push(`Logs: journalctl --user -u ${unit}.service -n 200 --no-pager`);
     } else if (platform === "win32") {
-      const task = resolveGatewayWindowsTaskName(env.CRYPTOCLAW_PROFILE);
+      const task = resolveGatewayWindowsTaskName(env.OPENCLAW_PROFILE);
       hints.push(`Logs: schtasks /Query /TN "${task}" /V /FO LIST`);
     }
   }

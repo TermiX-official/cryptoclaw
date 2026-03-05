@@ -12,7 +12,7 @@ extension CanvasWindowController {
                 styleMask: [.titled, .closable, .resizable, .miniaturizable],
                 backing: .buffered,
                 defer: false)
-            window.title = "CryptoClaw Canvas"
+            window.title = "OpenClaw Canvas"
             window.isReleasedWhenClosed = false
             window.contentView = contentView
             window.center()

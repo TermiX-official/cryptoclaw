@@ -1,1 +1,1 @@
-console.warn("clawdbot renamed -> cryptoclaw");
+console.warn("clawdbot renamed -> openclaw");

@@ -1,24 +1,25 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
-import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseModelRef } from "../agents/model-selection.js";
 import { loadConfig } from "../config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
+import { getFreePortBlockWithPermissionFallback } from "../test-utils/ports.js";
+import { GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { GatewayClient } from "./client.js";
 import { renderCatNoncePngBase64 } from "./live-image-probe.js";
 import { startGatewayServer } from "./server.js";
+import { extractPayloadText } from "./test-helpers.agent-results.js";
 
-const LIVE =
-  isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.CRYPTOCLAW_LIVE_TEST);
-const CLI_LIVE = isTruthyEnvValue(process.env.CRYPTOCLAW_LIVE_CLI_BACKEND);
-const CLI_IMAGE = isTruthyEnvValue(process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_PROBE);
-const CLI_RESUME = isTruthyEnvValue(process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_RESUME_PROBE);
+const LIVE = isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.OPENCLAW_LIVE_TEST);
+const CLI_LIVE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_CLI_BACKEND);
+const CLI_IMAGE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_CLI_BACKEND_IMAGE_PROBE);
+const CLI_RESUME = isTruthyEnvValue(process.env.OPENCLAW_LIVE_CLI_BACKEND_RESUME_PROBE);
 const describeLive = LIVE && CLI_LIVE ? describe : describe.skip;
 
-const DEFAULT_MODEL = "claude-cli/claude-sonnet-4-5";
+const DEFAULT_MODEL = "claude-cli/claude-sonnet-4-6";
 const DEFAULT_CLAUDE_ARGS = ["-p", "--output-format", "json", "--dangerously-skip-permissions"];
 const DEFAULT_CODEX_ARGS = [
   "exec",
@@ -77,15 +78,6 @@ function editDistance(a: string, b: string): number {
   return prev[bLen] ?? Number.POSITIVE_INFINITY;
 }
 
-function extractPayloadText(result: unknown): string {
-  const record = result as Record<string, unknown>;
-  const payloads = Array.isArray(record.payloads) ? record.payloads : [];
-  const texts = payloads
-    .map((p) => (p && typeof p === "object" ? (p as Record<string, unknown>).text : undefined))
-    .filter((t): t is string => typeof t === "string" && t.trim().length > 0);
-  return texts.join("\n").trim();
-}
-
 function parseJsonStringArray(name: string, raw?: string): string[] | undefined {
   const trimmed = raw?.trim();
   if (!trimmed) {
@@ -106,7 +98,7 @@ function parseImageMode(raw?: string): "list" | "repeat" | undefined {
   if (trimmed === "list" || trimmed === "repeat") {
     return trimmed;
   }
-  throw new Error("CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_MODE must be 'list' or 'repeat'.");
+  throw new Error("OPENCLAW_LIVE_CLI_BACKEND_IMAGE_MODE must be 'list' or 'repeat'.");
 }
 
 function withMcpConfigOverrides(args: string[], mcpConfigPath: string): string[] {
@@ -120,84 +112,48 @@ function withMcpConfigOverrides(args: string[], mcpConfigPath: string): string[]
   return next;
 }
 
-async function getFreePort(): Promise<number> {
-  return await new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.on("error", reject);
-    srv.listen(0, "127.0.0.1", () => {
-      const addr = srv.address();
-      if (!addr || typeof addr === "string") {
-        srv.close();
-        reject(new Error("failed to acquire free port"));
-        return;
-      }
-      const port = addr.port;
-      srv.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(port);
-        }
-      });
-    });
-  });
-}
-
-async function isPortFree(port: number): Promise<boolean> {
-  if (!Number.isFinite(port) || port <= 0 || port > 65535) {
-    return false;
-  }
-  return await new Promise((resolve) => {
-    const srv = createServer();
-    srv.once("error", () => resolve(false));
-    srv.listen(port, "127.0.0.1", () => {
-      srv.close(() => resolve(true));
-    });
-  });
-}
-
 async function getFreeGatewayPort(): Promise<number> {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const port = await getFreePort();
-    const candidates = [port, port + 1, port + 2, port + 4];
-    const ok = (await Promise.all(candidates.map((candidate) => isPortFree(candidate)))).every(
-      Boolean,
-    );
-    if (ok) {
-      return port;
-    }
-  }
-  throw new Error("failed to acquire a free gateway port block");
+  return await getFreePortBlockWithPermissionFallback({
+    offsets: [0, 1, 2, 4],
+    fallbackBase: 40_000,
+  });
 }
 
 async function connectClient(params: { url: string; token: string }) {
   return await new Promise<GatewayClient>((resolve, reject) => {
-    let settled = false;
-    const stop = (err?: Error, client?: GatewayClient) => {
-      if (settled) {
+    let done = false;
+    const finish = (result: { client?: GatewayClient; error?: Error }) => {
+      if (done) {
         return;
       }
-      settled = true;
-      clearTimeout(timer);
-      if (err) {
-        reject(err);
-      } else {
-        resolve(client as GatewayClient);
+      done = true;
+      clearTimeout(connectTimeout);
+      if (result.error) {
+        reject(result.error);
+        return;
       }
+      resolve(result.client as GatewayClient);
     };
+
+    const failWithClose = (code: number, reason: string) =>
+      finish({ error: new Error(`gateway closed during connect (${code}): ${reason}`) });
+
     const client = new GatewayClient({
       url: params.url,
       token: params.token,
-      clientName: "vitest-live-cli-backend",
+      clientName: GATEWAY_CLIENT_NAMES.TEST,
       clientVersion: "dev",
       mode: "test",
-      onHelloOk: () => stop(undefined, client),
-      onConnectError: (err) => stop(err),
-      onClose: (code, reason) =>
-        stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
+      onHelloOk: () => finish({ client }),
+      onConnectError: (error) => finish({ error }),
+      onClose: failWithClose,
     });
-    const timer = setTimeout(() => stop(new Error("gateway connect timeout")), 10_000);
-    timer.unref();
+
+    const connectTimeout = setTimeout(
+      () => finish({ error: new Error("gateway connect timeout") }),
+      10_000,
+    );
+    connectTimeout.unref();
     client.start();
   });
 }
@@ -205,31 +161,31 @@ async function connectClient(params: { url: string; token: string }) {
 describeLive("gateway live (cli backend)", () => {
   it("runs the agent pipeline against the local CLI backend", async () => {
     const previous = {
-      configPath: process.env.CRYPTOCLAW_CONFIG_PATH,
-      token: process.env.CRYPTOCLAW_GATEWAY_TOKEN,
-      skipChannels: process.env.CRYPTOCLAW_SKIP_CHANNELS,
-      skipGmail: process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER,
-      skipCron: process.env.CRYPTOCLAW_SKIP_CRON,
-      skipCanvas: process.env.CRYPTOCLAW_SKIP_CANVAS_HOST,
+      configPath: process.env.OPENCLAW_CONFIG_PATH,
+      token: process.env.OPENCLAW_GATEWAY_TOKEN,
+      skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
+      skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
+      skipCron: process.env.OPENCLAW_SKIP_CRON,
+      skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       anthropicApiKeyOld: process.env.ANTHROPIC_API_KEY_OLD,
     };
 
-    process.env.CRYPTOCLAW_SKIP_CHANNELS = "1";
-    process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER = "1";
-    process.env.CRYPTOCLAW_SKIP_CRON = "1";
-    process.env.CRYPTOCLAW_SKIP_CANVAS_HOST = "1";
+    process.env.OPENCLAW_SKIP_CHANNELS = "1";
+    process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
+    process.env.OPENCLAW_SKIP_CRON = "1";
+    process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.ANTHROPIC_API_KEY_OLD;
 
     const token = `test-${randomUUID()}`;
-    process.env.CRYPTOCLAW_GATEWAY_TOKEN = token;
+    process.env.OPENCLAW_GATEWAY_TOKEN = token;
 
-    const rawModel = process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_MODEL ?? DEFAULT_MODEL;
+    const rawModel = process.env.OPENCLAW_LIVE_CLI_BACKEND_MODEL ?? DEFAULT_MODEL;
     const parsed = parseModelRef(rawModel, "claude-cli");
     if (!parsed) {
       throw new Error(
-        `CRYPTOCLAW_LIVE_CLI_BACKEND_MODEL must resolve to a CLI backend model. Got: ${rawModel}`,
+        `OPENCLAW_LIVE_CLI_BACKEND_MODEL must resolve to a CLI backend model. Got: ${rawModel}`,
       );
     }
     const providerId = parsed.provider;
@@ -242,36 +198,36 @@ describeLive("gateway live (cli backend)", () => {
           ? { command: "codex", args: DEFAULT_CODEX_ARGS }
           : null;
 
-    const cliCommand = process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_COMMAND ?? providerDefaults?.command;
+    const cliCommand = process.env.OPENCLAW_LIVE_CLI_BACKEND_COMMAND ?? providerDefaults?.command;
     if (!cliCommand) {
       throw new Error(
-        `CRYPTOCLAW_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`,
+        `OPENCLAW_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`,
       );
     }
     const baseCliArgs =
       parseJsonStringArray(
-        "CRYPTOCLAW_LIVE_CLI_BACKEND_ARGS",
-        process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_ARGS,
+        "OPENCLAW_LIVE_CLI_BACKEND_ARGS",
+        process.env.OPENCLAW_LIVE_CLI_BACKEND_ARGS,
       ) ?? providerDefaults?.args;
     if (!baseCliArgs || baseCliArgs.length === 0) {
-      throw new Error(`CRYPTOCLAW_LIVE_CLI_BACKEND_ARGS is required for provider "${providerId}".`);
+      throw new Error(`OPENCLAW_LIVE_CLI_BACKEND_ARGS is required for provider "${providerId}".`);
     }
     const cliClearEnv =
       parseJsonStringArray(
-        "CRYPTOCLAW_LIVE_CLI_BACKEND_CLEAR_ENV",
-        process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_CLEAR_ENV,
+        "OPENCLAW_LIVE_CLI_BACKEND_CLEAR_ENV",
+        process.env.OPENCLAW_LIVE_CLI_BACKEND_CLEAR_ENV,
       ) ?? (providerId === "claude-cli" ? DEFAULT_CLEAR_ENV : []);
-    const cliImageArg = process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_ARG?.trim() || undefined;
-    const cliImageMode = parseImageMode(process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_MODE);
+    const cliImageArg = process.env.OPENCLAW_LIVE_CLI_BACKEND_IMAGE_ARG?.trim() || undefined;
+    const cliImageMode = parseImageMode(process.env.OPENCLAW_LIVE_CLI_BACKEND_IMAGE_MODE);
 
     if (cliImageMode && !cliImageArg) {
       throw new Error(
-        "CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_MODE requires CRYPTOCLAW_LIVE_CLI_BACKEND_IMAGE_ARG.",
+        "OPENCLAW_LIVE_CLI_BACKEND_IMAGE_MODE requires OPENCLAW_LIVE_CLI_BACKEND_IMAGE_ARG.",
       );
     }
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-live-cli-"));
-    const disableMcpConfig = process.env.CRYPTOCLAW_LIVE_CLI_BACKEND_DISABLE_MCP_CONFIG !== "0";
+    const disableMcpConfig = process.env.OPENCLAW_LIVE_CLI_BACKEND_DISABLE_MCP_CONFIG !== "0";
     let cliArgs = baseCliArgs;
     if (providerId === "claude-cli" && disableMcpConfig) {
       const mcpConfigPath = path.join(tempDir, "claude-mcp.json");
@@ -307,7 +263,7 @@ describeLive("gateway live (cli backend)", () => {
     };
     const tempConfigPath = path.join(tempDir, "openclaw.json");
     await fs.writeFile(tempConfigPath, `${JSON.stringify(nextCfg, null, 2)}\n`);
-    process.env.CRYPTOCLAW_CONFIG_PATH = tempConfigPath;
+    process.env.OPENCLAW_CONFIG_PATH = tempConfigPath;
 
     const port = await getFreeGatewayPort();
     const server = await startGatewayServer(port, {
@@ -426,34 +382,34 @@ describeLive("gateway live (cli backend)", () => {
       await server.close();
       await fs.rm(tempDir, { recursive: true, force: true });
       if (previous.configPath === undefined) {
-        delete process.env.CRYPTOCLAW_CONFIG_PATH;
+        delete process.env.OPENCLAW_CONFIG_PATH;
       } else {
-        process.env.CRYPTOCLAW_CONFIG_PATH = previous.configPath;
+        process.env.OPENCLAW_CONFIG_PATH = previous.configPath;
       }
       if (previous.token === undefined) {
-        delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+        delete process.env.OPENCLAW_GATEWAY_TOKEN;
       } else {
-        process.env.CRYPTOCLAW_GATEWAY_TOKEN = previous.token;
+        process.env.OPENCLAW_GATEWAY_TOKEN = previous.token;
       }
       if (previous.skipChannels === undefined) {
-        delete process.env.CRYPTOCLAW_SKIP_CHANNELS;
+        delete process.env.OPENCLAW_SKIP_CHANNELS;
       } else {
-        process.env.CRYPTOCLAW_SKIP_CHANNELS = previous.skipChannels;
+        process.env.OPENCLAW_SKIP_CHANNELS = previous.skipChannels;
       }
       if (previous.skipGmail === undefined) {
-        delete process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER;
+        delete process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
       } else {
-        process.env.CRYPTOCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
+        process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
       }
       if (previous.skipCron === undefined) {
-        delete process.env.CRYPTOCLAW_SKIP_CRON;
+        delete process.env.OPENCLAW_SKIP_CRON;
       } else {
-        process.env.CRYPTOCLAW_SKIP_CRON = previous.skipCron;
+        process.env.OPENCLAW_SKIP_CRON = previous.skipCron;
       }
       if (previous.skipCanvas === undefined) {
-        delete process.env.CRYPTOCLAW_SKIP_CANVAS_HOST;
+        delete process.env.OPENCLAW_SKIP_CANVAS_HOST;
       } else {
-        process.env.CRYPTOCLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
+        process.env.OPENCLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
       }
       if (previous.anthropicApiKey === undefined) {
         delete process.env.ANTHROPIC_API_KEY;

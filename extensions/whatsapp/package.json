@@ -1,12 +1,10 @@
 {
-  "name": "@cryptoclaw/whatsapp",
-  "version": "2026.2.4",
-  "description": "CryptoClaw WhatsApp channel plugin",
+  "name": "@openclaw/whatsapp",
+  "version": "2026.3.2",
+  "private": true,
+  "description": "OpenClaw WhatsApp channel plugin",
   "type": "module",
-  "devDependencies": {
-    "cryptoclaw": "workspace:*"
-  },
-  "cryptoclaw": {
+  "openclaw": {
     "extensions": [
       "./index.ts"
     ]

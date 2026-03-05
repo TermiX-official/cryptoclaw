@@ -1,11 +1,13 @@
 import type { Command } from "commander";
-import { DEFAULT_CHAT_CHANNEL } from "../../channels/registry.js";
 import { agentCliCommand } from "../../commands/agent-via-gateway.js";
 import {
   agentsAddCommand,
+  agentsBindingsCommand,
+  agentsBindCommand,
   agentsDeleteCommand,
   agentsListCommand,
   agentsSetIdentityCommand,
+  agentsUnbindCommand,
 } from "../../commands/agents.js";
 import { setVerbose } from "../../globals.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -29,7 +31,7 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
     .option("--verbose <on|off>", "Persist agent verbose level for the session")
     .option(
       "--channel <channel>",
-      `Delivery channel: ${args.agentChannelOptions} (default: ${DEFAULT_CHAT_CHANNEL})`,
+      `Delivery channel: ${args.agentChannelOptions} (omit to use the main session channel)`,
     )
     .option("--reply-to <target>", "Delivery target override (separate from session routing)")
     .option("--reply-channel <channel>", "Delivery channel override (separate from routing)")
@@ -51,24 +53,24 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
         `
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
-  ['cryptoclaw agent --to +15555550123 --message "status update"', "Start a new session."],
-  ['cryptoclaw agent --agent ops --message "Summarize logs"', "Use a specific agent."],
+  ['openclaw agent --to +15555550123 --message "status update"', "Start a new session."],
+  ['openclaw agent --agent ops --message "Summarize logs"', "Use a specific agent."],
   [
-    'cryptoclaw agent --session-id 1234 --message "Summarize inbox" --thinking medium',
+    'openclaw agent --session-id 1234 --message "Summarize inbox" --thinking medium',
     "Target a session with explicit thinking level.",
   ],
   [
-    'cryptoclaw agent --to +15555550123 --message "Trace logs" --verbose on --json',
+    'openclaw agent --to +15555550123 --message "Trace logs" --verbose on --json',
     "Enable verbose logging and JSON output.",
   ],
-  ['cryptoclaw agent --to +15555550123 --message "Summon reply" --deliver', "Deliver reply."],
+  ['openclaw agent --to +15555550123 --message "Summon reply" --deliver', "Deliver reply."],
   [
-    'cryptoclaw agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"',
+    'openclaw agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"',
     "Send reply to a different channel/target.",
   ],
 ])}
 
-${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "cryptoclawdocs.termix.ai/cli/agent")}`,
+${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.openclaw.ai/cli/agent")}`,
     )
     .action(async (opts) => {
       const verboseLevel = typeof opts.verbose === "string" ? opts.verbose.toLowerCase() : "";
@@ -86,7 +88,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "cryptoclawdocs.termix.ai
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "cryptoclawdocs.termix.ai/cli/agents")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs.openclaw.ai/cli/agents")}\n`,
     );
 
   agents
@@ -98,6 +100,68 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "cryptoclawdocs.termix.ai
       await runCommandWithRuntime(defaultRuntime, async () => {
         await agentsListCommand(
           { json: Boolean(opts.json), bindings: Boolean(opts.bindings) },
+          defaultRuntime,
+        );
+      });
+    });
+
+  agents
+    .command("bindings")
+    .description("List routing bindings")
+    .option("--agent <id>", "Filter by agent id")
+    .option("--json", "Output JSON instead of text", false)
+    .action(async (opts) => {
+      await runCommandWithRuntime(defaultRuntime, async () => {
+        await agentsBindingsCommand(
+          {
+            agent: opts.agent as string | undefined,
+            json: Boolean(opts.json),
+          },
+          defaultRuntime,
+        );
+      });
+    });
+
+  agents
+    .command("bind")
+    .description("Add routing bindings for an agent")
+    .option("--agent <id>", "Agent id (defaults to current default agent)")
+    .option(
+      "--bind <channel[:accountId]>",
+      "Binding to add (repeatable). If omitted, accountId is resolved by channel defaults/hooks.",
+      collectOption,
+      [],
+    )
+    .option("--json", "Output JSON summary", false)
+    .action(async (opts) => {
+      await runCommandWithRuntime(defaultRuntime, async () => {
+        await agentsBindCommand(
+          {
+            agent: opts.agent as string | undefined,
+            bind: Array.isArray(opts.bind) ? (opts.bind as string[]) : undefined,
+            json: Boolean(opts.json),
+          },
+          defaultRuntime,
+        );
+      });
+    });
+
+  agents
+    .command("unbind")
+    .description("Remove routing bindings for an agent")
+    .option("--agent <id>", "Agent id (defaults to current default agent)")
+    .option("--bind <channel[:accountId]>", "Binding to remove (repeatable)", collectOption, [])
+    .option("--all", "Remove all bindings for this agent", false)
+    .option("--json", "Output JSON summary", false)
+    .action(async (opts) => {
+      await runCommandWithRuntime(defaultRuntime, async () => {
+        await agentsUnbindCommand(
+          {
+            agent: opts.agent as string | undefined,
+            bind: Array.isArray(opts.bind) ? (opts.bind as string[]) : undefined,
+            all: Boolean(opts.all),
+            json: Boolean(opts.json),
+          },
           defaultRuntime,
         );
       });
@@ -155,20 +219,14 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "cryptoclawdocs.termix.ai
         `
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
+  ['openclaw agents set-identity --agent main --name "OpenClaw" --emoji "🦞"', "Set name + emoji."],
+  ["openclaw agents set-identity --agent main --avatar avatars/openclaw.png", "Set avatar path."],
   [
-    'cryptoclaw agents set-identity --agent main --name "CryptoClaw" --emoji "🦞"',
-    "Set name + emoji.",
-  ],
-  [
-    "cryptoclaw agents set-identity --agent main --avatar avatars/cryptoclaw.png",
-    "Set avatar path.",
-  ],
-  [
-    "cryptoclaw agents set-identity --workspace ~/.cryptoclaw/workspace --from-identity",
+    "openclaw agents set-identity --workspace ~/.openclaw/workspace --from-identity",
     "Load from IDENTITY.md.",
   ],
   [
-    "cryptoclaw agents set-identity --identity-file ~/.cryptoclaw/workspace/IDENTITY.md --agent main",
+    "openclaw agents set-identity --identity-file ~/.openclaw/workspace/IDENTITY.md --agent main",
     "Use a specific IDENTITY.md.",
   ],
 ])}

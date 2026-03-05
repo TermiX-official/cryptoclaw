@@ -1,5 +1,6 @@
 import os from "node:os";
 import path from "node:path";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { isValidProfileName } from "./profile-utils.js";
 
 export type CliProfileParseResult =
@@ -87,9 +88,13 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
   return { ok: true, profile, argv: out };
 }
 
-function resolveProfileStateDir(profile: string, homedir: () => string): string {
+function resolveProfileStateDir(
+  profile: string,
+  env: Record<string, string | undefined>,
+  homedir: () => string,
+): string {
   const suffix = profile.toLowerCase() === "default" ? "" : `-${profile}`;
-  return path.join(homedir(), `.cryptoclaw${suffix}`);
+  return path.join(resolveRequiredHomeDir(env as NodeJS.ProcessEnv, homedir), `.openclaw${suffix}`);
 }
 
 export function applyCliProfileEnv(params: {
@@ -105,18 +110,18 @@ export function applyCliProfileEnv(params: {
   }
 
   // Convenience only: fill defaults, never override explicit env values.
-  env.CRYPTOCLAW_PROFILE = profile;
+  env.OPENCLAW_PROFILE = profile;
 
-  const stateDir = env.CRYPTOCLAW_STATE_DIR?.trim() || resolveProfileStateDir(profile, homedir);
-  if (!env.CRYPTOCLAW_STATE_DIR?.trim()) {
-    env.CRYPTOCLAW_STATE_DIR = stateDir;
+  const stateDir = env.OPENCLAW_STATE_DIR?.trim() || resolveProfileStateDir(profile, env, homedir);
+  if (!env.OPENCLAW_STATE_DIR?.trim()) {
+    env.OPENCLAW_STATE_DIR = stateDir;
   }
 
-  if (!env.CRYPTOCLAW_CONFIG_PATH?.trim()) {
-    env.CRYPTOCLAW_CONFIG_PATH = path.join(stateDir, "cryptoclaw.json");
+  if (!env.OPENCLAW_CONFIG_PATH?.trim()) {
+    env.OPENCLAW_CONFIG_PATH = path.join(stateDir, "openclaw.json");
   }
 
-  if (profile === "dev" && !env.CRYPTOCLAW_GATEWAY_PORT?.trim()) {
-    env.CRYPTOCLAW_GATEWAY_PORT = "19001";
+  if (profile === "dev" && !env.OPENCLAW_GATEWAY_PORT?.trim()) {
+    env.OPENCLAW_GATEWAY_PORT = "19001";
   }
 }

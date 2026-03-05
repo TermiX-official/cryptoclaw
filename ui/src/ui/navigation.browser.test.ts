@@ -1,15 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CryptoClawApp } from "./app.ts";
+import { describe, expect, it } from "vitest";
 import "../styles.css";
+import { mountApp as mountTestApp, registerAppMountHooks } from "./test-helpers/app-mount.ts";
 
-// oxlint-disable-next-line typescript/unbound-method
-const originalConnect = CryptoClawApp.prototype.connect;
+registerAppMountHooks();
 
 function mountApp(pathname: string) {
-  window.history.replaceState({}, "", pathname);
-  const app = document.createElement("cryptoclaw-app") as CryptoClawApp;
-  document.body.append(app);
-  return app;
+  return mountTestApp(pathname);
 }
 
 function nextFrame() {
@@ -17,22 +13,6 @@ function nextFrame() {
     requestAnimationFrame(() => resolve());
   });
 }
-
-beforeEach(() => {
-  CryptoClawApp.prototype.connect = () => {
-    // no-op: avoid real gateway WS connections in browser tests
-  };
-  window.__CRYPTOCLAW_CONTROL_UI_BASE_PATH__ = undefined;
-  localStorage.clear();
-  document.body.innerHTML = "";
-});
-
-afterEach(() => {
-  CryptoClawApp.prototype.connect = originalConnect;
-  window.__CRYPTOCLAW_CONTROL_UI_BASE_PATH__ = undefined;
-  localStorage.clear();
-  document.body.innerHTML = "";
-});
 
 describe("control UI routing", () => {
   it("hydrates the tab from the location", async () => {
@@ -53,22 +33,22 @@ describe("control UI routing", () => {
   });
 
   it("infers nested base paths", async () => {
-    const app = mountApp("/apps/cryptoclaw/cron");
+    const app = mountApp("/apps/openclaw/cron");
     await app.updateComplete;
 
-    expect(app.basePath).toBe("/apps/cryptoclaw");
+    expect(app.basePath).toBe("/apps/openclaw");
     expect(app.tab).toBe("cron");
-    expect(window.location.pathname).toBe("/apps/cryptoclaw/cron");
+    expect(window.location.pathname).toBe("/apps/openclaw/cron");
   });
 
   it("honors explicit base path overrides", async () => {
-    window.__CRYPTOCLAW_CONTROL_UI_BASE_PATH__ = "/cryptoclaw";
-    const app = mountApp("/cryptoclaw/sessions");
+    window.__OPENCLAW_CONTROL_UI_BASE_PATH__ = "/openclaw";
+    const app = mountApp("/openclaw/sessions");
     await app.updateComplete;
 
-    expect(app.basePath).toBe("/cryptoclaw");
+    expect(app.basePath).toBe("/openclaw");
     expect(app.tab).toBe("sessions");
-    expect(window.location.pathname).toBe("/cryptoclaw/sessions");
+    expect(window.location.pathname).toBe("/openclaw/sessions");
   });
 
   it("updates the URL when clicking nav items", async () => {
@@ -82,6 +62,21 @@ describe("control UI routing", () => {
     await app.updateComplete;
     expect(app.tab).toBe("channels");
     expect(window.location.pathname).toBe("/channels");
+  });
+
+  it("resets to the main session when opening chat from sidebar navigation", async () => {
+    const app = mountApp("/sessions?session=agent:main:subagent:task-123");
+    await app.updateComplete;
+
+    const link = app.querySelector<HTMLAnchorElement>('a.nav-item[href="/chat"]');
+    expect(link).not.toBeNull();
+    link?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+
+    await app.updateComplete;
+    expect(app.tab).toBe("chat");
+    expect(app.sessionKey).toBe("main");
+    expect(window.location.pathname).toBe("/chat");
+    expect(window.location.search).toBe("?session=main");
   });
 
   it("keeps chat and nav usable on narrow viewports", async () => {
@@ -151,11 +146,11 @@ describe("control UI routing", () => {
     expect(container.scrollTop).toBe(maxScroll);
   });
 
-  it("strips token URL params without importing them", async () => {
+  it("hydrates token from URL params and strips it", async () => {
     const app = mountApp("/ui/overview?token=abc123");
     await app.updateComplete;
 
-    expect(app.settings.token).toBe("");
+    expect(app.settings.token).toBe("abc123");
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.search).toBe("");
   });
@@ -169,16 +164,25 @@ describe("control UI routing", () => {
     expect(window.location.search).toBe("");
   });
 
-  it("does not override stored settings from URL token params", async () => {
+  it("hydrates token from URL params even when settings already set", async () => {
     localStorage.setItem(
-      "cryptoclaw.control.settings.v1",
+      "openclaw.control.settings.v1",
       JSON.stringify({ token: "existing-token" }),
     );
     const app = mountApp("/ui/overview?token=abc123");
     await app.updateComplete;
 
-    expect(app.settings.token).toBe("existing-token");
+    expect(app.settings.token).toBe("abc123");
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.search).toBe("");
+  });
+
+  it("hydrates token from URL hash and strips it", async () => {
+    const app = mountApp("/ui/overview#token=abc123");
+    await app.updateComplete;
+
+    expect(app.settings.token).toBe("abc123");
+    expect(window.location.pathname).toBe("/ui/overview");
+    expect(window.location.hash).toBe("");
   });
 });

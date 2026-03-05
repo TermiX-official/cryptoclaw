@@ -1,8 +1,18 @@
-import { Command, Option } from "commander";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Command, Option } from "commander";
 import { resolveStateDir } from "../config/paths.js";
+import { routeLogsToStderr } from "../logging/console.js";
+import { formatDocsLink } from "../terminal/links.js";
+import { theme } from "../terminal/theme.js";
+import { pathExists } from "../utils.js";
+import {
+  buildFishOptionCompletionLine,
+  buildFishSubcommandCompletionLine,
+} from "./completion-fish.js";
+import { getCoreCliCommandNames, registerCoreCliByName } from "./program/command-registry.js";
+import { getProgramContext } from "./program/program-context.js";
 import { getSubCliEntries, registerSubCliByName } from "./program/register.subclis.js";
 
 const COMPLETION_SHELLS = ["zsh", "bash", "powershell", "fish"] as const;
@@ -33,7 +43,7 @@ export function resolveShellFromEnv(env: NodeJS.ProcessEnv = process.env): Compl
 function sanitizeCompletionBasename(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "cryptoclaw";
+    return "openclaw";
   }
   return trimmed.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
@@ -53,7 +63,7 @@ export function resolveCompletionCachePath(shell: CompletionShell, binName: stri
 /** Check if the completion cache file exists for the given shell. */
 export async function completionCacheExists(
   shell: CompletionShell,
-  binName = "cryptoclaw",
+  binName = "openclaw",
 ): Promise<boolean> {
   const cachePath = resolveCompletionCachePath(shell, binName);
   return pathExists(cachePath);
@@ -86,15 +96,6 @@ async function writeCompletionCache(params: {
   }
 }
 
-async function pathExists(targetPath: string): Promise<boolean> {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function formatCompletionSourceLine(
   shell: CompletionShell,
   binName: string,
@@ -107,7 +108,7 @@ function formatCompletionSourceLine(
 }
 
 function isCompletionProfileHeader(line: string): boolean {
-  return line.trim() === "# CryptoClaw Completion";
+  return line.trim() === "# OpenClaw Completion";
 }
 
 function isCompletionProfileLine(line: string, binName: string, cachePath: string | null): boolean {
@@ -122,7 +123,7 @@ function isCompletionProfileLine(line: string, binName: string, cachePath: strin
 
 /** Check if a line uses the slow dynamic completion pattern (source <(...)) */
 function isSlowDynamicCompletionLine(line: string, binName: string): boolean {
-  // Matches patterns like: source <(cryptoclaw completion --shell zsh)
+  // Matches patterns like: source <(openclaw completion --shell zsh)
   return (
     line.includes(`<(${binName} completion`) ||
     (line.includes(`${binName} completion`) && line.includes("| source"))
@@ -154,7 +155,7 @@ function updateCompletionProfile(
   }
 
   const trimmed = filtered.join("\n").trimEnd();
-  const block = `# CryptoClaw Completion\n${sourceLine}`;
+  const block = `# OpenClaw Completion\n${sourceLine}`;
   const next = trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
   return { next, changed: next !== content, hadExisting };
 }
@@ -184,7 +185,7 @@ function getShellProfilePath(shell: CompletionShell): string {
 
 export async function isCompletionInstalled(
   shell: CompletionShell,
-  binName = "cryptoclaw",
+  binName = "openclaw",
 ): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
@@ -202,11 +203,11 @@ export async function isCompletionInstalled(
 
 /**
  * Check if the profile uses the slow dynamic completion pattern.
- * Returns true if profile has `source <(cryptoclaw completion ...)` instead of cached file.
+ * Returns true if profile has `source <(openclaw completion ...)` instead of cached file.
  */
 export async function usesSlowDynamicCompletion(
   shell: CompletionShell,
-  binName = "cryptoclaw",
+  binName = "openclaw",
 ): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
@@ -231,6 +232,11 @@ export function registerCompletionCli(program: Command) {
   program
     .command("completion")
     .description("Generate shell completion script")
+    .addHelpText(
+      "after",
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/completion", "docs.openclaw.ai/cli/completion")}\n`,
+    )
     .addOption(
       new Option("-s, --shell <shell>", "Shell to generate completion for (default: zsh)").choices(
         COMPLETION_SHELLS,
@@ -239,11 +245,24 @@ export function registerCompletionCli(program: Command) {
     .option("-i, --install", "Install completion script to shell profile")
     .option(
       "--write-state",
-      "Write completion scripts to $CRYPTOCLAW_STATE_DIR/completions (no stdout)",
+      "Write completion scripts to $OPENCLAW_STATE_DIR/completions (no stdout)",
     )
     .option("-y, --yes", "Skip confirmation (non-interactive)", false)
     .action(async (options) => {
+      // Route logs to stderr so plugin loading messages do not corrupt
+      // the completion script written to stdout.
+      routeLogsToStderr();
       const shell = options.shell ?? "zsh";
+
+      // Completion needs the full Commander command tree (including nested subcommands).
+      // Our CLI defaults to lazy registration for perf; force-register core commands here.
+      const ctx = getProgramContext(program);
+      if (ctx) {
+        for (const name of getCoreCliCommandNames()) {
+          await registerCoreCliByName(program, ctx, name);
+        }
+      }
+
       // Eagerly register all subcommands to build the full tree
       const entries = getSubCliEntries();
       for (const entry of entries) {
@@ -277,11 +296,11 @@ export function registerCompletionCli(program: Command) {
         throw new Error(`Unsupported shell: ${shell}`);
       }
       const script = getCompletionScript(shell, program);
-      console.log(script);
+      process.stdout.write(script + "\n");
     });
 }
 
-export async function installCompletion(shell: string, yes: boolean, binName = "cryptoclaw") {
+export async function installCompletion(shell: string, yes: boolean, binName = "openclaw") {
   const home = process.env.HOME || os.homedir();
   let profilePath = "";
   let sourceLine = "";
@@ -584,32 +603,27 @@ function generateFishCompletion(program: Command): string {
     } // Only push if not root, or consistent root handling
 
     // Fish uses 'seen_subcommand_from' to determine context.
-    // For root: complete -c cryptoclaw -n "__fish_use_subcommand" -a "subcmd" -d "desc"
+    // For root: complete -c openclaw -n "__fish_use_subcommand" -a "subcmd" -d "desc"
 
     // Root logic
     if (parents.length === 0) {
       // Subcommands of root
       for (const sub of cmd.commands) {
-        const desc = sub.description().replace(/'/g, "'\\''");
-        script += `complete -c ${rootCmd} -n "__fish_use_subcommand" -a "${sub.name()}" -d '${desc}'\n`;
+        script += buildFishSubcommandCompletionLine({
+          rootCmd,
+          condition: "__fish_use_subcommand",
+          name: sub.name(),
+          description: sub.description(),
+        });
       }
       // Options of root
       for (const opt of cmd.options) {
-        const flags = opt.flags.split(/[ ,|]+/);
-        const long = flags.find((f) => f.startsWith("--"))?.replace(/^--/, "");
-        const short = flags
-          .find((f) => f.startsWith("-") && !f.startsWith("--"))
-          ?.replace(/^-/, "");
-        const desc = opt.description.replace(/'/g, "'\\''");
-        let line = `complete -c ${rootCmd} -n "__fish_use_subcommand"`;
-        if (short) {
-          line += ` -s ${short}`;
-        }
-        if (long) {
-          line += ` -l ${long}`;
-        }
-        line += ` -d '${desc}'\n`;
-        script += line;
+        script += buildFishOptionCompletionLine({
+          rootCmd,
+          condition: "__fish_use_subcommand",
+          flags: opt.flags,
+          description: opt.description,
+        });
       }
     } else {
       // Nested commands
@@ -618,31 +632,26 @@ function generateFishCompletion(program: Command): string {
       // Actually, a robust fish completion often requires defining a function to check current line.
       // For simplicity, we'll assume standard fish helper __fish_seen_subcommand_from.
 
-      // To properly scope to 'cryptoclaw gateway' and not 'cryptoclaw other gateway', we need to check the sequence.
+      // To properly scope to 'openclaw gateway' and not 'openclaw other gateway', we need to check the sequence.
       // A simplified approach:
 
       // Subcommands
       for (const sub of cmd.commands) {
-        const desc = sub.description().replace(/'/g, "'\\''");
-        script += `complete -c ${rootCmd} -n "__fish_seen_subcommand_from ${cmdName}" -a "${sub.name()}" -d '${desc}'\n`;
+        script += buildFishSubcommandCompletionLine({
+          rootCmd,
+          condition: `__fish_seen_subcommand_from ${cmdName}`,
+          name: sub.name(),
+          description: sub.description(),
+        });
       }
       // Options
       for (const opt of cmd.options) {
-        const flags = opt.flags.split(/[ ,|]+/);
-        const long = flags.find((f) => f.startsWith("--"))?.replace(/^--/, "");
-        const short = flags
-          .find((f) => f.startsWith("-") && !f.startsWith("--"))
-          ?.replace(/^-/, "");
-        const desc = opt.description.replace(/'/g, "'\\''");
-        let line = `complete -c ${rootCmd} -n "__fish_seen_subcommand_from ${cmdName}"`;
-        if (short) {
-          line += ` -s ${short}`;
-        }
-        if (long) {
-          line += ` -l ${long}`;
-        }
-        line += ` -d '${desc}'\n`;
-        script += line;
+        script += buildFishOptionCompletionLine({
+          rootCmd,
+          condition: `__fish_seen_subcommand_from ${cmdName}`,
+          flags: opt.flags,
+          description: opt.description,
+        });
       }
     }
 

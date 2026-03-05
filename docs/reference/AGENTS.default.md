@@ -1,4 +1,5 @@
 ---
+title: "Default AGENTS.md"
 summary: "Default OpenClaw agent instructions and skills roster for the personal assistant setup"
 read_when:
   - Starting a new OpenClaw agent session
@@ -9,33 +10,33 @@ read_when:
 
 ## First run (recommended)
 
-OpenClaw uses a dedicated workspace directory for the agent. Default: `~/.cryptoclaw/workspace` (configurable via `agents.defaults.workspace`).
+OpenClaw uses a dedicated workspace directory for the agent. Default: `~/.openclaw/workspace` (configurable via `agents.defaults.workspace`).
 
 1. Create the workspace (if it doesn’t already exist):
 
 ```bash
-mkdir -p ~/.cryptoclaw/workspace
+mkdir -p ~/.openclaw/workspace
 ```
 
 2. Copy the default workspace templates into the workspace:
 
 ```bash
-cp docs/reference/templates/AGENTS.md ~/.cryptoclaw/workspace/AGENTS.md
-cp docs/reference/templates/SOUL.md ~/.cryptoclaw/workspace/SOUL.md
-cp docs/reference/templates/TOOLS.md ~/.cryptoclaw/workspace/TOOLS.md
+cp docs/reference/templates/AGENTS.md ~/.openclaw/workspace/AGENTS.md
+cp docs/reference/templates/SOUL.md ~/.openclaw/workspace/SOUL.md
+cp docs/reference/templates/TOOLS.md ~/.openclaw/workspace/TOOLS.md
 ```
 
 3. Optional: if you want the personal assistant skill roster, replace AGENTS.md with this file:
 
 ```bash
-cp docs/reference/AGENTS.default.md ~/.cryptoclaw/workspace/AGENTS.md
+cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
 ```
 
 4. Optional: choose a different workspace by setting `agents.defaults.workspace` (supports `~`):
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.cryptoclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
 }
 ```
 
@@ -79,7 +80,7 @@ cp docs/reference/AGENTS.default.md ~/.cryptoclaw/workspace/AGENTS.md
 If you treat this workspace as Clawd’s “memory”, make it a git repo (ideally private) so `AGENTS.md` and your memory files are backed up.
 
 ```bash
-cd ~/.cryptoclaw/workspace
+cd ~/.openclaw/workspace
 git init
 git add AGENTS.md
 git commit -m "Add Clawd workspace"
@@ -110,7 +111,6 @@ git commit -m "Add Clawd workspace"
 - **OpenHue CLI** — Philips Hue lighting control for scenes and automations.
 - **OpenAI Whisper** — Local speech-to-text for quick dictation and voicemail transcripts.
 - **Gemini CLI** — Google Gemini models from the terminal for fast Q&A.
-- **bird** — X/Twitter CLI to tweet, reply, read threads, and search without a browser.
 - **agent-tools** — Utility toolkit for automations and helper scripts.
 
 ## Usage Notes

@@ -1,5 +1,4 @@
-import type { CryptoClawApp } from "./app.ts";
-import type { NostrProfile } from "./types.ts";
+import type { OpenClawApp } from "./app.ts";
 import {
   loadChannels,
   logoutWhatsApp,
@@ -7,30 +6,31 @@ import {
   waitWhatsAppLogin,
 } from "./controllers/channels.ts";
 import { loadConfig, saveConfig } from "./controllers/config.ts";
+import type { NostrProfile } from "./types.ts";
 import { createNostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
 
-export async function handleWhatsAppStart(host: CryptoClawApp, force: boolean) {
+export async function handleWhatsAppStart(host: OpenClawApp, force: boolean) {
   await startWhatsAppLogin(host, force);
   await loadChannels(host, true);
 }
 
-export async function handleWhatsAppWait(host: CryptoClawApp) {
+export async function handleWhatsAppWait(host: OpenClawApp) {
   await waitWhatsAppLogin(host);
   await loadChannels(host, true);
 }
 
-export async function handleWhatsAppLogout(host: CryptoClawApp) {
+export async function handleWhatsAppLogout(host: OpenClawApp) {
   await logoutWhatsApp(host);
   await loadChannels(host, true);
 }
 
-export async function handleChannelConfigSave(host: CryptoClawApp) {
+export async function handleChannelConfigSave(host: OpenClawApp) {
   await saveConfig(host);
   await loadConfig(host);
   await loadChannels(host, true);
 }
 
-export async function handleChannelConfigReload(host: CryptoClawApp) {
+export async function handleChannelConfigReload(host: OpenClawApp) {
   await loadConfig(host);
   await loadChannels(host, true);
 }
@@ -57,7 +57,7 @@ function parseValidationErrors(details: unknown): Record<string, string> {
   return errors;
 }
 
-function resolveNostrAccountId(host: CryptoClawApp): string {
+function resolveNostrAccountId(host: OpenClawApp): string {
   const accounts = host.channelsSnapshot?.channelAccounts?.nostr ?? [];
   return accounts[0]?.accountId ?? host.nostrProfileAccountId ?? "default";
 }
@@ -66,8 +66,29 @@ function buildNostrProfileUrl(accountId: string, suffix = ""): string {
   return `/api/channels/nostr/${encodeURIComponent(accountId)}/profile${suffix}`;
 }
 
+function resolveGatewayHttpAuthHeader(host: OpenClawApp): string | null {
+  const deviceToken = host.hello?.auth?.deviceToken?.trim();
+  if (deviceToken) {
+    return `Bearer ${deviceToken}`;
+  }
+  const token = host.settings.token.trim();
+  if (token) {
+    return `Bearer ${token}`;
+  }
+  const password = host.password.trim();
+  if (password) {
+    return `Bearer ${password}`;
+  }
+  return null;
+}
+
+function buildGatewayHttpHeaders(host: OpenClawApp): Record<string, string> {
+  const authorization = resolveGatewayHttpAuthHeader(host);
+  return authorization ? { Authorization: authorization } : {};
+}
+
 export function handleNostrProfileEdit(
-  host: CryptoClawApp,
+  host: OpenClawApp,
   accountId: string,
   profile: NostrProfile | null,
 ) {
@@ -75,13 +96,13 @@ export function handleNostrProfileEdit(
   host.nostrProfileFormState = createNostrProfileFormState(profile ?? undefined);
 }
 
-export function handleNostrProfileCancel(host: CryptoClawApp) {
+export function handleNostrProfileCancel(host: OpenClawApp) {
   host.nostrProfileFormState = null;
   host.nostrProfileAccountId = null;
 }
 
 export function handleNostrProfileFieldChange(
-  host: CryptoClawApp,
+  host: OpenClawApp,
   field: keyof NostrProfile,
   value: string,
 ) {
@@ -102,7 +123,7 @@ export function handleNostrProfileFieldChange(
   };
 }
 
-export function handleNostrProfileToggleAdvanced(host: CryptoClawApp) {
+export function handleNostrProfileToggleAdvanced(host: OpenClawApp) {
   const state = host.nostrProfileFormState;
   if (!state) {
     return;
@@ -113,7 +134,7 @@ export function handleNostrProfileToggleAdvanced(host: CryptoClawApp) {
   };
 }
 
-export async function handleNostrProfileSave(host: CryptoClawApp) {
+export async function handleNostrProfileSave(host: OpenClawApp) {
   const state = host.nostrProfileFormState;
   if (!state || state.saving) {
     return;
@@ -133,6 +154,7 @@ export async function handleNostrProfileSave(host: CryptoClawApp) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        ...buildGatewayHttpHeaders(host),
       },
       body: JSON.stringify(state.values),
     });
@@ -184,7 +206,7 @@ export async function handleNostrProfileSave(host: CryptoClawApp) {
   }
 }
 
-export async function handleNostrProfileImport(host: CryptoClawApp) {
+export async function handleNostrProfileImport(host: OpenClawApp) {
   const state = host.nostrProfileFormState;
   if (!state || state.importing) {
     return;
@@ -203,6 +225,7 @@ export async function handleNostrProfileImport(host: CryptoClawApp) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...buildGatewayHttpHeaders(host),
       },
       body: JSON.stringify({ autoMerge: true }),
     });

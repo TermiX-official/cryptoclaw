@@ -1,5 +1,4 @@
 import type { Command } from "commander";
-import type { BrowserParentOpts } from "./browser-cli-shared.js";
 import { danger } from "../globals.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
@@ -11,6 +10,7 @@ import { browserActionExamples, browserCoreExamples } from "./browser-cli-exampl
 import { registerBrowserExtensionCommands } from "./browser-cli-extension.js";
 import { registerBrowserInspectCommands } from "./browser-cli-inspect.js";
 import { registerBrowserManageCommands } from "./browser-cli-manage.js";
+import type { BrowserParentOpts } from "./browser-cli-shared.js";
 import { registerBrowserStateCommands } from "./browser-cli-state.js";
 import { formatCliCommand } from "./command-format.js";
 import { addGatewayClientOptions } from "./gateway-rpc.js";
@@ -30,13 +30,13 @@ export function registerBrowserCli(program: Command) {
           true,
         )}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/browser",
-          "cryptoclawdocs.termix.ai/cli/browser",
+          "docs.openclaw.ai/cli/browser",
         )}\n`,
     )
     .action(() => {
       browser.outputHelp();
       defaultRuntime.error(
-        danger(`Missing subcommand. Try: "${formatCliCommand("cryptoclaw browser status")}"`),
+        danger(`Missing subcommand. Try: "${formatCliCommand("openclaw browser status")}"`),
       );
       defaultRuntime.exit(1);
     });

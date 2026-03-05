@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 
 const note = vi.hoisted(() => vi.fn());
+const pluginRegistry = vi.hoisted(() => ({ list: [] as unknown[] }));
 
 vi.mock("../terminal/note.js", () => ({
   note,
 }));
 
 vi.mock("../channels/plugins/index.js", () => ({
-  listChannelPlugins: () => [],
+  listChannelPlugins: () => pluginRegistry.list,
 }));
 
 import { noteSecurityWarnings } from "./doctor-security.js";
@@ -19,22 +20,23 @@ describe("noteSecurityWarnings gateway exposure", () => {
 
   beforeEach(() => {
     note.mockClear();
-    prevToken = process.env.CRYPTOCLAW_GATEWAY_TOKEN;
-    prevPassword = process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
-    delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
-    delete process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
+    pluginRegistry.list = [];
+    prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+    prevPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
+    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
   });
 
   afterEach(() => {
     if (prevToken === undefined) {
-      delete process.env.CRYPTOCLAW_GATEWAY_TOKEN;
+      delete process.env.OPENCLAW_GATEWAY_TOKEN;
     } else {
-      process.env.CRYPTOCLAW_GATEWAY_TOKEN = prevToken;
+      process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
     }
     if (prevPassword === undefined) {
-      delete process.env.CRYPTOCLAW_GATEWAY_PASSWORD;
+      delete process.env.OPENCLAW_GATEWAY_PASSWORD;
     } else {
-      process.env.CRYPTOCLAW_GATEWAY_PASSWORD = prevPassword;
+      process.env.OPENCLAW_GATEWAY_PASSWORD = prevPassword;
     }
   });
 
@@ -46,10 +48,12 @@ describe("noteSecurityWarnings gateway exposure", () => {
     const message = lastMessage();
     expect(message).toContain("CRITICAL");
     expect(message).toContain("without authentication");
+    expect(message).toContain("Safer remote access");
+    expect(message).toContain("ssh -N -L 18789:127.0.0.1:18789");
   });
 
   it("uses env token to avoid critical warning", async () => {
-    process.env.CRYPTOCLAW_GATEWAY_TOKEN = "token-123";
+    process.env.OPENCLAW_GATEWAY_TOKEN = "token-123";
     const cfg = { gateway: { bind: "lan" } } as OpenClawConfig;
     await noteSecurityWarnings(cfg);
     const message = lastMessage();
@@ -72,5 +76,47 @@ describe("noteSecurityWarnings gateway exposure", () => {
     const message = lastMessage();
     expect(message).toContain("No channel security warnings detected");
     expect(message).not.toContain("Gateway bound");
+  });
+
+  it("shows explicit dmScope config command for multi-user DMs", async () => {
+    pluginRegistry.list = [
+      {
+        id: "whatsapp",
+        meta: { label: "WhatsApp" },
+        config: {
+          listAccountIds: () => ["default"],
+          resolveAccount: () => ({}),
+          isEnabled: () => true,
+          isConfigured: () => true,
+        },
+        security: {
+          resolveDmPolicy: () => ({
+            policy: "allowlist",
+            allowFrom: ["alice", "bob"],
+            allowFromPath: "channels.whatsapp.",
+            approveHint: "approve",
+          }),
+        },
+      },
+    ];
+    const cfg = { session: { dmScope: "main" } } as OpenClawConfig;
+    await noteSecurityWarnings(cfg);
+    const message = lastMessage();
+    expect(message).toContain('config set session.dmScope "per-channel-peer"');
+  });
+
+  it("clarifies approvals.exec forwarding-only behavior", async () => {
+    const cfg = {
+      approvals: {
+        exec: {
+          enabled: false,
+        },
+      },
+    } as OpenClawConfig;
+    await noteSecurityWarnings(cfg);
+    const message = lastMessage();
+    expect(message).toContain("disables approval forwarding only");
+    expect(message).toContain("exec-approvals.json");
+    expect(message).toContain("openclaw approvals get --gateway");
   });
 });

@@ -1,12 +1,10 @@
 {
-  "name": "@cryptoclaw/copilot-proxy",
-  "version": "2026.2.4",
-  "description": "CryptoClaw Copilot Proxy provider plugin",
+  "name": "@openclaw/copilot-proxy",
+  "version": "2026.3.2",
+  "private": true,
+  "description": "OpenClaw Copilot Proxy provider plugin",
   "type": "module",
-  "devDependencies": {
-    "cryptoclaw": "workspace:*"
-  },
-  "cryptoclaw": {
+  "openclaw": {
     "extensions": [
       "./index.ts"
     ]

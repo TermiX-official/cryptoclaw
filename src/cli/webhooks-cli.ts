@@ -27,21 +27,21 @@ export function registerWebhooksCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/webhooks", "cryptoclawdocs.termix.ai/cli/webhooks")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/webhooks", "docs.openclaw.ai/cli/webhooks")}\n`,
     );
 
   const gmail = webhooks.command("gmail").description("Gmail Pub/Sub hooks (via gogcli)");
 
   gmail
     .command("setup")
-    .description("Configure Gmail watch + Pub/Sub + CryptoClaw hooks")
+    .description("Configure Gmail watch + Pub/Sub + OpenClaw hooks")
     .requiredOption("--account <email>", "Gmail account to watch")
     .option("--project <id>", "GCP project id (OAuth client owner)")
     .option("--topic <name>", "Pub/Sub topic name", DEFAULT_GMAIL_TOPIC)
     .option("--subscription <name>", "Pub/Sub subscription name", DEFAULT_GMAIL_SUBSCRIPTION)
     .option("--label <label>", "Gmail label to watch", DEFAULT_GMAIL_LABEL)
-    .option("--hook-url <url>", "CryptoClaw hook URL")
-    .option("--hook-token <token>", "CryptoClaw hook token")
+    .option("--hook-url <url>", "OpenClaw hook URL")
+    .option("--hook-token <token>", "OpenClaw hook token")
     .option("--push-token <token>", "Push token for gog watch serve")
     .option("--bind <host>", "gog watch serve bind host", DEFAULT_GMAIL_SERVE_BIND)
     .option("--port <port>", "gog watch serve port", String(DEFAULT_GMAIL_SERVE_PORT))
@@ -78,8 +78,8 @@ export function registerWebhooksCli(program: Command) {
     .option("--topic <topic>", "Pub/Sub topic path (projects/.../topics/..)")
     .option("--subscription <name>", "Pub/Sub subscription name")
     .option("--label <label>", "Gmail label to watch")
-    .option("--hook-url <url>", "CryptoClaw hook URL")
-    .option("--hook-token <token>", "CryptoClaw hook token")
+    .option("--hook-url <url>", "OpenClaw hook URL")
+    .option("--hook-token <token>", "OpenClaw hook token")
     .option("--push-token <token>", "Push token for gog watch serve")
     .option("--bind <host>", "gog watch serve bind host")
     .option("--port <port>", "gog watch serve port")
@@ -110,32 +110,26 @@ function parseGmailSetupOptions(raw: Record<string, unknown>): GmailSetupOptions
   if (!account) {
     throw new Error("--account is required");
   }
+  const common = parseGmailCommonOptions(raw);
   return {
     account,
     project: stringOption(raw.project),
-    topic: stringOption(raw.topic),
-    subscription: stringOption(raw.subscription),
-    label: stringOption(raw.label),
-    hookUrl: stringOption(raw.hookUrl),
-    hookToken: stringOption(raw.hookToken),
-    pushToken: stringOption(raw.pushToken),
-    bind: stringOption(raw.bind),
-    port: numberOption(raw.port),
-    path: stringOption(raw.path),
-    includeBody: booleanOption(raw.includeBody),
-    maxBytes: numberOption(raw.maxBytes),
-    renewEveryMinutes: numberOption(raw.renewMinutes),
-    tailscale: stringOption(raw.tailscale) as GmailSetupOptions["tailscale"],
-    tailscalePath: stringOption(raw.tailscalePath),
-    tailscaleTarget: stringOption(raw.tailscaleTarget),
+    ...gmailOptionsFromCommon(common),
     pushEndpoint: stringOption(raw.pushEndpoint),
     json: Boolean(raw.json),
   };
 }
 
 function parseGmailRunOptions(raw: Record<string, unknown>): GmailRunOptions {
+  const common = parseGmailCommonOptions(raw);
   return {
     account: stringOption(raw.account),
+    ...gmailOptionsFromCommon(common),
+  };
+}
+
+function parseGmailCommonOptions(raw: Record<string, unknown>) {
+  return {
     topic: stringOption(raw.topic),
     subscription: stringOption(raw.subscription),
     label: stringOption(raw.label),
@@ -148,9 +142,31 @@ function parseGmailRunOptions(raw: Record<string, unknown>): GmailRunOptions {
     includeBody: booleanOption(raw.includeBody),
     maxBytes: numberOption(raw.maxBytes),
     renewEveryMinutes: numberOption(raw.renewMinutes),
-    tailscale: stringOption(raw.tailscale) as GmailRunOptions["tailscale"],
+    tailscaleRaw: stringOption(raw.tailscale),
     tailscalePath: stringOption(raw.tailscalePath),
     tailscaleTarget: stringOption(raw.tailscaleTarget),
+  };
+}
+
+function gmailOptionsFromCommon(
+  common: ReturnType<typeof parseGmailCommonOptions>,
+): Omit<GmailRunOptions, "account"> {
+  return {
+    topic: common.topic,
+    subscription: common.subscription,
+    label: common.label,
+    hookUrl: common.hookUrl,
+    hookToken: common.hookToken,
+    pushToken: common.pushToken,
+    bind: common.bind,
+    port: common.port,
+    path: common.path,
+    includeBody: common.includeBody,
+    maxBytes: common.maxBytes,
+    renewEveryMinutes: common.renewEveryMinutes,
+    tailscale: common.tailscaleRaw as GmailRunOptions["tailscale"],
+    tailscalePath: common.tailscalePath,
+    tailscaleTarget: common.tailscaleTarget,
   };
 }
 

@@ -29,7 +29,7 @@ struct AboutSettings: View {
             }
 
             VStack(spacing: 3) {
-                Text("CryptoClaw")
+                Text("OpenClaw")
                     .font(.title3.bold())
                 Text("Version \(self.versionString)")
                     .foregroundStyle(.secondary)
@@ -110,8 +110,8 @@ struct AboutSettings: View {
     private var buildTimestamp: String? {
         guard
             let raw =
-                (Bundle.main.object(forInfoDictionaryKey: "CryptoClawBuildTimestamp") as? String) ??
-                (Bundle.main.object(forInfoDictionaryKey: "OpenClawBuildTimestamp") as? String)
+            (Bundle.main.object(forInfoDictionaryKey: "OpenClawBuildTimestamp") as? String) ??
+            (Bundle.main.object(forInfoDictionaryKey: "OpenClawBuildTimestamp") as? String)
         else { return nil }
         let parser = ISO8601DateFormatter()
         parser.formatOptions = [.withInternetDateTime]
@@ -125,7 +125,7 @@ struct AboutSettings: View {
     }
 
     private var gitCommit: String {
-        (Bundle.main.object(forInfoDictionaryKey: "CryptoClawGitCommit") as? String) ??
+        (Bundle.main.object(forInfoDictionaryKey: "OpenClawGitCommit") as? String) ??
             (Bundle.main.object(forInfoDictionaryKey: "OpenClawGitCommit") as? String) ??
             "unknown"
     }

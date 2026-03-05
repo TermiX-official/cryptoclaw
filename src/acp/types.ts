@@ -6,6 +6,7 @@ export type AcpSession = {
   sessionKey: string;
   cwd: string;
   createdAt: number;
+  lastTouchedAt: number;
   abortController: AbortController | null;
   activeRunId: string | null;
 };
@@ -19,11 +20,15 @@ export type AcpServerOptions = {
   requireExistingSession?: boolean;
   resetSession?: boolean;
   prefixCwd?: boolean;
+  sessionCreateRateLimit?: {
+    maxRequests?: number;
+    windowMs?: number;
+  };
   verbose?: boolean;
 };
 
 export const ACP_AGENT_INFO = {
   name: "openclaw-acp",
-  title: "CryptoClaw ACP Gateway",
+  title: "OpenClaw ACP Gateway",
   version: VERSION,
 };

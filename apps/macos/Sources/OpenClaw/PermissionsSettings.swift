@@ -1,6 +1,6 @@
+import CoreLocation
 import OpenClawIPC
 import OpenClawKit
-import CoreLocation
 import SwiftUI
 
 struct PermissionsSettings: View {
@@ -12,7 +12,7 @@ struct PermissionsSettings: View {
         VStack(alignment: .leading, spacing: 14) {
             SystemRunSettingsView()
 
-            Text("Allow these so CryptoClaw can notify and capture when needed.")
+            Text("Allow these so OpenClaw can notify and capture when needed.")
                 .padding(.top, 4)
 
             PermissionStatusList(status: self.status, refresh: self.refresh)
@@ -164,7 +164,9 @@ struct PermissionRow: View {
         .padding(.vertical, self.compact ? 4 : 6)
     }
 
-    private var iconSize: CGFloat { self.compact ? 28 : 32 }
+    private var iconSize: CGFloat {
+        self.compact ? 28 : 32
+    }
 
     private var title: String {
         switch self.capability {

@@ -20,13 +20,13 @@ x-i18n:
 ## 快速安装（推荐）
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 Windows（PowerShell）：
 
 ```powershell
-npm install -g @termix-it/cryptoclaw@latest
+iwr -useb https://openclaw.ai/install.ps1 | iex
 ```
 
 下一步（如果你跳过了新手引导）：
@@ -48,13 +48,13 @@ openclaw onboard --install-daemon
 通过 npm 全局安装 `openclaw` 并运行新手引导。
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 安装器标志：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest --help
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --help
 ```
 
 详情：[安装器内部原理](/install/installer)。
@@ -62,7 +62,7 @@ npm install -g @termix-it/cryptoclaw@latest --help
 非交互式（跳过新手引导）：
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
 ```
 
 ### 2）全局安装（手动）
@@ -135,10 +135,10 @@ openclaw onboard --install-daemon
 
 ```bash
 # 显式 npm
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method npm
 
 # 从 GitHub 安装（源代码 checkout）
-git clone https://github.com/TermiX-official/cryptoclaw.git && cd cryptoclaw && pnpm install && pnpm build
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 常用标志：

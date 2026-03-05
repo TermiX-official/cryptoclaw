@@ -106,7 +106,7 @@ tailscale status
 ## 5) 安装 OpenClaw
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 source ~/.bashrc
 ```
 

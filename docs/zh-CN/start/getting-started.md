@@ -28,7 +28,7 @@ x-i18n:
 - 工作区引导 + Skills
 - 可选的后台服务
 
-如果你想要更深入的参考页面，跳转到：[向导](/start/wizard)、[设置](/start/setup)、[配对](/start/pairing)、[安全](/gateway/security)。
+如果你想要更深入的参考页面，跳转到：[向导](/start/wizard)、[设置](/start/setup)、[配对](/channels/pairing)、[安全](/gateway/security)。
 
 沙箱注意事项：`agents.defaults.sandbox.mode: "non-main"` 使用 `session.mainKey`（默认 `"main"`），因此群组/渠道会话会被沙箱隔离。如果你想要主智能体始终在主机上运行，设置显式的每智能体覆盖：
 
@@ -57,7 +57,7 @@ Windows：使用 **WSL2**（推荐 Ubuntu）。强烈推荐 WSL2；原生 Window
 ## 1) 安装 CLI（推荐）
 
 ```bash
-npm install -g @termix-it/cryptoclaw@latest
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
 安装程序选项（安装方法、非交互式、从 GitHub）：[安装](/install)。
@@ -65,7 +65,7 @@ npm install -g @termix-it/cryptoclaw@latest
 Windows (PowerShell)：
 
 ```powershell
-npm install -g @termix-it/cryptoclaw@latest
+iwr -useb https://openclaw.ai/install.ps1 | iex
 ```
 
 替代方案（全局安装）：
@@ -162,7 +162,7 @@ openclaw pairing list whatsapp
 openclaw pairing approve whatsapp <code>
 ```
 
-配对文档：[配对](/start/pairing)
+配对文档：[配对](/channels/pairing)
 
 ## 从源代码（开发）
 

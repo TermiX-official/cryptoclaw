@@ -51,7 +51,7 @@ export function renderDebug(props: DebugProps) {
               securitySummary
                 ? html`<div class="callout ${securityTone}" style="margin-top: 8px;">
                   Security audit: ${securityLabel}${info > 0 ? ` · ${info} info` : ""}. Run
-                  <span class="mono">cryptoclaw security audit --deep</span> for details.
+                  <span class="mono">openclaw security audit --deep</span> for details.
                 </div>`
                 : nothing
             }
@@ -127,16 +127,18 @@ export function renderDebug(props: DebugProps) {
               <div class="muted" style="margin-top: 12px">No events yet.</div>
             `
           : html`
-            <div class="list" style="margin-top: 12px;">
+            <div class="list debug-event-log" style="margin-top: 12px;">
               ${props.eventLog.map(
                 (evt) => html`
-                  <div class="list-item">
+                  <div class="list-item debug-event-log__item">
                     <div class="list-main">
                       <div class="list-title">${evt.event}</div>
                       <div class="list-sub">${new Date(evt.ts).toLocaleTimeString()}</div>
                     </div>
-                    <div class="list-meta">
-                      <pre class="code-block">${formatEventPayload(evt.payload)}</pre>
+                    <div class="list-meta debug-event-log__meta">
+                      <pre class="code-block debug-event-log__payload">${formatEventPayload(
+                        evt.payload,
+                      )}</pre>
                     </div>
                   </div>
                 `,

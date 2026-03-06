@@ -81,7 +81,7 @@ jobs:
         run: pnpm build
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-build
           path: dist/
@@ -222,7 +222,7 @@ jobs:
         run: ${{ matrix.command }}
 
       - name: Upload dead-code results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dead-code-${{ matrix.tool }}-${{ github.run_id }}
           path: .artifacts/deadcode

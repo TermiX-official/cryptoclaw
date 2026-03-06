@@ -1,6 +1,6 @@
 {
   "name": "@termix-it/cryptoclaw",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Private crypto AI assistant — wallet management, DeFi, NFTs, and multi-chain operations from your terminal",
   "keywords": [
     "ai",
@@ -27,6 +27,7 @@
     "url": "git+https://github.com/TermiX-official/cryptoclaw.git"
   },
   "bin": {
+    "cryptoclaw": "openclaw.mjs",
     "openclaw": "openclaw.mjs"
   },
   "directories": {

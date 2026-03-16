@@ -2,6 +2,7 @@ import type { OpenClawPluginApi, OpenClawPluginDefinition } from "cryptoclaw/plu
 import { getDefaultChainName, resolveChainId, setDefaultChainId } from "./src/evm/chains.js";
 import { checkAddressSecurity } from "./src/evm/services/security.js";
 import { registerBlockTools } from "./src/evm/tools/block-tools.js";
+import { registerCommerceTools } from "./src/evm/tools/commerce-tools.js";
 import { registerContractTools } from "./src/evm/tools/contract-tools.js";
 import { registerIdentityTools } from "./src/evm/tools/identity-tools.js";
 import { registerNetworkTools } from "./src/evm/tools/network-tools.js";
@@ -20,7 +21,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
   id: "blockchain",
   name: "Blockchain",
   description:
-    "EVM blockchain tools: wallet management, token transfers, DEX swaps (Uniswap/PancakeSwap V2+V3), NFTs, smart contracts, ERC-8004 agent identity, and multi-chain operations",
+    "EVM blockchain tools: wallet management, token transfers, DEX swaps (Uniswap/PancakeSwap V2+V3), NFTs, smart contracts, ERC-8004 agent identity, ERC-8183 agentic commerce, and multi-chain operations",
 
   register(api: OpenClawPluginApi) {
     const stateDir = api.runtime.state.resolveStateDir();
@@ -54,6 +55,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     registerNetworkTools(api);
     registerSwapTools(api, walletManager);
     registerIdentityTools(api, walletManager);
+    registerCommerceTools(api, walletManager);
     registerSecurityTools(api);
 
     // --- Transfer tools that should trigger auto security check ---

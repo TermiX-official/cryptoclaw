@@ -10,6 +10,15 @@ export const STATE_CHANGING_TOOLS = new Set([
   "wallet_delete",
   "agent_register",
   "agent_set_wallet",
+  // ERC-8183 Agentic Commerce state-changing tools
+  "job_create",
+  "job_set_provider",
+  "job_set_budget",
+  "job_fund",
+  "job_submit",
+  "job_complete",
+  "job_reject",
+  "job_claim_refund",
   // wallet_export is CLI-only — not an agent tool, no confirmation needed here
 ]);
 
@@ -49,6 +58,22 @@ export function formatConfirmationPrompt(
       return `Register agent identity on ${String(params.network) || "bsc"} with URI: ${String(params.agentURI)}`;
     case "agent_set_wallet":
       return `Set agent #${String(params.agentId) || "stored"} wallet to ${String(params.walletAddress)} on ${String(params.network) || "bsc"}`;
+    case "job_create":
+      return `Create ERC-8183 job: evaluator=${String(params.evaluator)}, expires=${String(params.expiredAt)} on ${String(params.network) || "base"}`;
+    case "job_set_provider":
+      return `Set provider for job #${String(params.jobId)} to ${String(params.provider)} on ${String(params.network) || "base"}`;
+    case "job_set_budget":
+      return `Set budget for job #${String(params.jobId)} to ${String(params.amount)} USDC on ${String(params.network) || "base"}`;
+    case "job_fund":
+      return `Fund job #${String(params.jobId)} (lock USDC into escrow) on ${String(params.network) || "base"}`;
+    case "job_submit":
+      return `Submit deliverable for job #${String(params.jobId)} on ${String(params.network) || "base"}`;
+    case "job_complete":
+      return `Approve job #${String(params.jobId)} — release escrow to provider on ${String(params.network) || "base"}`;
+    case "job_reject":
+      return `Reject job #${String(params.jobId)} on ${String(params.network) || "base"}`;
+    case "job_claim_refund":
+      return `Claim refund for expired job #${String(params.jobId)} on ${String(params.network) || "base"}`;
     default:
       return `Execute ${toolName} with params: ${JSON.stringify(params)}`;
   }

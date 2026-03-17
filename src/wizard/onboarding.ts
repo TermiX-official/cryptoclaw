@@ -560,6 +560,68 @@ export async function runOnboardingWizard(
     }
   }
 
+  // TEE (Trusted Execution Environment) setup — optional secure vault
+  if (flow === "advanced") {
+    const useTee = await prompter.confirm({
+      message: "Enable TEE (Trusted Execution Environment) for secure key & API secret protection?",
+      initialValue: false,
+    });
+
+    if (useTee) {
+      const teeEndpoint = await prompter.text({
+        message: "TEE enclave endpoint",
+        initialValue:
+          (nextConfig as Record<string, unknown> & { tee?: { endpoint?: string } }).tee?.endpoint ??
+          "http://localhost:3443",
+        placeholder: "http://localhost:3443",
+      });
+
+      const teeTransport = await prompter.select({
+        message: "TEE transport",
+        options: [
+          { value: "grpc", label: "gRPC / HTTP", hint: "Remote TEE or local dev" },
+          { value: "vsock", label: "VSOCK", hint: "AWS Nitro Enclaves" },
+          { value: "unix", label: "Unix socket", hint: "Local Intel SGX/TDX" },
+        ],
+        initialValue: "grpc",
+      });
+
+      const teeConfig: Record<string, string> = {
+        endpoint: teeEndpoint.trim(),
+        transport: teeTransport,
+      };
+
+      const setMrenclave = await prompter.confirm({
+        message: "Verify enclave code hash (MRENCLAVE) on connect?",
+        initialValue: false,
+      });
+      if (setMrenclave) {
+        const mrenclave = await prompter.text({
+          message: "Expected MRENCLAVE hash",
+          placeholder: "abc123...",
+        });
+        if (mrenclave.trim()) {
+          teeConfig.mrenclave = mrenclave.trim();
+        }
+      }
+
+      (nextConfig as Record<string, unknown>).tee = teeConfig;
+
+      await prompter.note(
+        [
+          `Endpoint:  ${teeConfig.endpoint}`,
+          `Transport: ${teeConfig.transport}`,
+          ...(teeConfig.mrenclave ? [`MRENCLAVE: ${teeConfig.mrenclave}`] : []),
+          "",
+          "The gateway will connect to the TEE enclave on startup.",
+          "All API key signing and wallet operations will run inside the enclave.",
+          "See: src/secure-vault/enclave/README.md",
+        ].join("\n"),
+        "TEE configured",
+      );
+    }
+  }
+
   // Setup hooks (session memory on /new)
   const { setupInternalHooks } = await import("../commands/onboard-hooks.js");
   nextConfig = await setupInternalHooks(nextConfig, runtime, prompter);

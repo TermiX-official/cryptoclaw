@@ -47,6 +47,8 @@ Supported chains for Binance Web3 skills: **BSC (56)**, **Base (8453)**, **Solan
 - **Contract deployment** — deploy ERC20/ERC721 from templates
 - **On-chain data** — Etherscan, Dune Analytics, whale tracking, gas monitoring
 - **Security checks** — GoPlus Security API + Binance Token Audit for every token
+- **Agentic Commerce (ERC-8183)** — on-chain job escrow for AI agent commerce with trustless evaluation
+- **Agent Identity (ERC-8004)** — verifiable on-chain AI agent identity with reputation tracking
 
 ### Market Intelligence
 
@@ -57,6 +59,12 @@ Supported chains for Binance Web3 skills: **BSC (56)**, **Base (8453)**, **Solan
 - **Macro calendar** — Fed rates, CPI, economic events impacting crypto
 - **Hyperliquid** — perpetual futures and spot trading on Hyperliquid DEX
 - **Whale watcher** — monitor large on-chain transactions
+
+### Security Infrastructure
+
+- **TEE (Trusted Execution Environment)** — optional hardware-isolated enclave for private key signing and API secret protection. When enabled, all wallet signing (transfers, swaps, contract calls) and exchange API requests execute inside the TEE — secrets never enter the Node.js process.
+- **SecureVault** — unified interface for secret operations with automatic TEE detection. Falls back to in-process signing when TEE is not available.
+- **Signed API Requests** — `signed_api_request` tool lets agents call exchange APIs (Binance, OKX, Bybit) without touching API keys or secrets.
 
 ### Messaging Channels
 
@@ -135,6 +143,96 @@ cryptoclaw agent --message "Show me smart money signals on BSC" --thinking high
 
 ---
 
+## Agentic Commerce (ERC-8183)
+
+CryptoClaw implements [ERC-8183](https://eips.ethereum.org/EIPS/eip-8183) — an on-chain job escrow protocol for AI agent commerce. Clients post jobs, lock funds in escrow, providers execute work, and evaluators approve or reject — settlement is automatic and trustless.
+
+### How It Works
+
+```
+Client creates job → Sets budget → Funds escrow (USDC)
+    → Provider submits deliverable → Evaluator approves → Funds released
+```
+
+### Tools
+
+| Tool               | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `job_create`       | Create a new job with evaluator, deadline, description |
+| `job_set_budget`   | Set or negotiate budget in USDC                        |
+| `job_fund`         | Lock USDC into escrow (auto-handles ERC-20 approval)   |
+| `job_submit`       | Provider submits deliverable (IPFS CID / hash)         |
+| `job_complete`     | Evaluator approves, releasing funds to provider        |
+| `job_reject`       | Reject job with reason (refunds to client)             |
+| `job_claim_refund` | Claim refund for expired job (permissionless)          |
+| `job_query`        | Query job details by ID                                |
+| `job_list`         | List jobs by wallet address and role                   |
+
+### ERC-8004 Integration
+
+ERC-8183 composes with [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) (Trustless Agents). Use `agent_identity` to verify a provider's on-chain identity and `agent_reputation` to check their trust score before creating or accepting a job.
+
+### Deployed Contracts
+
+| Network      | ACPCore                                      | Payment Token (USDC)                         |
+| ------------ | -------------------------------------------- | -------------------------------------------- |
+| Base Mainnet | `0x16213AB6a660A24f36d4F8DdACA7a3d0856A8AF5` | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Base Sepolia | `0x16213AB6a660A24f36d4F8DdACA7a3d0856A8AF5` | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+
+---
+
+## TEE (Trusted Execution Environment)
+
+CryptoClaw supports optional TEE hardware isolation for private keys and API secrets. When enabled, all signing operations (wallet transactions, exchange API requests) execute inside a TEE enclave — secrets never enter the main Node.js process.
+
+### What TEE Protects
+
+| Operation                                      | Without TEE                      | With TEE                                  |
+| ---------------------------------------------- | -------------------------------- | ----------------------------------------- |
+| Wallet signing (transfer, swap, contract call) | Private key in Node.js memory    | Signing inside enclave, key never exposed |
+| Exchange API requests (Binance, OKX)           | API secret in Node.js memory     | HMAC signing inside enclave               |
+| Key storage                                    | AES-256-GCM encrypted file       | Enclave-encrypted memory                  |
+| Server compromise                              | Attacker can dump process memory | Attacker cannot read enclave memory       |
+
+### Setup
+
+Enable TEE during onboarding (Manual mode) or via config:
+
+```bash
+# Via onboarding wizard
+cryptoclaw onboard   # Select "Manual" → enable TEE when prompted
+
+# Or via config
+cryptoclaw config set tee.endpoint http://localhost:3443
+cryptoclaw config set tee.transport grpc
+```
+
+### Start the Enclave
+
+```bash
+# Development (no hardware isolation, full functionality)
+ENCLAVE_PORT=3443 bun src/secure-vault/enclave/server.ts
+
+# Production (hardware-isolated, same code)
+gramine-sgx bun src/secure-vault/enclave/server.ts   # Intel SGX
+```
+
+### Deployment Options
+
+| Platform            | Command                                  | Hardware Isolation | Attestation      |
+| ------------------- | ---------------------------------------- | ------------------ | ---------------- |
+| Local (dev)         | `bun server.ts`                          | None               | Placeholder      |
+| Intel SGX (Gramine) | `gramine-sgx bun server.ts`              | SGX enclave        | Real MRENCLAVE   |
+| AWS Nitro Enclave   | Package as EIF → `nitro-cli run-enclave` | Nitro isolation    | Real PCR         |
+| Phala dStack        | `dstack deploy`                          | Confidential VM    | Real attestation |
+| Marlin Oyster       | `oyster deploy`                          | TEE CVM            | RA-TLS           |
+
+TEE is fully optional. Without it, CryptoClaw works exactly as before — all signing happens in-process.
+
+See [`src/secure-vault/enclave/README.md`](src/secure-vault/enclave/README.md) for detailed setup instructions.
+
+---
+
 ## Skills Library (80+)
 
 CryptoClaw ships with 80+ skills covering crypto, DeFi, productivity, and automation. Skills are loaded per-conversation and give the AI agent native access to external tools and APIs.
@@ -170,6 +268,7 @@ CryptoClaw ships with 80+ skills covering crypto, DeFi, productivity, and automa
 | `four-meme`              | BSC launchpad token discovery                      |
 | `macro-calendar`         | Macro events (Fed, CPI, economic calendar)         |
 | `agent-identity`         | On-chain AI agent identity (ERC-8004)              |
+| `agentic-commerce`       | On-chain job escrow for agent commerce (ERC-8183)  |
 
 ### Productivity & Automation
 
@@ -270,20 +369,33 @@ cryptoclaw doctor
 Telegram / WhatsApp / Discord / Slack / Signal / iMessage / Matrix / ...
                │
                ▼
-┌──────────────────────────────────────┐
-│              Gateway                 │
-│          (control plane)             │
-│        ws://127.0.0.1:18789          │
-└──────────────┬───────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    Gateway                           │
+│               (control plane)                        │
+│             ws://127.0.0.1:18789                     │
+│                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │ AI Agent    │  │ Blockchain  │  │ SecureVault  │  │
+│  │ + Skills    │  │ Extension   │  │ (TEE proxy)  │  │
+│  └─────────────┘  └──────┬──────┘  └──────┬───────┘  │
+│                          │                │          │
+│  ERC-8183 Commerce ──────┘                │          │
+│  ERC-8004 Identity ──────┘                │          │
+└──────────────────────────────────────┬────┘──────────┘
+               │                       │
+               │                 ┌─────▼──────────────┐
+               │                 │ TEE Enclave         │
+               │                 │ (optional)          │
+               │                 │ Private keys + API  │
+               │                 │ secrets never leave │
+               │                 └────────────────────┘
                │
-               ├─ AI Agent (RPC / streaming)
-               │    └─ Skills: binance-spot, wallet-manager, token-swap, ...
                ├─ CLI  (cryptoclaw …)
                ├─ WebChat UI
                └─ macOS / iOS / Android nodes
 ```
 
-The Gateway is the local control plane. The AI agent connects to it via WebSocket RPC, loads skills on demand, and routes responses back to any connected channel. Everything runs on your machine.
+The Gateway is the local control plane. The AI agent connects to it via WebSocket RPC, loads skills on demand, and routes responses back to any connected channel. Everything runs on your machine. When TEE is enabled, all signing operations are delegated to the hardware-isolated enclave.
 
 ---
 
@@ -313,9 +425,12 @@ pnpm tsgo
 CryptoClaw connects to real messaging surfaces and real on-chain infrastructure. Treat inbound messages as **untrusted input** by default.
 
 - **DM pairing** — unknown senders get a pairing code challenge; the agent does not process their message until approved.
-- **Wallet signing** — private keys never leave your machine; all signing is local.
+- **Wallet signing** — private keys never leave your machine; all signing is local. With TEE enabled, signing happens inside a hardware-isolated enclave.
+- **TEE protection** — optional hardware-level isolation for private keys, API secrets, and signing operations. Even root access cannot read enclave memory.
+- **SecureVault** — exchange API credentials (Binance, OKX, Bybit) are managed through the vault. The `signed_api_request` tool handles signing without exposing secrets to the AI agent.
 - **Token audit** — `binance-token-audit` and `security-check` skills run automatically before swaps when configured.
-- **Mainnet confirmation** — Binance spot and swap skills require explicit user confirmation before executing mainnet transactions.
+- **Mainnet confirmation** — all state-changing tools (transfers, swaps, orders, ERC-8183 jobs) require explicit user confirmation.
+- **ERC-8183 escrow** — funds are held in the on-chain ACPCore contract until terminal state. `claimRefund` is permissionless and cannot be blocked by hooks.
 
 Run `cryptoclaw doctor` to surface misconfigured security policies.
 

@@ -19,6 +19,9 @@ export const STATE_CHANGING_TOOLS = new Set([
   "job_complete",
   "job_reject",
   "job_claim_refund",
+  // SecureVault — signed exchange requests and credential storage
+  "signed_api_request",
+  "vault_store_credential",
   // wallet_export is CLI-only — not an agent tool, no confirmation needed here
 ]);
 
@@ -74,6 +77,10 @@ export function formatConfirmationPrompt(
       return `Reject job #${String(params.jobId)} on ${String(params.network) || "base"}`;
     case "job_claim_refund":
       return `Claim refund for expired job #${String(params.jobId)} on ${String(params.network) || "base"}`;
+    case "signed_api_request":
+      return `Send signed ${String(params.method)} request to ${String(params.provider)} ${String(params.path)}`;
+    case "vault_store_credential":
+      return `Store ${String(params.provider)} API credentials in vault`;
     default:
       return `Execute ${toolName} with params: ${JSON.stringify(params)}`;
   }

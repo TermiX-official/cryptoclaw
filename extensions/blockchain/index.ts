@@ -11,6 +11,7 @@ import { registerSecurityTools } from "./src/evm/tools/security-tools.js";
 import { registerSwapTools } from "./src/evm/tools/swap-tools.js";
 import { registerTokenTools } from "./src/evm/tools/token-tools.js";
 import { registerTxTools } from "./src/evm/tools/tx-tools.js";
+import { registerVaultTools, initVault } from "./src/evm/tools/vault-tools.js";
 import { registerWalletTools } from "./src/evm/tools/wallet-tools.js";
 import { requiresConfirmation, formatConfirmationPrompt } from "./src/tx-gate/confirmation.js";
 import { SpendingTracker, DEFAULT_SPENDING_LIMITS } from "./src/tx-gate/spending-limits.js";
@@ -57,6 +58,17 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     registerIdentityTools(api, walletManager);
     registerCommerceTools(api, walletManager);
     registerSecurityTools(api);
+    registerVaultTools(api);
+
+    // Async TEE probe — upgrades LocalVault → TeeVault if enclave is reachable.
+    // Tools work immediately with LocalVault; TEE kicks in once probe completes.
+    // Reads TEE config from cryptoclaw.json `tee` section or `env.vars`.
+    const teeConfig = (api.config as Record<string, unknown>).tee as
+      | { endpoint?: string; transport?: string; mrenclave?: string }
+      | undefined;
+    initVault(teeConfig).catch((err) => {
+      api.logger.warn(`[secure-vault] TEE probe failed, using local vault: ${err}`);
+    });
 
     // --- Transfer tools that should trigger auto security check ---
     const TRANSFER_TOOLS = new Set([
@@ -275,6 +287,14 @@ const blockchainPlugin: OpenClawPluginDefinition = {
           walletLines.join("\n"),
           `Supported networks: ethereum, bsc, polygon, arbitrum, optimism, base, opbnb, iotex (+ testnets).`,
           "Wallet import/export: CLI-only (`cryptoclaw wallet import`, `cryptoclaw wallet export`). Do NOT attempt these as agent tools.",
+          "",
+          "[SecureVault — Exchange API Access]",
+          "For ANY exchange API call that requires authentication (Binance, OKX, Bybit):",
+          "- Use `signed_api_request` tool — it handles API key lookup, HMAC signing, and request dispatch",
+          "- NEVER read or output API keys/secrets — the vault handles them internally",
+          "- If no credentials are configured, suggest `vault_store_credential` or setting env vars",
+          `- TEE status: check with \`vault_status\` tool`,
+          "- Supported providers: binance, okx, bybit",
           "",
           KEY_GUARD_SYSTEM_PROMPT,
         ].join("\n"),

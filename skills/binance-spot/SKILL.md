@@ -12,7 +12,12 @@ Official Binance skill for CEX spot trading. Supports 60+ endpoints for market d
 
 ## Configuration
 
-Store credentials in `TOOLS.md` or environment:
+Store credentials via SecureVault (recommended) or environment variables:
+
+**Option 1 — SecureVault (TEE-protected when available):**
+Use `vault_store_credential` tool with provider "binance", apiKey, and apiSecret.
+
+**Option 2 — Environment variables:**
 
 ```
 BINANCE_API_KEY=<your_api_key>
@@ -20,9 +25,23 @@ BINANCE_API_SECRET=<your_api_secret>
 BINANCE_TESTNET=false  # set true for testnet
 ```
 
-Signing methods supported: HMAC SHA256, RSA, Ed25519.
+## How to Call Authenticated Endpoints
 
-Security: display API key as first 5 + last 4 chars; secret key shows only last 5 chars.
+For all endpoints that require authentication, use the `signed_api_request` tool:
+
+```
+signed_api_request({
+  provider: "binance",
+  method: "POST",
+  path: "/api/v3/order",
+  params: '{"symbol":"BTCUSDT","side":"BUY","type":"MARKET","quantity":"0.001"}'
+})
+```
+
+The vault handles HMAC-SHA256 signing, timestamp injection, and API key headers automatically.
+You NEVER need to handle API keys or secrets directly.
+
+For public endpoints (no auth required), you may use direct HTTP requests.
 
 **Always require explicit user confirmation before executing mainnet transactions.**
 
@@ -153,18 +172,21 @@ GET /api/v3/myAllocations?symbol=BTCUSDT
 
 ```
 User: What's the current BTC price?
-→ GET /api/v3/ticker/price?symbol=BTCUSDT
+→ GET /api/v3/ticker/price?symbol=BTCUSDT (public, no auth needed)
 
 User: Show my USDT balance
-→ GET /api/v3/account → filter for USDT
+→ signed_api_request(provider:"binance", method:"GET", path:"/api/v3/account")
+→ Filter response for USDT
 
 User: Buy 0.001 BTC at market price
 → Confirm with user first
-→ POST /api/v3/order {side:BUY, type:MARKET, quantity:0.001}
+→ signed_api_request(provider:"binance", method:"POST", path:"/api/v3/order",
+     params:'{"symbol":"BTCUSDT","side":"BUY","type":"MARKET","quantity":"0.001"}')
 
 User: Place a limit sell for 0.01 ETH at $3500
 → Confirm with user first
-→ POST /api/v3/order {symbol:ETHUSDT, side:SELL, type:LIMIT, quantity:0.01, price:3500, timeInForce:GTC}
+→ signed_api_request(provider:"binance", method:"POST", path:"/api/v3/order",
+     params:'{"symbol":"ETHUSDT","side":"SELL","type":"LIMIT","quantity":"0.01","price":"3500","timeInForce":"GTC"}')
 ```
 
 ## Safety Rules

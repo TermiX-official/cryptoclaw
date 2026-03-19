@@ -13,6 +13,7 @@ import { registerTokenTools } from "./src/evm/tools/token-tools.js";
 import { registerTxTools } from "./src/evm/tools/tx-tools.js";
 import { registerVaultTools, initVault } from "./src/evm/tools/vault-tools.js";
 import { registerWalletTools } from "./src/evm/tools/wallet-tools.js";
+import { registerZkvmTools } from "./src/evm/tools/zkvm-tools.js";
 import { requiresConfirmation, formatConfirmationPrompt } from "./src/tx-gate/confirmation.js";
 import { SpendingTracker, DEFAULT_SPENDING_LIMITS } from "./src/tx-gate/spending-limits.js";
 import { sanitizeSecrets, KEY_GUARD_SYSTEM_PROMPT } from "./src/wallet/key-guard.js";
@@ -59,6 +60,7 @@ const blockchainPlugin: OpenClawPluginDefinition = {
     registerCommerceTools(api, walletManager);
     registerSecurityTools(api);
     registerVaultTools(api);
+    registerZkvmTools(api, walletManager);
 
     // Async TEE probe — upgrades LocalVault → TeeVault if enclave is reachable.
     // Tools work immediately with LocalVault; TEE kicks in once probe completes.

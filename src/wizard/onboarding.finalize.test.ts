@@ -5,6 +5,17 @@ import type { RuntimeEnv } from "../runtime.js";
 const runTui = vi.hoisted(() => vi.fn(async () => {}));
 const probeGatewayReachable = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
 const setupOnboardingShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
+const spawnMock = vi.hoisted(() =>
+  vi.fn(() => ({ unref: vi.fn(), pid: 12345 })),
+);
+const isWSLMock = vi.hoisted(() => vi.fn(async () => false));
+const buildGatewayInstallPlanMock = vi.hoisted(() =>
+  vi.fn(async () => ({
+    programArguments: ["/usr/bin/node", "/path/to/cli", "gateway", "--port", "18790"],
+    workingDirectory: "/tmp",
+    environment: {},
+  })),
+);
 
 vi.mock("../commands/onboard-helpers.js", () => ({
   detectBrowserOpenSupport: vi.fn(async () => ({ ok: false })),
@@ -19,12 +30,17 @@ vi.mock("../commands/onboard-helpers.js", () => ({
 }));
 
 vi.mock("../commands/daemon-install-helpers.js", () => ({
-  buildGatewayInstallPlan: vi.fn(async () => ({
-    programArguments: [],
-    workingDirectory: "/tmp",
-    environment: {},
-  })),
+  buildGatewayInstallPlan: buildGatewayInstallPlanMock,
   gatewayInstallErrorHint: vi.fn(() => "hint"),
+}));
+
+vi.mock("node:child_process", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:child_process")>();
+  return { ...actual, spawn: spawnMock };
+});
+
+vi.mock("../infra/wsl.js", () => ({
+  isWSL: isWSLMock,
 }));
 
 vi.mock("../commands/daemon-runtime.js", () => ({
@@ -84,6 +100,74 @@ describe("finalizeOnboardingWizard", () => {
     runTui.mockClear();
     probeGatewayReachable.mockClear();
     setupOnboardingShellCompletion.mockClear();
+  });
+
+  it("starts gateway as detached process when systemd is unavailable on Linux", async () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    isWSLMock.mockResolvedValue(true);
+    spawnMock.mockClear();
+
+    const prompter = buildWizardPrompter({
+      select: vi.fn(async () => "later") as never,
+      confirm: vi.fn(async () => false),
+    });
+    const runtime = createRuntime();
+    const notes: string[] = [];
+    const originalNote = prompter.note;
+    prompter.note = vi.fn(async (msg: string) => {
+      notes.push(msg);
+      return originalNote(msg);
+    }) as never;
+
+    try {
+      await finalizeOnboardingWizard({
+        flow: "quickstart",
+        opts: {
+          acceptRisk: true,
+          authChoice: "skip",
+          skipHealth: true,
+          skipUi: false,
+        },
+        baseConfig: {},
+        nextConfig: {
+          tools: { web: { search: { apiKey: "" } } },
+        },
+        workspaceDir: "/tmp",
+        settings: {
+          port: 18790,
+          bind: "loopback",
+          authMode: "token",
+          gatewayToken: "test-token",
+          tailscaleMode: "off",
+          tailscaleResetOnExit: false,
+        },
+        prompter,
+        runtime,
+      });
+    } finally {
+      Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true });
+      isWSLMock.mockResolvedValue(false);
+    }
+
+    // Verify spawn was called with detached mode
+    expect(spawnMock).toHaveBeenCalledWith(
+      "/usr/bin/node",
+      ["/path/to/cli", "gateway", "--port", "18790"],
+      expect.objectContaining({
+        detached: true,
+        stdio: "ignore",
+      }),
+    );
+
+    // Verify the gateway-started note was shown
+    expect(notes).toContain(
+      "Gateway started as a background process (temporary, not managed by systemd).",
+    );
+
+    // Verify the WSL systemd hint was shown
+    const wslHint = notes.find((n) => n.includes("systemd=true"));
+    expect(wslHint).toBeTruthy();
   });
 
   it("resolves gateway password SecretRef for probe and TUI", async () => {

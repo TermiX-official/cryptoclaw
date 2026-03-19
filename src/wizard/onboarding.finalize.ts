@@ -25,6 +25,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
+import { isWSL } from "../infra/wsl.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";
@@ -108,6 +109,27 @@ export async function finalizeOnboardingWizard(
       "Gateway service",
     );
     installDaemon = false;
+  }
+
+  // When systemd is unavailable (common in WSL/containers), start the gateway
+  // as a detached background process so onboarding can complete fully.
+  if (process.platform === "linux" && !systemdAvailable && !installDaemon) {
+    const started = await startGatewayBackgroundFallback({
+      port: settings.port,
+      token: settings.gatewayToken,
+      config: nextConfig,
+    });
+    if (started) {
+      await prompter.note(
+        "Gateway started as a background process (temporary, not managed by systemd).",
+        "Gateway",
+      );
+    }
+    const wsl = await isWSL();
+    if (wsl) {
+      const { renderSystemdUnavailableHints } = await import("../daemon/systemd-hints.js");
+      await prompter.note(renderSystemdUnavailableHints({ wsl: true }).join("\n"), "Recommended");
+    }
   }
 
   if (installDaemon) {
@@ -502,4 +524,36 @@ export async function finalizeOnboardingWizard(
   );
 
   return { launchedTui };
+}
+
+/** Start the gateway as a detached background process when no service manager is available. */
+async function startGatewayBackgroundFallback(params: {
+  port: number;
+  token?: string;
+  config: OpenClawConfig;
+}): Promise<boolean> {
+  try {
+    const { spawn } = await import("node:child_process");
+    const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
+      env: process.env,
+      port: params.port,
+      token: params.token,
+      runtime: DEFAULT_GATEWAY_DAEMON_RUNTIME,
+      config: params.config,
+    });
+    const [cmd, ...args] = programArguments;
+    if (!cmd) {
+      return false;
+    }
+    const child = spawn(cmd, args, {
+      detached: true,
+      stdio: "ignore",
+      cwd: workingDirectory,
+      env: { ...process.env, ...environment },
+    });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
 }

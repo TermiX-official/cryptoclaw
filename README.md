@@ -154,19 +154,128 @@ Client creates job → Sets budget → Funds escrow (USDC)
     → Provider submits deliverable → Evaluator approves → Funds released
 ```
 
+### CryptoClaw Agent as Evaluator
+
+CryptoClaw agents can act as **autonomous Evaluators** for ERC-8183 jobs. When a Provider submits work, the agent automatically runs the Client's verification program, settles the job on-chain, and generates a cryptographic proof of the evaluation result.
+
+Three evaluation modes are supported:
+
+| Mode                 | How it works                                                                                                                                                                      | Trust model                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **zkVM Evaluator**   | Client provides a verification program (RISC-V binary). Agent runs it inside a zkVM (SP1/RISC Zero) against the deliverable. ZK proof guarantees the program produced the result. | Mathematical proof — zero trust needed |
+| **TEE Evaluator**    | Agent runs evaluation logic (including LLM calls) inside a TEE enclave. Attestation proves the code ran in an isolated environment.                                               | Hardware proof — trust Intel/AMD       |
+| **Manual Evaluator** | Agent calls `job_complete` or `job_reject` based on the operator's instruction.                                                                                                   | Trust the evaluator                    |
+
+#### zkVM Evaluation Flow
+
+```
+Client                     Provider                  CryptoClaw Agent (Evaluator)
+  │                          │                            │
+  │ createJob()              │                            │
+  │ + upload test_suite.elf  │                            │
+  │   to IPFS (QmXyz...)    │                            │
+  │ + fund()                 │                            │
+  │                          │                            │
+  │                   submit()                            │
+  │                   deliverable → IPFS (QmAbc...)       │
+  │                          │                            │
+  │                          │     zkvm_evaluate_job()    │
+  │                          │     1. Fetch test_suite    │
+  │                          │     2. Fetch deliverable   │
+  │                          │     3. Verify program hash │
+  │                          │     4. Execute in zkVM:    │
+  │                          │        test_suite(deliver) │
+  │                          │     5. exit 0 → PASS       │
+  │                          │     6. Generate ZK proof   │
+  │                          │     7. On-chain:           │
+  │                          │        complete(jobId)     │
+  │                          │                            │
+  │              Payment received ←─────────────────────────│
+  │                          │                            │
+  Anyone can verify:                                      │
+  proof proves "program QmXyz on input QmAbc = exit 0"    │
+  Evaluator cannot fake the result.                       │
+```
+
 ### Tools
 
-| Tool               | Description                                            |
-| ------------------ | ------------------------------------------------------ |
-| `job_create`       | Create a new job with evaluator, deadline, description |
-| `job_set_budget`   | Set or negotiate budget in USDC                        |
-| `job_fund`         | Lock USDC into escrow (auto-handles ERC-20 approval)   |
-| `job_submit`       | Provider submits deliverable (IPFS CID / hash)         |
-| `job_complete`     | Evaluator approves, releasing funds to provider        |
-| `job_reject`       | Reject job with reason (refunds to client)             |
-| `job_claim_refund` | Claim refund for expired job (permissionless)          |
-| `job_query`        | Query job details by ID                                |
-| `job_list`         | List jobs by wallet address and role                   |
+| Tool                | Description                                                              |
+| ------------------- | ------------------------------------------------------------------------ |
+| `job_create`        | Create a new job with evaluator, deadline, description                   |
+| `job_set_budget`    | Set or negotiate budget in USDC                                          |
+| `job_fund`          | Lock USDC into escrow (auto-handles ERC-20 approval)                     |
+| `job_submit`        | Provider submits deliverable (IPFS CID / hash)                           |
+| `job_complete`      | Evaluator approves, releasing funds to provider                          |
+| `job_reject`        | Reject job with reason (refunds to client)                               |
+| `job_claim_refund`  | Claim refund for expired job (permissionless)                            |
+| `job_query`         | Query job details by ID                                                  |
+| `job_list`          | List jobs by wallet address and role                                     |
+| `zkvm_evaluate_job` | Run Client's verification program in zkVM, generate ZK proof, settle job |
+| `zkvm_status`       | Check available zkVM backends (SP1, RISC Zero, native)                   |
+
+### Verification Program Specification
+
+The Client provides a verification program that defines the acceptance criteria for a job. The zkVM Evaluator runs this program on the Provider's deliverable and generates a ZK proof of the result.
+
+**Program format:** Compiled RISC-V ELF binary (the standard target for SP1 and RISC Zero zkVMs).
+
+**Program I/O contract:**
+
+| Channel       | Usage                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| **stdin**     | Receives the deliverable content                                                           |
+| **stdout**    | Outputs evaluation details (human-readable)                                                |
+| **exit code** | `0` = pass (triggers `complete`), non-zero = fail (triggers `reject`)                      |
+| **env vars**  | `ZKVM_JOB_DESCRIPTION` (job description), `ZKVM_DELIVERABLE_HASH` (SHA-256 of deliverable) |
+
+**Program distribution:** Upload the compiled ELF binary to IPFS and include the CID + SHA-256 hash in the job description. The Evaluator fetches the binary, verifies its hash, and executes it inside the zkVM.
+
+**What can a verification program do?**
+
+| Verification type | Example              | Description                                      |
+| ----------------- | -------------------- | ------------------------------------------------ |
+| Unit tests        | `test_erc20.elf`     | Run a test suite against submitted code          |
+| Format validation | `check_schema.elf`   | Validate JSON/XML/Protobuf against a schema      |
+| Data integrity    | `verify_dataset.elf` | Check checksums, row counts, value ranges        |
+| Benchmark         | `perf_check.elf`     | Verify an algorithm meets performance criteria   |
+| String matching   | `keyword_check.elf`  | Check for required sections, keywords, structure |
+| Hash verification | `verify_hash.elf`    | Confirm deliverable matches a known hash         |
+
+**Supported languages** (anything that compiles to RISC-V):
+
+| Language | Toolchain                                           | Notes                             |
+| -------- | --------------------------------------------------- | --------------------------------- |
+| Rust     | `cargo prove build` (SP1) or `cargo risczero build` | Recommended — best zkVM support   |
+| C/C++    | `riscv64-unknown-elf-gcc`                           | Standard RISC-V cross-compilation |
+| Go       | `GOOS=linux GOARCH=riscv64`                         | Experimental, larger binaries     |
+| Zig      | `zig build -Dtarget=riscv64-linux`                  | Lightweight alternative           |
+
+**Example — Rust verification program:**
+
+```rust
+use std::io::Read;
+
+fn main() {
+    let mut deliverable = String::new();
+    std::io::stdin().read_to_string(&mut deliverable).unwrap();
+
+    let job_desc = std::env::var("ZKVM_JOB_DESCRIPTION").unwrap_or_default();
+
+    // Example: verify an ERC-20 contract has required functions
+    let required = ["transfer", "approve", "balanceOf", "totalSupply"];
+    let missing: Vec<_> = required.iter()
+        .filter(|f| !deliverable.contains(**f))
+        .collect();
+
+    if missing.is_empty() {
+        println!("PASS: All {} required functions found", required.len());
+        std::process::exit(0); // → triggers complete()
+    } else {
+        println!("FAIL: Missing functions: {:?}", missing);
+        std::process::exit(1); // → triggers reject()
+    }
+}
+```
 
 ### ERC-8004 Integration
 
@@ -239,36 +348,37 @@ CryptoClaw ships with 80+ skills covering crypto, DeFi, productivity, and automa
 
 ### Crypto & DeFi
 
-| Skill                    | Description                                        |
-| ------------------------ | -------------------------------------------------- |
-| `binance-spot`           | Binance CEX spot trading — 60+ endpoints           |
-| `binance-market-rank`    | Trending tokens, smart money, social hype rankings |
-| `binance-token-info`     | Token search, metadata, real-time data, K-lines    |
-| `binance-token-audit`    | Security audit for honeypots and rug pulls         |
-| `binance-trading-signal` | Smart Money on-chain buy/sell signals              |
-| `binance-address-info`   | Wallet portfolio query across chains               |
-| `binance-meme-rush`      | Launchpad meme token and trend discovery           |
-| `wallet-manager`         | Create, import, and manage blockchain wallets      |
-| `token-swap`             | Swap tokens on Uniswap/PancakeSwap                 |
-| `coingecko`              | Prices, market caps, charts, trending tokens       |
-| `defillama`              | TVL, protocol analytics, yield pools               |
-| `debank`                 | Wallet portfolios and DeFi positions               |
-| `etherscan`              | Block explorer queries (ETH, BSC, Polygon, etc.)   |
-| `hyperliquid`            | Perpetual futures and spot on Hyperliquid DEX      |
-| `aave-bsc`               | Aave V3 lending on BSC                             |
-| `dune`                   | Custom SQL analytics on Dune                       |
-| `gas-tracker`            | Gas prices across networks                         |
-| `whale-watcher`          | Large on-chain transaction monitoring              |
-| `market-data`            | Multi-source price and market data                 |
-| `security-check`         | Token/address security via GoPlus API              |
-| `portfolio-tracker`      | Track holdings and portfolio value                 |
-| `defi-dashboard`         | Yield farming, staking, liquidity pools            |
-| `nft-manager`            | View, transfer, manage NFTs                        |
-| `contract-deployer`      | Deploy ERC20/ERC721 from templates                 |
-| `four-meme`              | BSC launchpad token discovery                      |
-| `macro-calendar`         | Macro events (Fed, CPI, economic calendar)         |
-| `agent-identity`         | On-chain AI agent identity (ERC-8004)              |
-| `agentic-commerce`       | On-chain job escrow for agent commerce (ERC-8183)  |
+| Skill                    | Description                                            |
+| ------------------------ | ------------------------------------------------------ |
+| `binance-spot`           | Binance CEX spot trading — 60+ endpoints               |
+| `binance-market-rank`    | Trending tokens, smart money, social hype rankings     |
+| `binance-token-info`     | Token search, metadata, real-time data, K-lines        |
+| `binance-token-audit`    | Security audit for honeypots and rug pulls             |
+| `binance-trading-signal` | Smart Money on-chain buy/sell signals                  |
+| `binance-address-info`   | Wallet portfolio query across chains                   |
+| `binance-meme-rush`      | Launchpad meme token and trend discovery               |
+| `wallet-manager`         | Create, import, and manage blockchain wallets          |
+| `token-swap`             | Swap tokens on Uniswap/PancakeSwap                     |
+| `coingecko`              | Prices, market caps, charts, trending tokens           |
+| `defillama`              | TVL, protocol analytics, yield pools                   |
+| `debank`                 | Wallet portfolios and DeFi positions                   |
+| `etherscan`              | Block explorer queries (ETH, BSC, Polygon, etc.)       |
+| `hyperliquid`            | Perpetual futures and spot on Hyperliquid DEX          |
+| `aave-bsc`               | Aave V3 lending on BSC                                 |
+| `dune`                   | Custom SQL analytics on Dune                           |
+| `gas-tracker`            | Gas prices across networks                             |
+| `whale-watcher`          | Large on-chain transaction monitoring                  |
+| `market-data`            | Multi-source price and market data                     |
+| `security-check`         | Token/address security via GoPlus API                  |
+| `portfolio-tracker`      | Track holdings and portfolio value                     |
+| `defi-dashboard`         | Yield farming, staking, liquidity pools                |
+| `nft-manager`            | View, transfer, manage NFTs                            |
+| `contract-deployer`      | Deploy ERC20/ERC721 from templates                     |
+| `four-meme`              | BSC launchpad token discovery                          |
+| `macro-calendar`         | Macro events (Fed, CPI, economic calendar)             |
+| `agent-identity`         | On-chain AI agent identity (ERC-8004)                  |
+| `agentic-commerce`       | On-chain job escrow for agent commerce (ERC-8183)      |
+| `zkvm-evaluator`         | Trustless job evaluation with ZK proof (SP1/RISC Zero) |
 
 ### Productivity & Automation
 

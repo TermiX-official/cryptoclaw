@@ -22,6 +22,8 @@ export const STATE_CHANGING_TOOLS = new Set([
   // SecureVault — signed exchange requests and credential storage
   "signed_api_request",
   "vault_store_credential",
+  // zkVM — evaluate ERC-8183 jobs with Client's verification program
+  "zkvm_evaluate_job",
   // wallet_export is CLI-only — not an agent tool, no confirmation needed here
 ]);
 
@@ -81,6 +83,8 @@ export function formatConfirmationPrompt(
       return `Send signed ${String(params.method)} request to ${String(params.provider)} ${String(params.path)}`;
     case "vault_store_credential":
       return `Store ${String(params.provider)} API credentials in vault`;
+    case "zkvm_evaluate_job":
+      return `Evaluate job #${String(params.jobId)} with zkVM (${String(params.backend) || "auto"}) on ${String(params.network) || "base"}`;
     default:
       return `Execute ${toolName} with params: ${JSON.stringify(params)}`;
   }

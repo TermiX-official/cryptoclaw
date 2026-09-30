@@ -47,7 +47,10 @@ async function fetchDeliverable(ref: string): Promise<string> {
 export async function getAvailableBackend(): Promise<"sp1" | "risc0" | "native"> {
   if (await isSp1Available()) return "sp1";
   if (await isRisc0Available()) return "risc0";
-  return "native";
+  if (process.env.CRYPTOCLAW_ALLOW_NATIVE_ZKVM === "1") return "native";
+  throw new Error(
+    "No production zkVM backend is available. Install SP1 or RISC Zero; native execution is development-only and requires CRYPTOCLAW_ALLOW_NATIVE_ZKVM=1.",
+  );
 }
 
 // --- Evaluate and settle ---

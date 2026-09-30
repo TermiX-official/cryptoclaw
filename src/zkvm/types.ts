@@ -31,7 +31,7 @@ export type VerificationProgram = {
    * zkVM backend to use.
    *   - "sp1": Succinct SP1 (RISC-V, fastest)
    *   - "risc0": RISC Zero (RISC-V, Bonsai prover service)
-   *   - "native": Run natively without ZK proof (dev/testing only)
+   *   - "native": Run natively without ZK proof (explicit local development only)
    */
   backend: "sp1" | "risc0" | "native";
   /** Proof system for on-chain verification. */

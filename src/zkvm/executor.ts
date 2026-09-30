@@ -28,6 +28,12 @@ import type { VerificationProgram, ZkvmExecuteParams, ZkvmExecuteResult } from "
 
 const execFileAsync = promisify(execFile);
 
+/**
+ * Native execution is a development-only escape hatch. It must never be
+ * enabled implicitly because verification programs may be client-supplied.
+ */
+const NATIVE_ZKVM_ENABLED = process.env.CRYPTOCLAW_ALLOW_NATIVE_ZKVM === "1";
+
 // --- Backend availability ---
 
 export async function isSp1Available(): Promise<boolean> {
@@ -91,6 +97,11 @@ export async function execute(params: ZkvmExecuteParams): Promise<ZkvmExecuteRes
     case "risc0":
       return executeRisc0(program, deliverableStr, deliverableHash, params.auxiliaryInputs);
     case "native":
+      if (!NATIVE_ZKVM_ENABLED) {
+        throw new Error(
+          "Native zkVM execution is disabled. Install SP1/RISC Zero or explicitly set CRYPTOCLAW_ALLOW_NATIVE_ZKVM=1 for local development only.",
+        );
+      }
       return executeNative(program, deliverableStr, deliverableHash, params.auxiliaryInputs);
     default: {
       const _exhaustive: never = program.backend;

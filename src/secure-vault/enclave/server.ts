@@ -20,6 +20,7 @@
 
 import crypto from "node:crypto";
 import { getProviderConfig } from "../provider-configs.js";
+import { resolveProviderRequestUrl } from "../request-url.js";
 
 // --- In-memory credential store (enclave-protected) ---
 
@@ -167,6 +168,7 @@ async function handleRpc(request: RpcRequest): Promise<RpcResponse> {
         const config = getProviderConfig(provider);
         const baseUrl =
           baseUrlOverride ?? (cred.testnet ? config.testnetBaseUrl : undefined) ?? config.baseUrl;
+        const requestUrl = resolveProviderRequestUrl(baseUrl, path);
 
         const queryParams = new URLSearchParams(params);
         if (config.includeTimestamp && config.timestampParam) {
@@ -182,14 +184,14 @@ async function handleRpc(request: RpcRequest): Promise<RpcResponse> {
 
         const url =
           method === "GET" || method === "DELETE"
-            ? `${baseUrl}${path}?${queryParams.toString()}`
-            : `${baseUrl}${path}`;
+            ? `${requestUrl}?${queryParams.toString()}`
+            : requestUrl;
 
         const headers: Record<string, string> = {
           [config.apiKeyHeader]: cred.apiKey,
         };
 
-        const fetchOptions: RequestInit = { method, headers };
+        const fetchOptions: RequestInit = { method, headers, redirect: "error" };
         if (method === "POST" || method === "PUT") {
           headers["Content-Type"] = "application/x-www-form-urlencoded";
           fetchOptions.body = queryParams.toString();

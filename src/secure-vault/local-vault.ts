@@ -11,6 +11,7 @@
 
 import crypto from "node:crypto";
 import { getProviderConfig } from "./provider-configs.js";
+import { resolveProviderRequestUrl } from "./request-url.js";
 import type { SecureVault, SignedRequestParams, SignedRequestResult } from "./types.js";
 
 type StoredCredential = {
@@ -66,6 +67,7 @@ export class LocalVault implements SecureVault {
     const config = getProviderConfig(params.provider);
     const baseUrl =
       params.baseUrl ?? (cred.testnet ? config.testnetBaseUrl : undefined) ?? config.baseUrl;
+    const requestUrl = resolveProviderRequestUrl(baseUrl, params.path);
 
     // Build query parameters
     const queryParams = new URLSearchParams(params.params ?? {});
@@ -90,8 +92,8 @@ export class LocalVault implements SecureVault {
     // Build request
     const url =
       params.method === "GET" || params.method === "DELETE"
-        ? `${baseUrl}${params.path}?${queryParams.toString()}`
-        : `${baseUrl}${params.path}`;
+        ? `${requestUrl}?${queryParams.toString()}`
+        : requestUrl;
 
     const headers: Record<string, string> = {
       [config.apiKeyHeader]: cred.apiKey,
@@ -100,6 +102,7 @@ export class LocalVault implements SecureVault {
     const fetchOptions: RequestInit = {
       method: params.method,
       headers,
+      redirect: "error",
     };
 
     if (params.method === "POST" || params.method === "PUT") {
